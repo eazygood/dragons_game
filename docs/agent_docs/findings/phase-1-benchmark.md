@@ -112,11 +112,35 @@ A live probe confirmed the cause. By turn ~94 all 10 ads on the board are
 `Impossible`, and spending turns on potions surfaces at most one `Suicide
 mission`. So the engine had no attemptable ad and stopped.
 
-The fix: on an exhausted board the engine buys the cheapest affordable
-level-up, even with `levelUpEnabled: false`, and stops only when it cannot
-afford one. Play up to that point is unchanged and score never decreases, so
-each game's score can only rise. The one exception is that concurrent
-benchmark games share evidence. Not yet re-benchmarked.
+**Tried and reverted:** an exhausted-board level-up. When no ad was
+attemptable, the engine bought the cheapest affordable level-up even with
+`levelUpEnabled: false`, and stopped only when it could not afford one.
+
+Re-benchmark (`37fef34a`, cold, 20 runs, same config otherwise):
+
+| Metric            | Acceptance (`bf7180fc`) | With the level-up rule |
+| ----------------- | ----------------------- | ---------------------- |
+| Pass ≥ 1000       | 20/20                   | 19/20                  |
+| Min / median      | 1566 / 2687             | 21 / 2428              |
+| Mean turns        | 101.2                   | 116.1                  |
+| Ended `abandoned` | 16                      | 8                      |
+
+- 7 games reached an exhausted board between turns 96 and 106 and bought 8–22
+  level-ups there. **None of them won any reward after the first level-up.**
+  Levelling up does not bring attemptable ads back, so the rule was removed.
+- The other 12 games ran out of lives before their board ran dry, so the rule
+  never acted in them. The lower median is game-to-game variance, not the rule.
+- The one failure (`uhVgOkuh`, score 21) lost its 3 lives in 5 turns on ads
+  estimated at 0.76, 0.73 and 0.88, with under 50 gold, so no potion was
+  affordable. The rule never acted. Nothing in the engine guards the opening
+  turns, which makes this the only measured way to miss 1000.
+
+Stopping on an exhausted board is therefore correct: by then the game is over
+in all but name. Gold left at that point is not lost score.
+
+Open question: the three proactive level-up benchmarks never stopped. It is not
+known whether levelling up _early_ keeps the board from running dry, or whether
+those games simply died first.
 
 The proactive level-up verdict (§4) rests on 95% vs 100%, which is one run in
 twenty. Treat it as weak evidence.

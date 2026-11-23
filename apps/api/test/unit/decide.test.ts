@@ -110,8 +110,9 @@ describe('decide', () => {
     ).toBe('buy');
   });
 
-  it('levels up instead of stopping on an exhausted board with the shipped settings', () => {
-    // Measured: by turn ~95 every ad is Impossible; stopping there left ~1400 gold unspent.
+  it('stops on an exhausted board with the shipped settings, however much gold is left', () => {
+    // Measured: from turn ~95 every ad is Impossible, and 7 games that bought
+    // 8–22 level-ups there won no further reward.
     const exhausted = [ad({ probability: 'Impossible' }), ad({ probability: 'Impossible' })];
     const decision = decide({
       state: { ...state, lives: 4, gold: 1400 },
@@ -121,20 +122,7 @@ describe('decide', () => {
       config: STRATEGY_CONFIG,
     });
 
-    expect(decision).toMatchObject({ kind: 'buy', itemId: 'cs', reasoning: { rule: 'level_up' } });
-  });
-
-  it('stops on an exhausted board only when no level-up is affordable', () => {
-    const exhausted = [ad({ probability: 'Impossible' })];
-    const decision = decide({
-      state: { ...state, lives: 4, gold: 99 },
-      board: exhausted,
-      shop,
-      calibration,
-      config: STRATEGY_CONFIG,
-    });
-
-    expect(decision.kind).toBe('stop');
+    expect(decision).toMatchObject({ kind: 'stop', reasoning: { rule: 'no_viable_option' } });
   });
 
   it('levels up only with gold to spare above the potion reserve', () => {
@@ -155,7 +143,7 @@ describe('decide', () => {
     expect(decision.reasoning.rule).toBe('best_expected_value');
   });
 
-  it('never levels up on a playable board when the policy is disabled', () => {
+  it('never levels up when the policy is disabled', () => {
     const decision = decide({
       state: { ...state, gold: 500 },
       board,

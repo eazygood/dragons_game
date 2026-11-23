@@ -259,11 +259,11 @@ failures, and those of concurrent benchmark games, count from the next turn.
    engine never buys above the floor.
    Measured: a run surviving ~90 turns scored 6840; one dying at turn 24 scored 467. **Survival is the strategy.**
 5. Take the highest EV clearing `minimumProbability`; else the safest
-   attemptable ad; else the board is exhausted (every ad `Impossible` or
-   expired, measured from turn ~95), so buy the cheapest affordable level-up;
-   else stop. With `levelUpEnabled` (off by default) the engine also levels up
-   proactively when no ad clears the floor or gold above `levelUpGoldReserve`
-   allows.
+   attemptable ad; else stop. Stopping means the board is exhausted (every ad
+   `Impossible` or expired, measured from turn ~95). Nothing for sale revives
+   it, so the engine does not spend gold there. With `levelUpEnabled` (off by
+   default) the engine also levels up when no ad clears the floor or when gold
+   above `levelUpGoldReserve` allows.
 
 All thresholds live in one typed `StrategyConfig`. No magic numbers in the
 engine.
@@ -308,23 +308,24 @@ The registry is an interface, so moving the loop out later is contained.
 
 Recorded as they are established. A documented negative result is a finding.
 
-| Question                                 | Status  | Result                                                                                                                |
-| ---------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
-| Does `calibrated` beat `baseline`?       | yes     | 90% vs 55% pass over 20 cold runs each, before any tuning                                                             |
-| Do labels mean the same at every reward? | **no**  | `Sure thing` 47/47 under 100 gold, 1/45 at 160+ — hence reward bands in the calibration key                           |
-| Does levelling up pay?                   | partly  | proactive: off 100% pass / median 2510, on 95% / 3348, one run apart, so **off**. On an exhausted board: **always**   |
-| Does the board run dry?                  | **yes** | by turn ~95 every ad is `Impossible`; with level-ups off, 16/20 acceptance runs stopped there with ~1400 gold unspent |
-| Can lives exceed the starting 3?         | yes     | observed up to 12 from repeated potions                                                                               |
-| Is `encrypted: 2` ROT13?                 | yes     | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)                                      |
-| Do encrypted ads behave differently?     | no      | 0.73 vs 0.72 success; `was_encrypted` column dropped                                                                  |
-| Does reputation affect anything?         | skip    | **each call burns a turn**; values move but nothing uses them                                                         |
-| Is there upstream rate limiting?         | no      | no `429` across every benchmark at 8 req/s, 3 concurrent games                                                        |
+| Question                                 | Status  | Result                                                                                                                   |
+| ---------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Does `calibrated` beat `baseline`?       | yes     | 90% vs 55% pass over 20 cold runs each, before any tuning                                                                |
+| Do labels mean the same at every reward? | **no**  | `Sure thing` 47/47 under 100 gold, 1/45 at 160+ — hence reward bands in the calibration key                              |
+| Does levelling up pay?                   | partly  | proactive: off 100% pass / median 2510, on 95% / 3348, one run apart, so **off**. On an exhausted board: **no**          |
+| Does the board run dry?                  | **yes** | by turn ~95 every ad is `Impossible`, and 8–22 level-ups bought there won nothing more; the game is over in all but name |
+| Can lives exceed the starting 3?         | yes     | observed up to 12 from repeated potions                                                                                  |
+| Is `encrypted: 2` ROT13?                 | yes     | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)                                         |
+| Do encrypted ads behave differently?     | no      | 0.73 vs 0.72 success; `was_encrypted` column dropped                                                                     |
+| Does reputation affect anything?         | skip    | **each call burns a turn**; values move but nothing uses them                                                            |
+| Is there upstream rate limiting?         | no      | no `429` across every benchmark at 8 req/s, 3 concurrent games                                                           |
 
 Acceptance (`pnpm bench --runs 20`, cold, tuned defaults): **20/20**, min 1566, median 2687.
 Cold means "this benchmark's own games only", so the 20 games share evidence as
-they go. 16 of the 20 stopped on an exhausted board. The level-up fallback was
-added after this run and changes play only from that point on, so per-game
-scores can only rise. It is **not yet re-benchmarked**. Raw numbers, the sweep and the acceptance run:
+they go. 16 of the 20 stopped on an exhausted board. A re-run of the same
+config scored 19/20 (min 21, median 2428): one game lost its 3 lives in 5 turns
+before it could afford a potion. Read the pass rate as 95–100%, not a
+guarantee. Raw numbers, the sweep and both runs:
 [`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md).
 
 Tuned `StrategyConfig` (sweep in the findings file):
@@ -337,6 +338,6 @@ livesFloor: 3,              // = starting lives: buy back every lost life
 minimumProbability: 0.45,   // 0.3 cost 10 points of pass rate
 lifeCostInGold: 50,
 turnCostInGold: 20,
-levelUpEnabled: false,      // proactive only; exhausted boards always level up
+levelUpEnabled: false,      // 100% vs 95% pass, one run apart: weak evidence
 levelUpGoldReserve: 350,
 ```
