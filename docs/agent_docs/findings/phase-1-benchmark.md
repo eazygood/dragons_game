@@ -100,3 +100,23 @@ The two were not swept together; §6 validates the combination.
 
 The brief's bar is ≥ 19/20. The weakest of these 20 games still cleared 1000 by
 half again.
+
+## 7. After the final review: games that stop with gold unspent
+
+The acceptance database shows 16 of 20 runs ended `abandoned`. They were at
+4 lives with 858–2234 gold left (about 1400 on average) around turn 99, and all
+at dragon level 0. The 4 runs that ended `game_over` were the low scorers (min
+1566). None of the three level-up-on benchmarks ever stopped (levels 18–28).
+
+A live probe confirmed the cause. By turn ~94 all 10 ads on the board are
+`Impossible`, and spending turns on potions surfaces at most one `Suicide
+mission`. So the engine had no attemptable ad and stopped.
+
+The fix: on an exhausted board the engine buys the cheapest affordable
+level-up, even with `levelUpEnabled: false`, and stops only when it cannot
+afford one. Play up to that point is unchanged and score never decreases, so
+each game's score can only rise. The one exception is that concurrent
+benchmark games share evidence. Not yet re-benchmarked.
+
+The proactive level-up verdict (§4) rests on 95% vs 100%, which is one run in
+twenty. Treat it as weak evidence.

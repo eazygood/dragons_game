@@ -134,10 +134,25 @@ describe('repositories', () => {
     });
   });
 
-  it('returns no counts after a truncation, which is what a cold benchmark needs', async () => {
-    await adAttemptRepository.deleteMany({ db });
+  it('counts only the attempts of one benchmark when scoped to it', async () => {
+    const benchmarkRunId = await gameRunRepository.createOne({
+      db,
+      gameRun: { ...ACTIVE_RUN, gameId: 'repo-bench', benchmarkId: 'bench-scope' },
+    });
 
-    expect(await adAttemptRepository.findCalibrationCounts({ db })).toEqual([]);
+    await adAttemptRepository.createOne({
+      db,
+      attempt: attemptOf({
+        gameRunId: benchmarkRunId,
+        probability: 'Gamble',
+        dragonLevel: 0,
+        success: true,
+      }),
+    });
+
+    expect(
+      await adAttemptRepository.findCalibrationCounts({ db, benchmarkId: 'bench-scope' }),
+    ).toEqual([{ probability: 'Gamble', dragonLevel: 0, reward: 10, attempts: 1, successes: 1 }]);
   });
 
   it('records a failed purchase', async () => {

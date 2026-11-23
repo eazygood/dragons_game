@@ -28,7 +28,6 @@ flowchart TB
     MAN --> ENG
     MAN --> REPO --> DB
     MAN --> ADP --> EXT
-    ENG -.->|"reads calibration"| REPO
 ```
 
 Why everything goes through Fastify: one source of truth for game state; the
@@ -71,8 +70,9 @@ for the operation — `game-mediator/start-game.ts`, not one growing file.
 ### Managers
 
 Own one entity's lifecycle, its rules and its transaction boundary. A manager
-calls only its own entity's repository. `game-manager/` owns the game state
-machine: apply a solve result, apply a purchase, detect game over.
+may compose every repository its transaction writes: `game-manager/` owns the
+game state machine and writes a turn's run update together with its attempt or
+purchase row, atomically.
 
 ### Repositories
 
@@ -210,7 +210,7 @@ Three consequences that cause real bugs if missed:
 
 ```ts
 // pure — no I/O, no clock, no randomness
-decide(state: GameState, board: Ad[], calibration: Calibration): Decision
+decide({ state, board, shop, calibration, config }): Decision
 ```
 
 `Decision` is a discriminated union — `solve`, `buy`, or `stop` — each carrying
@@ -225,7 +225,7 @@ reward and outcome. The estimate is a Laplace-smoothed success rate keyed on
 `(label, levelBucket, rewardBand)`:
 
 ```
-p̂ = (successes + α·prior) / (attempts + α)      α ≈ 5
+p̂ = (successes + α·prior) / (attempts + α)      α = smoothingAlpha (tuned: 2)
 ```
 
 With little data the prior dominates; as evidence accumulates, measurement takes
@@ -252,13 +252,18 @@ failures, and those of concurrent benchmark games, count from the next turn.
 3. **Expected value** — `EV = p̂ · reward − (1 − p̂) · lifeCost`, where
    `lifeCost` is a healing potion (50 gold) plus the turn it burns. This converts
    risk into gold so risky-lucrative and safe-cheap ads compare on one axis.
-4. **Survival override** — lives, not gold, are the binding constraint. At or
-   below a lives floor the engine buys `hpot` before anything else. The tuned floor equals the starting lives, so spare gold is always
-   banked as lives: gold is worth nothing at game end, and a potion costs only
-   the turn.
+4. **Survival override**: lives, not gold, are the binding constraint. At or
+   below `livesFloor` the engine buys `hpot` before anything else. The tuned
+   floor equals the starting lives (3), so every lost life is bought back as soon
+   as gold allows. Lives can rise above the start (observed up to 12), but the
+   engine never buys above the floor.
    Measured: a run surviving ~90 turns scored 6840; one dying at turn 24 scored 467. **Survival is the strategy.**
-5. Take the highest EV clearing the floor; else buy if gold allows; else take the
-   safest available ad.
+5. Take the highest EV clearing `minimumProbability`; else the safest
+   attemptable ad; else the board is exhausted (every ad `Impossible` or
+   expired, measured from turn ~95), so buy the cheapest affordable level-up;
+   else stop. With `levelUpEnabled` (off by default) the engine also levels up
+   proactively when no ad clears the floor or gold above `levelUpGoldReserve`
+   allows.
 
 All thresholds live in one typed `StrategyConfig`. No magic numbers in the
 engine.
@@ -278,7 +283,13 @@ falls.
 
 ## Bot runtime
 
-The bot runs **in the Fastify process**. A `BotRunRegistry` holds active runs by
+**Phase 1 ships the loop as CLIs** (`pnpm bot`, `pnpm bench`). They call the
+adapter and the calibration loader directly. Before the advisor lands, that
+"load calibration, fetch board, decide" path moves behind a manager, so the bot
+and the UI share one code path. The registry and `/watch` below are the Phase 2
+design and are not built yet.
+
+In Phase 2 the bot runs **in the Fastify process**. A `BotRunRegistry` holds active runs by
 `gameId`; `/watch` subscribes and fans out to any number of SSE viewers from one
 run. Viewers never drive the loop — a disconnect does not stop a game, and a
 reconnect replays from the persisted decision trail.
@@ -297,17 +308,23 @@ The registry is an interface, so moving the loop out later is contained.
 
 Recorded as they are established. A documented negative result is a finding.
 
-| Question                                 | Status | Result                                                                                      |
-| ---------------------------------------- | ------ | ------------------------------------------------------------------------------------------- |
-| Does `calibrated` beat `baseline`?       | yes    | 90% vs 55% pass over 20 cold runs each, before any tuning                                   |
-| Do labels mean the same at every reward? | **no** | `Sure thing` 47/47 under 100 gold, 1/45 at 160+ — hence reward bands in the calibration key |
-| Does levelling up pay?                   | **no** | off: 100% pass, median 2510; on: 95%, median 3348. Reliability is the brief, so **off**     |
-| Is `encrypted: 2` ROT13?                 | yes    | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)            |
-| Do encrypted ads behave differently?     | no     | 0.73 vs 0.72 success; `was_encrypted` column dropped                                        |
-| Does reputation affect anything?         | skip   | **each call burns a turn**; values move but nothing uses them                               |
-| Is there upstream rate limiting?         | no     | no `429` across every benchmark at 8 req/s, 3 concurrent games                              |
+| Question                                 | Status  | Result                                                                                                                |
+| ---------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| Does `calibrated` beat `baseline`?       | yes     | 90% vs 55% pass over 20 cold runs each, before any tuning                                                             |
+| Do labels mean the same at every reward? | **no**  | `Sure thing` 47/47 under 100 gold, 1/45 at 160+ — hence reward bands in the calibration key                           |
+| Does levelling up pay?                   | partly  | proactive: off 100% pass / median 2510, on 95% / 3348, one run apart, so **off**. On an exhausted board: **always**   |
+| Does the board run dry?                  | **yes** | by turn ~95 every ad is `Impossible`; with level-ups off, 16/20 acceptance runs stopped there with ~1400 gold unspent |
+| Can lives exceed the starting 3?         | yes     | observed up to 12 from repeated potions                                                                               |
+| Is `encrypted: 2` ROT13?                 | yes     | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)                                      |
+| Do encrypted ads behave differently?     | no      | 0.73 vs 0.72 success; `was_encrypted` column dropped                                                                  |
+| Does reputation affect anything?         | skip    | **each call burns a turn**; values move but nothing uses them                                                         |
+| Is there upstream rate limiting?         | no      | no `429` across every benchmark at 8 req/s, 3 concurrent games                                                        |
 
-Acceptance (`pnpm bench --runs 20`, cold, tuned defaults): **20/20**, min 1566, median 2687. Raw numbers, the sweep and the acceptance run:
+Acceptance (`pnpm bench --runs 20`, cold, tuned defaults): **20/20**, min 1566, median 2687.
+Cold means "this benchmark's own games only", so the 20 games share evidence as
+they go. 16 of the 20 stopped on an exhausted board. The level-up fallback was
+added after this run and changes play only from that point on, so per-game
+scores can only rise. It is **not yet re-benchmarked**. Raw numbers, the sweep and the acceptance run:
 [`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md).
 
 Tuned `StrategyConfig` (sweep in the findings file):
@@ -316,10 +333,10 @@ Tuned `StrategyConfig` (sweep in the findings file):
 smoothingAlpha: 2,          // a fresh trap cell is unlearned in 3 failures, not 6
 levelBucketEdges: [2, 4, 6],
 rewardBandEdges: [100, 160],
-livesFloor: 3,              // = starting lives: bank spare gold as potions
+livesFloor: 3,              // = starting lives: buy back every lost life
 minimumProbability: 0.45,   // 0.3 cost 10 points of pass rate
 lifeCostInGold: 50,
 turnCostInGold: 20,
-levelUpEnabled: false,
+levelUpEnabled: false,      // proactive only; exhausted boards always level up
 levelUpGoldReserve: 350,
 ```

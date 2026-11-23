@@ -51,14 +51,16 @@ If a session cannot produce an `encrypted: 2` ad, record that as a finding in
 ## Benchmark
 
 ```bash
-pnpm bench          # 20 cold runs — truncates calibration first
+pnpm bench          # 20 cold runs — calibration scoped to this benchmark's games
 pnpm bench --warm   # same, keeping accumulated history
 ```
 
 Reports the score distribution, pass rate against 1000, and mean turns survived.
 
 **Cold is the headline number**, because an empty store is what a reviewer gets
-on their first `docker compose up`. The warm figure shows what the learning is
+on their first `docker compose up`. Cold reads only the evidence of the current
+benchmark's own games, so no history is ever deleted, and the concurrent games
+learn from each other as they go. The warm figure shows what the learning is
 worth. Both go in the README.
 
 **Acceptance: ≥ 95% of cold runs clear 1000.**

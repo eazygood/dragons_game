@@ -1,5 +1,5 @@
 import type { Knex } from 'knex';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
 import { runBenchmark } from '../../src/bot/benchmark.ts';
@@ -34,6 +34,10 @@ describe('runBenchmark', () => {
   });
 
   afterAll(() => db.destroy());
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   beforeEach(async () => {
     await db(DbTables.GameRuns).delete();
@@ -72,8 +76,9 @@ describe('runBenchmark', () => {
 
   const client = () => createScriptedClient({ turnsUntilGameOver: SCRIPTED_TURNS });
 
-  it('truncates calibration before a cold benchmark', async () => {
-    await runBenchmark({
+  it('keeps earlier history out of a cold benchmark without deleting it', async () => {
+    const counts = vi.spyOn(adAttemptRepository, 'findCalibrationCounts');
+    const summary = await runBenchmark({
       db,
       client: client(),
       strategy: 'calibrated',
@@ -83,10 +88,15 @@ describe('runBenchmark', () => {
       config,
     });
 
-    expect(await countOfAttemptsSeededBefore()).toBe(0);
+    expect(counts).toHaveBeenCalledWith(
+      expect.objectContaining({ benchmarkId: summary.benchmarkId }),
+    );
+    expect(await countOfAttemptsSeededBefore()).toBe(1);
   });
 
-  it('keeps accumulated calibration when warm', async () => {
+  it('reads all accumulated calibration when warm', async () => {
+    const counts = vi.spyOn(adAttemptRepository, 'findCalibrationCounts');
+
     await runBenchmark({
       db,
       client: client(),
@@ -97,7 +107,7 @@ describe('runBenchmark', () => {
       config,
     });
 
-    expect(await countOfAttemptsSeededBefore()).toBeGreaterThan(0);
+    expect(counts).toHaveBeenCalledWith(expect.objectContaining({ benchmarkId: null }));
   });
 
   it('groups every run of one invocation under a single benchmark id', async () => {

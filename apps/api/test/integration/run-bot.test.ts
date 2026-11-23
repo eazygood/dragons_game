@@ -6,6 +6,7 @@ import { runBot } from '../../src/bot/run-bot.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
 import { DbTables } from '../../src/entities/db-tables.ts';
+import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';
 import { createScriptedClient } from '../support/scripted-client.ts';
 
@@ -115,6 +116,24 @@ describe('runBot', () => {
     await expect(
       runBot({ db, client: scriptedClient, strategy: 'calibrated', config, logger }),
     ).rejects.toThrow('upstream exploded');
+  });
+
+  it('leaves no run active when an upstream error ends it', async () => {
+    scriptedClient.solveAd.mockRejectedValueOnce(
+      new UpstreamUnavailableError({ message: 'solve timed out' }),
+    );
+
+    await expect(
+      runBot({ db, client: scriptedClient, strategy: 'calibrated', config, logger }),
+    ).rejects.toThrow('solve timed out');
+
+    const [run] = await db<{ status: string; ended_at: Date | null }>(DbTables.GameRuns).select(
+      'status',
+      'ended_at',
+    );
+
+    expect(run?.status).toBe('abandoned');
+    expect(run?.ended_at).not.toBeNull();
   });
 
   it('falls back to the prior calibration when the calibration read fails', async () => {

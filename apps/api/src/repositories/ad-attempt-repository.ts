@@ -51,18 +51,30 @@ const createOne = async ({ db, attempt }: { db: DbExecutor; attempt: AdAttempt }
   await db(DbTables.AdAttempts).insert(transform({ attempt }));
 };
 
-const findCalibrationCounts = async ({ db }: { db: DbExecutor }): Promise<CalibrationCount[]> => {
+// A benchmark id scopes the evidence to that benchmark's games: a cold start that
+// leaves every other game's history in place.
+const findCalibrationCounts = async ({
+  db,
+  benchmarkId = null,
+}: {
+  db: DbExecutor;
+  benchmarkId?: string | null;
+}): Promise<CalibrationCount[]> => {
   const rows: CalibrationCountRow[] = await db(DbTables.AdAttempts)
     .select('probability', 'dragon_level', 'reward')
     .count({ attempts: '*' })
     .sum({ successes: 'success' })
-    .groupBy('probability', 'dragon_level', 'reward');
+    .groupBy('probability', 'dragon_level', 'reward')
+    .modify((query) => {
+      if (benchmarkId) {
+        void query.whereIn(
+          'game_run_id',
+          db(DbTables.GameRuns).select('id').where({ benchmark_id: benchmarkId }),
+        );
+      }
+    });
 
   return rows.map((row) => reverseTransform({ row }));
 };
 
-const deleteMany = async ({ db }: { db: DbExecutor }) => {
-  await db(DbTables.AdAttempts).delete();
-};
-
-export const adAttemptRepository = { createOne, findCalibrationCounts, deleteMany };
+export const adAttemptRepository = { createOne, findCalibrationCounts };

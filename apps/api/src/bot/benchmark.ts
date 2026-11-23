@@ -5,7 +5,6 @@ import type { Knex } from 'knex';
 import type { MugloarClient } from '../adapters/mugloar-api-adapter/index.ts';
 import { STRATEGY_CONFIG } from '../domain/engine/strategy-config.ts';
 import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
-import { adAttemptRepository } from '../repositories/index.ts';
 import { BENCHMARK_TARGET, summarise } from './benchmark-report.ts';
 import type { BenchmarkSummary } from './benchmark-report.ts';
 import { runBounded } from './bounded-pool.ts';
@@ -40,15 +39,22 @@ export const runBenchmark = async ({
     warn: (details, message) => logger.warn(details, message),
   };
 
-  if (!warm) {
-    await adAttemptRepository.deleteMany({ db });
-  }
+  // Cold reads only this benchmark's own games, so other history is never deleted.
+  const calibrationBenchmarkId = warm ? null : benchmarkId;
 
   const results = await runBounded({
     count: runs,
     concurrency,
     task: async (index) => {
-      const result = await runBot({ db, client, strategy, benchmarkId, config, logger: botLogger });
+      const result = await runBot({
+        db,
+        client,
+        strategy,
+        benchmarkId,
+        calibrationBenchmarkId,
+        config,
+        logger: botLogger,
+      });
 
       logger.info({ benchmarkId, run: index + 1, ...result }, 'benchmark run finished');
 

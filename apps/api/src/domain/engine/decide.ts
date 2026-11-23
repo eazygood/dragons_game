@@ -117,5 +117,11 @@ export const decide = ({ state, board, shop, calibration, config }: DecideInput)
     return solve({ rule: 'safest_available', scored, pick: fallback });
   }
 
+  // Late boards turn all-Impossible; levelling up is the only spend that keeps
+  // the game going, so it applies even when level-ups are otherwise disabled.
+  if (levelUp && state.gold >= levelUp.cost) {
+    return buy({ rule: 'level_up', scored, item: levelUp });
+  }
+
   return { kind: 'stop', reasoning: reasoningFor({ rule: 'no_viable_option', scored }) };
 };

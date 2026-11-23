@@ -24,7 +24,7 @@ pnpm db:make <name>     # new migration
 
 pnpm bot                # one headless run
 pnpm bench              # 20 cold runs, reports pass rate vs 1000
-pnpm bench --warm       # same, without truncating calibration
+pnpm bench --warm       # same, reading all history instead of this run's
 pnpm capture            # record live API responses into test fixtures
 ```
 
@@ -41,7 +41,7 @@ bot and the human player's advisor cannot disagree, and why the strategy is
 testable without a network or a database.
 
 ```
-decide(state, board, calibration) → Decision
+decide({ state, board, shop, calibration, config }) → Decision
 ```
 
 The bot executes the `Decision`. The UI renders it. Same function.

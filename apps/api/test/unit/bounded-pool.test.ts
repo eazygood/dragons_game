@@ -38,4 +38,37 @@ describe('runBounded', () => {
 
     expect(results).toEqual([0, 10, 20, 30]);
   });
+
+  // A benchmark's db pool is destroyed once this settles; in-flight games must not outlive it.
+  it('waits for in-flight tasks before rejecting, and starts no new ones', async () => {
+    const started: number[] = [];
+    const finished: number[] = [];
+
+    const outcome = runBounded({
+      count: 6,
+      concurrency: 2,
+      task: async (index) => {
+        started.push(index);
+
+        if (index === 0) {
+          throw new Error('run 0 failed');
+        }
+
+        for (let wait = 0; wait < 3; wait += 1) {
+          await tick();
+        }
+
+        finished.push(index);
+      },
+    });
+
+    await expect(outcome).rejects.toThrow('run 0 failed');
+    expect(finished).toEqual([1]);
+
+    for (let wait = 0; wait < 10; wait += 1) {
+      await tick();
+    }
+
+    expect(started).toEqual([0, 1]);
+  });
 });

@@ -6,25 +6,26 @@ import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
 import { adAttemptRepository } from '../repositories/index.ts';
 import type { BotLogger, BotStrategy } from './types.ts';
 
-// Loaded once per run: within-run drift is small, and a per-turn read would sit
-// on the critical path of a rate-limited loop.
+// A null scope reads all history; a benchmark id reads only that benchmark's games.
 export const loadCalibration = async ({
   db,
   strategy,
   config,
   logger,
+  benchmarkId,
 }: {
   db: Knex;
   strategy: BotStrategy;
   config: StrategyConfig;
   logger: BotLogger;
+  benchmarkId: string | null;
 }): Promise<Calibration> => {
   if (strategy === 'baseline') {
     return priorCalibration({ config });
   }
 
   try {
-    const counts = await adAttemptRepository.findCalibrationCounts({ db });
+    const counts = await adAttemptRepository.findCalibrationCounts({ db, benchmarkId });
 
     return buildCalibration({ counts, config });
   } catch (error) {
