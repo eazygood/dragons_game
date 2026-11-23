@@ -1,7 +1,8 @@
 import { ProbabilityLabelSchema } from '@bigbank-dragon/contracts';
 
 import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
-import type { AdAttempt, CalibrationCount } from '../../entities/ad-attempt.ts';
+import type { CalibrationCount } from '../../domain/engine/calibration.ts';
+import type { AdAttempt } from '../../entities/ad-attempt.ts';
 import { DbTables } from '../../entities/db-tables.ts';
 
 export interface AdAttemptRow {

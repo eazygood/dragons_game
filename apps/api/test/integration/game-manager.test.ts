@@ -58,11 +58,11 @@ describe('game manager', () => {
     });
     vi.spyOn(adAttemptRepository.mugloar, 'createOne').mockResolvedValue({
       status: 'ok',
-      value: { success: true, lives: 3, gold: 20, score: 20, highScore: 0, turn: 1, message: 'ok' },
+      value: { success: true, lives: 3, gold: 20, score: 20, turn: 1, message: 'ok' },
     });
     vi.spyOn(purchaseRepository.mugloar, 'createOne').mockResolvedValue({
       status: 'ok',
-      value: { shoppingSuccess: true, gold: 0, lives: 3, level: 2, turn: 5 },
+      value: { success: true, gold: 0, lives: 3, level: 2, turn: 5 },
     });
 
     ({ run, state } = await startGame({ db, strategy: 'calibrated' }));
@@ -129,7 +129,7 @@ describe('game manager', () => {
   it('advances the turn but not the level when a purchase fails', async () => {
     vi.mocked(purchaseRepository.mugloar.createOne).mockResolvedValue({
       status: 'ok',
-      value: { shoppingSuccess: false, gold: 10, lives: 3, level: 0, turn: 6 },
+      value: { success: false, gold: 10, lives: 3, level: 0, turn: 6 },
     });
 
     const result = await buyItem({ db, run, state, item: CLAW_HONING });

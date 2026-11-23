@@ -1,8 +1,16 @@
 import { IMPOSSIBLE_LABEL, PROBABILITY_PRIOR } from '@bigbank-dragon/contracts';
 import type { ProbabilityLabel } from '@bigbank-dragon/contracts';
 
-import type { CalibrationCount } from '../../entities/ad-attempt.ts';
 import type { StrategyConfig } from './strategy-config.ts';
+
+// The engine's input shape; the repository maps stored attempts into it.
+export interface CalibrationCount {
+  probability: ProbabilityLabel;
+  dragonLevel: number;
+  reward: number;
+  attempts: number;
+  successes: number;
+}
 
 export type Calibration = {
   estimate({

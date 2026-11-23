@@ -1,5 +1,5 @@
 export { buildCalibration, levelBucket, priorCalibration } from './calibration.ts';
-export type { Calibration } from './calibration.ts';
+export type { Calibration, CalibrationCount } from './calibration.ts';
 export { decide } from './decide.ts';
 export { scoreAds } from './score-ads.ts';
 export type { ScoredAd } from './score-ads.ts';

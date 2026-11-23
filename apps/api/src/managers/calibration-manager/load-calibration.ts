@@ -1,10 +1,11 @@
+import type { StrategyName } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import { buildCalibration, priorCalibration } from '../domain/engine/calibration.ts';
-import type { Calibration } from '../domain/engine/calibration.ts';
-import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
-import { adAttemptRepository } from '../repositories/index.ts';
-import type { BotLogger, BotStrategy } from './types.ts';
+import type { Logger } from '../../config/logger.ts';
+import { buildCalibration, priorCalibration } from '../../domain/engine/calibration.ts';
+import type { Calibration } from '../../domain/engine/calibration.ts';
+import type { StrategyConfig } from '../../domain/engine/strategy-config.ts';
+import { adAttemptRepository } from '../../repositories/index.ts';
 
 // A null scope reads all history; a benchmark id reads only that benchmark's games.
 export const loadCalibration = async ({
@@ -15,9 +16,9 @@ export const loadCalibration = async ({
   benchmarkId,
 }: {
   db: Knex;
-  strategy: BotStrategy;
+  strategy: StrategyName;
   config: StrategyConfig;
-  logger: BotLogger;
+  logger: Logger;
   benchmarkId: string | null;
 }): Promise<Calibration> => {
   if (strategy === 'baseline') {

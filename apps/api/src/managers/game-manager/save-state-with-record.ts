@@ -5,6 +5,7 @@ import { withTransaction } from '../../adapters/mysql-adapter.ts';
 import type { GameRun } from '../../entities/game-run.ts';
 import { PersistenceFailedError } from '../../errors/errors.ts';
 import { gameRunRepository } from '../../repositories/index.ts';
+import { statePatch } from './state-patch.ts';
 
 // One transaction for the run's live state and the turn's record (ad attempt or
 // purchase), so a failed record write rolls the state back and the two never disagree.
@@ -26,13 +27,7 @@ export const saveStateWithRecord = async ({
         await gameRunRepository.db.updateOne({
           db: trx,
           id: run.id,
-          patch: {
-            lives: state.lives,
-            gold: state.gold,
-            dragonLevel: state.dragonLevel,
-            turn: state.turn,
-            score: state.score,
-          },
+          patch: statePatch({ state }),
         });
         await writeRecord(trx);
       },

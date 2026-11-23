@@ -1,9 +1,9 @@
 import type { Ad } from '@bigbank-dragon/contracts';
 
 import { mugloarApiAdapter } from '../../adapters/mugloar-api-adapter/index.ts';
-import type { UpstreamResult } from '../../adapters/mugloar-api-adapter/index.ts';
 import { AdListWireSchema } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
 import { decodeAds } from '../../domain/decode-ad.ts';
+import type { UpstreamResult } from '../../entities/upstream-result.ts';
 
 const DecodedAdListSchema = AdListWireSchema.transform((raws) => decodeAds({ raws }));
 

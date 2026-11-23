@@ -15,10 +15,12 @@ export interface AdAttempt {
   createdAt: Date;
 }
 
-export interface CalibrationCount {
-  probability: ProbabilityLabel;
-  dragonLevel: number;
-  reward: number;
-  attempts: number;
-  successes: number;
+// What a solve reports back; the turn's attempt row is built from it.
+export interface SolveOutcome {
+  success: boolean;
+  lives: number;
+  gold: number;
+  score: number;
+  turn: number;
+  message: string;
 }

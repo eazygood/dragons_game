@@ -3,6 +3,7 @@ import type { Knex } from 'knex';
 
 import type { GameRun, RunStatus } from '../../entities/game-run.ts';
 import { gameRunRepository } from '../../repositories/index.ts';
+import { statePatch } from './state-patch.ts';
 
 export const finishRun = async ({
   db,
@@ -18,14 +19,6 @@ export const finishRun = async ({
   await gameRunRepository.db.updateOne({
     db,
     id: run.id,
-    patch: {
-      lives: state.lives,
-      gold: state.gold,
-      dragonLevel: state.dragonLevel,
-      turn: state.turn,
-      score: state.score,
-      status,
-      endedAt: new Date(),
-    },
+    patch: { ...statePatch({ state }), status, endedAt: new Date() },
   });
 };

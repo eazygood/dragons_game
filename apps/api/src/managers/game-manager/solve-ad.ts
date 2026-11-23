@@ -1,8 +1,8 @@
 import type { Ad, GameState, ScoredReasoning } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { UpstreamResult } from '../../adapters/mugloar-api-adapter/index.ts';
 import type { GameRun } from '../../entities/game-run.ts';
+import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { adAttemptRepository } from '../../repositories/index.ts';
 import { saveStateWithRecord } from './save-state-with-record.ts';
 

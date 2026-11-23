@@ -1,8 +1,8 @@
 import type { Ad, Decision, GameState, ShopItem } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { UpstreamResult } from '../adapters/mugloar-api-adapter/index.ts';
 import type { GameRun } from '../entities/game-run.ts';
+import type { UpstreamResult } from '../entities/upstream-result.ts';
 import { PersistenceFailedError } from '../errors/errors.ts';
 import { buyItem, solveAd } from '../managers/game-manager/index.ts';
 import type { BotLogger } from './types.ts';

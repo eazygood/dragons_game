@@ -82,7 +82,7 @@ describe('runBot', () => {
   it('ends the run without another read once lives reach zero', async () => {
     scriptedGame.solveAd.mockResolvedValueOnce({
       status: 'ok',
-      value: { success: false, lives: 0, gold: 0, score: 0, highScore: 0, turn: 1, message: 'x' },
+      value: { success: false, lives: 0, gold: 0, score: 0, turn: 1, message: 'x' },
     });
 
     const result = await runBot({ db, strategy: 'baseline', config });

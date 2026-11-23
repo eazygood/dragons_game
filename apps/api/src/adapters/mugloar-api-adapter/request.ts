@@ -7,6 +7,7 @@ import {
   GameNotFoundError,
   UpstreamUnavailableError,
 } from '../../errors/errors.ts';
+import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { mugloarThrottle } from './throttle.ts';
 
 const GAME_OVER_STATUS = 410;
@@ -16,8 +17,6 @@ const SERVER_ERROR_STATUS = 500;
 // Writes are never retried: solve and buy are not idempotent, and a retried
 // start whose first response was lost would silently open a second game.
 const NO_RETRIES = 0;
-
-export type UpstreamResult<T> = { status: 'ok'; value: T } | { status: 'game_over' };
 
 type Method = 'GET' | 'POST';
 
