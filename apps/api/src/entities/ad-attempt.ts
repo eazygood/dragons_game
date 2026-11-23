@@ -19,6 +19,7 @@ export interface AdAttempt {
 export interface CalibrationCount {
   probability: ProbabilityLabel;
   dragonLevel: number;
+  reward: number;
   attempts: number;
   successes: number;
 }

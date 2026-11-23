@@ -33,15 +33,17 @@ const attemptOf = ({
   probability,
   dragonLevel,
   success,
+  reward = 10,
 }: Pick<AdAttempt, 'gameRunId' | 'dragonLevel' | 'success'> & {
   probability: ProbabilityLabel;
+  reward?: number;
 }): AdAttempt => ({
   gameRunId,
   adId: 'ad',
   probability,
   dragonLevel,
   turn: 1,
-  reward: 10,
+  reward,
   wasEncrypted: false,
   success,
   estimatedProbability: 0.95,
@@ -102,11 +104,12 @@ describe('repositories', () => {
     });
   });
 
-  it('groups calibration counts by label and level', async () => {
+  it('groups calibration counts by label, level and reward', async () => {
     const seeds = [
-      { probability: 'Sure thing', dragonLevel: 0, success: true },
-      { probability: 'Sure thing', dragonLevel: 0, success: false },
-      { probability: 'Sure thing', dragonLevel: 6, success: true },
+      { probability: 'Sure thing', dragonLevel: 0, reward: 40, success: true },
+      { probability: 'Sure thing', dragonLevel: 0, reward: 40, success: false },
+      { probability: 'Sure thing', dragonLevel: 6, reward: 40, success: true },
+      { probability: 'Sure thing', dragonLevel: 6, reward: 210, success: false },
     ] as const;
 
     for (const seed of seeds) {
@@ -115,18 +118,20 @@ describe('repositories', () => {
 
     const counts = await adAttemptRepository.findCalibrationCounts({ db });
 
-    expect(counts).toHaveLength(2);
+    expect(counts).toHaveLength(3);
     expect(counts).toContainEqual({
       probability: 'Sure thing',
       dragonLevel: 0,
+      reward: 40,
       attempts: 2,
       successes: 1,
     });
     expect(counts).toContainEqual({
       probability: 'Sure thing',
       dragonLevel: 6,
+      reward: 210,
       attempts: 1,
-      successes: 1,
+      successes: 0,
     });
   });
 

@@ -21,6 +21,7 @@ export interface AdAttemptRow {
 interface CalibrationCountRow {
   probability: string;
   dragon_level: number;
+  reward: number;
   attempts: number | string;
   successes: number | string | null;
 }
@@ -43,6 +44,7 @@ export const transform = ({ attempt }: { attempt: AdAttempt }): AdAttemptRow => 
 const reverseTransform = ({ row }: { row: CalibrationCountRow }): CalibrationCount => ({
   probability: ProbabilityLabelSchema.parse(row.probability),
   dragonLevel: row.dragon_level,
+  reward: row.reward,
   attempts: Number(row.attempts),
   successes: Number(row.successes ?? 0),
 });
@@ -53,10 +55,10 @@ const createOne = async ({ db, attempt }: { db: DbExecutor; attempt: AdAttempt }
 
 const findCalibrationCounts = async ({ db }: { db: DbExecutor }): Promise<CalibrationCount[]> => {
   const rows: CalibrationCountRow[] = await db(DbTables.AdAttempts)
-    .select('probability', 'dragon_level')
+    .select('probability', 'dragon_level', 'reward')
     .count({ attempts: '*' })
     .sum({ successes: 'success' })
-    .groupBy('probability', 'dragon_level');
+    .groupBy('probability', 'dragon_level', 'reward');
 
   return rows.map((row) => reverseTransform({ row }));
 };

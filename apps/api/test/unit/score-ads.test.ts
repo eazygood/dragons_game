@@ -58,12 +58,12 @@ describe('scoreAds', () => {
     ]);
   });
 
-  it('estimates at the current dragon level, not at level zero', () => {
+  it("estimates at the current dragon level and the ad's own reward", () => {
     const spy = { estimate: vi.fn().mockReturnValue(0.5) };
 
     scoreAds({ board: [ad({})], state: { ...state, dragonLevel: 6 }, calibration: spy, config });
 
-    expect(spy.estimate).toHaveBeenCalledWith({ label: 'Piece of cake', level: 6 });
+    expect(spy.estimate).toHaveBeenCalledWith({ label: 'Piece of cake', level: 6, reward: 20 });
   });
 
   it('breaks expected-value ties by adId so the ranking is reproducible', () => {

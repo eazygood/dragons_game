@@ -8,6 +8,7 @@ const StrategyOverrideSchema = z
   .object({
     smoothingAlpha: z.number().positive(),
     levelBucketEdges: z.array(z.number().int().nonnegative()),
+    rewardBandEdges: z.array(z.number().nonnegative()),
     livesFloor: z.number().int().nonnegative(),
     minimumProbability: z.number().min(0).max(1),
     lifeCostInGold: z.number().nonnegative(),

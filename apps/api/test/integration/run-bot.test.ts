@@ -130,7 +130,7 @@ describe('runBot', () => {
     });
 
     expect(result.score).toBe(SCRIPTED_SCORE);
-    expect(logger.warn).toHaveBeenCalledOnce();
+    expect(logger.warn).toHaveBeenCalledTimes(SCRIPTED_TURNS);
   });
 
   it('ignores stored history entirely in the baseline strategy', async () => {
@@ -141,12 +141,13 @@ describe('runBot', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('reads stored history once per run in the calibrated strategy', async () => {
+  // Concurrent benchmark games share evidence, so a once-per-game read goes stale.
+  it('re-reads stored history before every decision in the calibrated strategy', async () => {
     const spy = vi.spyOn(adAttemptRepository, 'findCalibrationCounts');
 
     await runBot({ db, client: scriptedClient, strategy: 'calibrated', config });
 
-    expect(spy).toHaveBeenCalledOnce();
+    expect(spy).toHaveBeenCalledTimes(SCRIPTED_TURNS);
   });
 
   it('stops at the turn ceiling rather than looping forever', async () => {

@@ -33,6 +33,7 @@ export const scoreAds = ({
       const estimatedProbability = calibration.estimate({
         label: ad.probability,
         level: state.dragonLevel,
+        reward: ad.reward,
       });
       const expectedValue =
         estimatedProbability * ad.reward - (1 - estimatedProbability) * lifeCost({ config });

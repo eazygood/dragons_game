@@ -86,7 +86,6 @@ export const runBot = async ({
   logger?: BotLogger;
   maxTurns?: number;
 }): Promise<BotRunResult> => {
-  const calibration = await loadCalibration({ db, strategy, config, logger });
   const started = await startGame({ db, client, strategy, benchmarkId });
   const { run } = started;
   let { state } = started;
@@ -104,6 +103,8 @@ export const runBot = async ({
       break;
     }
 
+    // Per turn, not per game: concurrent games' evidence counts as soon as it lands.
+    const calibration = await loadCalibration({ db, strategy, config, logger });
     const decision = decide({ state, board: board.value, shop: shop.value, calibration, config });
 
     logger.info({ gameId: run.gameId, turn: state.turn, decision }, 'decision');
