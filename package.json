@@ -16,6 +16,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "bot": "pnpm --filter @bigbank-dragon/api bot",
+    "bench": "pnpm --filter @bigbank-dragon/api bench",
     "capture": "pnpm --filter @bigbank-dragon/api capture",
     "test:integration": "pnpm --filter @bigbank-dragon/api test:integration",
     "db:migrate": "pnpm --filter @bigbank-dragon/api db:migrate",

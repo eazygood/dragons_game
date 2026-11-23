@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "bot": "tsx src/tools/bot.ts",
+    "bench": "tsx src/tools/bench.ts",
     "capture": "tsx src/tools/capture.ts",
     "test": "vitest run --project unit --project contract",
     "typecheck": "tsc --noEmit",

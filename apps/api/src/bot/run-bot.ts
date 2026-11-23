@@ -14,7 +14,7 @@ import type { BotLogger, BotRunResult, BotStrategy } from './types.ts';
 // Far beyond any observed game; only a misbehaving upstream ever reaches it.
 export const DEFAULT_MAX_TURNS = 1000;
 
-const SILENT_LOGGER: BotLogger = { info: () => undefined, warn: () => undefined };
+export const SILENT_LOGGER: BotLogger = { info: () => undefined, warn: () => undefined };
 
 type TurnContext = { db: Knex; client: MugloarClient; run: GameRun; state: GameState };
 
