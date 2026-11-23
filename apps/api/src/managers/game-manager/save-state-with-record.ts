@@ -6,17 +6,18 @@ import type { GameRun } from '../../entities/game-run.ts';
 import { PersistenceFailedError } from '../../errors/errors.ts';
 import { gameRunRepository } from '../../repositories/index.ts';
 
-// The live state goes first, so a failing record write rolls it back with it.
-export const persistTurn = async ({
+// One transaction for the run's live state and the turn's record (ad attempt or
+// purchase), so a failed record write rolls the state back and the two never disagree.
+export const saveStateWithRecord = async ({
   db,
   run,
   state,
-  record,
+  writeRecord,
 }: {
   db: Knex;
   run: GameRun;
   state: GameState;
-  record: (trx: Knex.Transaction) => Promise<unknown>;
+  writeRecord: (trx: Knex.Transaction) => Promise<unknown>;
 }): Promise<void> => {
   try {
     await withTransaction({
@@ -33,7 +34,7 @@ export const persistTurn = async ({
             score: state.score,
           },
         });
-        await record(trx);
+        await writeRecord(trx);
       },
     });
   } catch (cause) {

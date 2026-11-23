@@ -4,7 +4,7 @@ import type { Knex } from 'knex';
 import type { MugloarClient, UpstreamResult } from '../../adapters/mugloar-api-adapter/index.ts';
 import type { GameRun } from '../../entities/game-run.ts';
 import { purchaseRepository } from '../../repositories/index.ts';
-import { persistTurn } from './persist-turn.ts';
+import { saveStateWithRecord } from './save-state-with-record.ts';
 
 export const buyItem = async ({
   db,
@@ -35,11 +35,11 @@ export const buyItem = async ({
     dragonLevel: outcome.shoppingSuccess ? outcome.level : state.dragonLevel,
   };
 
-  await persistTurn({
+  await saveStateWithRecord({
     db,
     run,
     state: next,
-    record: (trx) =>
+    writeRecord: (trx) =>
       purchaseRepository.createOne({
         db: trx,
         purchase: {
