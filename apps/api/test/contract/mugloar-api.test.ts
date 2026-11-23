@@ -133,7 +133,7 @@ describe('Mugloar API against recorded live responses', () => {
     ).resolves.toEqual({ status: 'game_over' });
   });
 
-  it('reads a recorded failed purchase as shoppingSuccess false', async () => {
+  it('reads a recorded failed purchase (shoppingSuccess false) as success false', async () => {
     const recording = find(
       ({ path, body }) =>
         path.includes('/shop/buy/') &&
@@ -145,6 +145,6 @@ describe('Mugloar API against recorded live responses', () => {
       call: () => purchaseRepository.mugloar.createOne({ gameId, itemId }),
     });
 
-    expect(result.status === 'ok' && result.value.shoppingSuccess).toBe(false);
+    expect(result.status === 'ok' && result.value.success).toBe(false);
   });
 });

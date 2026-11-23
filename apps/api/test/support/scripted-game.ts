@@ -67,7 +67,7 @@ export const scriptGame = ({ turnsUntilGameOver }: { turnsUntilGameOver: number 
 
       return Promise.resolve({
         status: 'ok',
-        value: { success: true, lives: STARTING_LIVES, ...game, highScore: 0, message: 'ok' },
+        value: { success: true, lives: STARTING_LIVES, ...game, message: 'ok' },
       });
     }),
     fetchShop: vi
@@ -79,7 +79,7 @@ export const scriptGame = ({ turnsUntilGameOver }: { turnsUntilGameOver: number 
       return Promise.resolve({
         status: 'ok',
         value: {
-          shoppingSuccess: false,
+          success: false,
           gold: game.gold,
           lives: STARTING_LIVES,
           level: 0,

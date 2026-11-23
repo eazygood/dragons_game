@@ -19,4 +19,75 @@ export default tseslint.config(
       ],
     },
   },
+  // Layer rules from docs/agent_docs/architecture.md §Layers: dependencies move downward only.
+  {
+    files: ['apps/api/src/bot/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/repositories/**', '**/adapters/**'],
+              message: 'The bot calls managers only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/managers/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/adapters/**', '!**/adapters/mysql-adapter.ts', '**/bot/**'],
+              message: 'Managers call repositories; only withTransaction comes from an adapter.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/repositories/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['**/managers/**', '**/bot/**'], message: 'Repositories never call upward.' },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/domain/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'node:*',
+                '**/adapters/**',
+                '**/bot/**',
+                '**/config/**',
+                '**/entities/**',
+                '**/managers/**',
+                '**/repositories/**',
+                '**/tools/**',
+              ],
+              message: 'The engine is pure: no I/O and no imports from outside domain/.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

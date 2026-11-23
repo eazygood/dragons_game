@@ -1,8 +1,8 @@
 import type { GameState, ShopItem } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { UpstreamResult } from '../../adapters/mugloar-api-adapter/index.ts';
 import type { GameRun } from '../../entities/game-run.ts';
+import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { purchaseRepository } from '../../repositories/index.ts';
 import { saveStateWithRecord } from './save-state-with-record.ts';
 
@@ -33,7 +33,7 @@ export const buyItem = async ({
     lives: outcome.lives,
     gold: outcome.gold,
     turn: outcome.turn,
-    dragonLevel: outcome.shoppingSuccess ? outcome.level : state.dragonLevel,
+    dragonLevel: outcome.success ? outcome.level : state.dragonLevel,
   };
 
   await saveStateWithRecord({
@@ -48,7 +48,7 @@ export const buyItem = async ({
           itemId: item.id,
           cost: item.cost,
           turn: outcome.turn,
-          success: outcome.shoppingSuccess,
+          success: outcome.success,
           createdAt: new Date(),
         },
       }),

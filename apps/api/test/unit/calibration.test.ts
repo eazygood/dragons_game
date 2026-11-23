@@ -6,8 +6,8 @@ import {
   priorCalibration,
   rewardBand,
 } from '../../src/domain/engine/calibration.ts';
+import type { CalibrationCount } from '../../src/domain/engine/calibration.ts';
 import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
-import type { CalibrationCount } from '../../src/entities/ad-attempt.ts';
 
 const config = STRATEGY_CONFIG;
 const CHEAP = 50;

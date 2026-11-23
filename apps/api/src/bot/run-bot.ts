@@ -5,10 +5,9 @@ import { decide } from '../domain/engine/decide.ts';
 import { STRATEGY_CONFIG } from '../domain/engine/strategy-config.ts';
 import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
 import type { GameRun } from '../entities/game-run.ts';
-import { finishRun, startGame } from '../managers/game-manager/index.ts';
-import { adRepository, shopItemRepository } from '../repositories/index.ts';
+import { loadCalibration } from '../managers/calibration-manager/index.ts';
+import { findAds, findShopItems, finishRun, startGame } from '../managers/game-manager/index.ts';
 import { execute, keepPlayingOnPersistenceFailure } from './execute-decision.ts';
-import { loadCalibration } from './load-calibration.ts';
 import type { BotLogger, BotRunResult, BotStrategy } from './types.ts';
 
 // Far beyond any observed game; only a misbehaving upstream ever reaches it.
@@ -41,7 +40,7 @@ const play = async ({
   maxTurns,
 }: PlayInput) => {
   // Fetched once: the listing can differ between games, not within one.
-  const shop = await shopItemRepository.mugloar.findMany({ gameId: run.gameId });
+  const shop = await findShopItems({ gameId: run.gameId });
 
   if (shop.status === 'game_over') {
     progress.gameOver = true;
@@ -49,7 +48,7 @@ const play = async ({
   }
 
   while (progress.turns < maxTurns) {
-    const board = await adRepository.mugloar.findMany({ gameId: run.gameId });
+    const board = await findAds({ gameId: run.gameId });
 
     if (board.status === 'game_over') {
       progress.gameOver = true;

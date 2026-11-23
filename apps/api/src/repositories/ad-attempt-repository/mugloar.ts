@@ -1,10 +1,19 @@
-import type { z } from 'zod';
-
 import { mugloarApiAdapter } from '../../adapters/mugloar-api-adapter/index.ts';
-import type { UpstreamResult } from '../../adapters/mugloar-api-adapter/index.ts';
 import { SolveWireSchema } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
+import type { SolveOutcome } from '../../entities/ad-attempt.ts';
+import type { UpstreamResult } from '../../entities/upstream-result.ts';
 
-export type SolveOutcome = z.infer<typeof SolveWireSchema>;
+// highScore is the server's global record, not this game's; nothing downstream reads it.
+const SolveOutcomeSchema = SolveWireSchema.transform(
+  ({ success, lives, gold, score, turn, message }): SolveOutcome => ({
+    success,
+    lives,
+    gold,
+    score,
+    turn,
+    message,
+  }),
+);
 
 // adId must already be decoded; the encoded one is a 400.
 const createOne = ({
@@ -18,7 +27,7 @@ const createOne = ({
     operation: 'solve_ad',
     method: 'POST',
     path: `/${encodeURIComponent(gameId)}/solve/${encodeURIComponent(adId)}`,
-    schema: SolveWireSchema,
+    schema: SolveOutcomeSchema,
   });
 
 export const mugloarRepository = { createOne };

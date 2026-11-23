@@ -44,15 +44,24 @@ Routes → Mediators → Managers → Repositories → Adapters
 ```
 
 Dependencies move **downward only**. Never skip a layer, never call upward.
+`eslint.config.mjs` enforces this with `no-restricted-imports` for `bot/`,
+`managers/`, `repositories/` and `domain/`, so a shortcut fails `pnpm lint`.
 
 | Layer            | May call                             | Must not                                               |
 | ---------------- | ------------------------------------ | ------------------------------------------------------ |
 | **Routes**       | Mediators, Managers                  | contain business logic; touch repositories or adapters |
 | **Mediators**    | Managers                             | contain game rules; touch repositories                 |
-| **Managers**     | Repositories, Engine, other Managers | be called by anything below them; touch adapters       |
+| **Managers**     | Repositories, Engine, other Managers | be called by anything below them; touch adapters ¹     |
 | **Repositories** | one data-source Adapter              | span entities; call managers or other repositories     |
 | **Adapters**     | one external system                  | contain business logic                                 |
 | **Engine**       | nothing                              | perform I/O of any kind                                |
+
+¹ The one exception is `withTransaction` from `mysql-adapter`: a manager owns
+the transaction boundary, so it opens the transaction and hands it to repositories.
+
+Until routes exist, `bot/` stands at the mediator level: it calls managers only.
+Shared types that cross layers live in `entities/` (`UpstreamResult`, the solve
+and buy outcomes) rather than in the adapter that first produces them.
 
 ### Routes
 
@@ -72,7 +81,10 @@ for the operation — `game-mediator/start-game.ts`, not one growing file.
 Own one entity's lifecycle, its rules and its transaction boundary. A manager
 may compose every repository its transaction writes: `game-manager/` owns the
 game state machine and writes a turn's run update together with its attempt or
-purchase row, atomically.
+purchase row, atomically. It also fronts the turn's reads (`findAds`,
+`findShopItems`) so that callers never reach a repository.
+`calibration-manager/` turns stored attempts into a `Calibration`, falling back
+to the prior when the read fails.
 
 ### Repositories
 
@@ -81,6 +93,14 @@ One entity each, with one file per data source:
 `gameRunRepository.db.createOne(...)` and `gameRunRepository.mugloar.createOne()`.
 Enforce no business rules. On the DB side, `transform` / `reverseTransform`
 convert between the row shape (snake_case) and the domain entity (camelCase).
+On the mugloar side, the zod schema's `transform` maps the wire shape into an
+entity (`SolveOutcome`, `BuyOutcome`), so `shoppingSuccess` and `highScore`
+never get past the repository.
+
+"One entity" governs what a repository returns and writes. A read may still
+filter by a related table: `findCalibrationCounts` scopes attempts to a
+benchmark with a subquery on `game_runs`. That is cheaper than a second
+round-trip through `gameRunRepository`, and it writes nothing.
 
 The `mugloar` side owns the endpoints: the path, the wire schema, and decoding
 encrypted ads.
@@ -112,6 +132,8 @@ from the process-wide `mugloarThrottle` before every attempt.
 ### Engine
 
 **Pure.** No I/O, no clock, no randomness, no imports from outside `domain/`.
+The engine owns its input types: `CalibrationCount` is defined in
+`calibration.ts`, and the repository maps rows into it.
 
 ---
 
@@ -306,11 +328,11 @@ falls.
 
 ## Bot runtime
 
-**Phase 1 ships the loop as CLIs** (`pnpm bot`, `pnpm bench`). They call the
-upstream repositories and the calibration loader directly. Before the advisor lands, that
-"load calibration, fetch board, decide" path moves behind a manager, so the bot
-and the UI share one code path. The registry and `/watch` below are the Phase 2
-design and are not built yet.
+**Phase 1 ships the loop as CLIs** (`pnpm bot`, `pnpm bench`). The "load
+calibration, fetch board, decide" path goes through `calibration-manager` and
+`game-manager`, which the advisor will reuse, so the bot and the UI share one
+code path. The registry and `/watch` below are the Phase 2 design and are not
+built yet.
 
 In Phase 2 the bot runs **in the Fastify process**. A `BotRunRegistry` holds active runs by
 `gameId`; `/watch` subscribes and fans out to any number of SSE viewers from one

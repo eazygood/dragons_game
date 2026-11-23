@@ -1,8 +1,8 @@
 import type { ShopItem } from '@bigbank-dragon/contracts';
 
 import { mugloarApiAdapter } from '../../adapters/mugloar-api-adapter/index.ts';
-import type { UpstreamResult } from '../../adapters/mugloar-api-adapter/index.ts';
 import { ShopWireSchema } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
+import type { UpstreamResult } from '../../entities/upstream-result.ts';
 
 const findMany = ({ gameId }: { gameId: string }): Promise<UpstreamResult<ShopItem[]>> =>
   mugloarApiAdapter.request({

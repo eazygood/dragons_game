@@ -68,6 +68,32 @@ describe('mugloar api: shapes and errors', () => {
     });
   });
 
+  it('maps a solve response to the attempt outcome, dropping the global high score', async () => {
+    stub.post('/:gameId/solve/:adId', () => ({
+      success: true,
+      lives: 3,
+      gold: 20,
+      score: 20,
+      highScore: 9999,
+      turn: 1,
+      message: 'You defeated the troll',
+    }));
+
+    await expect(
+      adAttemptRepository.mugloar.createOne({ gameId: 'g1', adId: 'a1' }),
+    ).resolves.toEqual({
+      status: 'ok',
+      value: {
+        success: true,
+        lives: 3,
+        gold: 20,
+        score: 20,
+        turn: 1,
+        message: 'You defeated the troll',
+      },
+    });
+  });
+
   it('returns game_over from a read endpoint too', async () => {
     stub.get('/:gameId/messages', () => GAME_OVER);
 
@@ -110,7 +136,7 @@ describe('mugloar api: shapes and errors', () => {
   });
 
   // Verified live 2026-11-23: /shop is a bare array, like /messages.
-  it('reads shoppingSuccess as a boolean and the shop as a bare array', async () => {
+  it('maps shoppingSuccess to a boolean success and reads the shop as a bare array', async () => {
     stub.get('/:gameId/shop', () => [{ id: 'hpot', name: 'Healing potion', cost: 50 }]);
     stub.post('/:gameId/shop/buy/:itemId', () => ({
       shoppingSuccess: false,
@@ -126,8 +152,9 @@ describe('mugloar api: shapes and errors', () => {
     });
     await expect(
       purchaseRepository.mugloar.createOne({ gameId: 'g1', itemId: 'hpot' }),
-    ).resolves.toMatchObject({
-      value: { shoppingSuccess: false, turn: 6 },
+    ).resolves.toEqual({
+      status: 'ok',
+      value: { success: false, gold: 10, lives: 3, level: 0, turn: 6 },
     });
   });
 });
