@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run --project unit",
+    "capture": "tsx src/tools/capture.ts",
+    "test": "vitest run --project unit --project contract",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

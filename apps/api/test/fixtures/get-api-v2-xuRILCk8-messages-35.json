@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "1PfR7AMC",
+      "message": "Help defending grassland in Orrinhill from the intruders",
+      "reward": 129,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Risky"
+    },
+    {
+      "adId": "K56bZTs7",
+      "message": "Help defending plains in Oldpool from the intruders",
+      "reward": 73,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Rather detrimental"
+    },
+    {
+      "adId": "b0RocDdPeVY=",
+      "message": "SW52ZXN0aWdhdGUgU2V2acyHbmogSHVkZGxlc3RvbiBhbmQgZmluZCBvdXQgdGhlaXIgcmVsYXRpb24gdG8gdGhlIG1hZ2ljIHdhZ29uLg==",
+      "reward": 136,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "Umlza3k="
+    },
+    {
+      "adId": "9dMjrN4Q",
+      "message": "Help defending pasture in Eastkeep from the intruders",
+      "reward": 99,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "15qowxGj",
+      "message": "Help defending pasture in Orrincaster from the intruders",
+      "reward": 86,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "tE2Q3lct",
+      "message": "Help defending thrift shoppe in Snowpine from the intruders",
+      "reward": 89,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "NxA9aF6g",
+      "message": "Help defending meadow in Whitedinny from the intruders",
+      "reward": 100,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "Jma806PH",
+      "message": "Help defending pasture in Burnssheen from the intruders",
+      "reward": 81,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Gamble"
+    },
+    {
+      "adId": "3E0cC83p",
+      "message": "Help defending thrift shoppe in Redcrest from the intruders",
+      "reward": 80,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "fXd1f6cc",
+      "message": "Help defending peninsula in Ridgechester from the intruders",
+      "reward": 85,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Quite likely"
+    }
+  ]
+}

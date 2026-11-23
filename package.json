@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "capture": "pnpm --filter @bigbank-dragon/api capture"
   },
   "devDependencies": {
     "eslint": "10.15.0",

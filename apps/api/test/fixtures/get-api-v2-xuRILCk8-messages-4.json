@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "QjryI6bR",
+      "message": "Help Colombano Harrelson to clean their pot",
+      "reward": 10,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "fyBlqjyO",
+      "message": "Steal turnips delivery to Alecto Atteberry and share some of the profits with the people.",
+      "reward": 45,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "TRYgGLvN",
+      "message": "Escort Alysa Sappington to field in Frostshore where they can meet with their long lost sheep",
+      "reward": 71,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "FHg5f3zo",
+      "message": "Create an advertisement campaign for Sergey Kjartansson to promote their cat based business",
+      "reward": 27,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "nTP39Mu1",
+      "message": "Help Kotone Brittain to sell an unordinary house on the local market",
+      "reward": 26,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "XeQ8w3dG",
+      "message": "Help Ave Gabrielson to transport a magic house to grassland in Eastton",
+      "reward": 24,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "nbYecrES",
+      "message": "Help Phares Atteberry to clean their horse",
+      "reward": 10,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Sure thing"
+    },
+    {
+      "adId": "D7502KSf",
+      "message": "Create an advertisement campaign for Desiderius Peterson to promote their bucket based business",
+      "reward": 35,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "6cs1fmxW",
+      "message": "Help Lucilius Carlyle to reach an agreement with Tewodros Whitaker on the matters of disputed chicken",
+      "reward": 11,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "R62edJFx",
+      "message": "Help Nsonowa Akerman to reach an agreement with Chantel Hameldon on the matters of disputed potatoes",
+      "reward": 11,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    }
+  ]
+}

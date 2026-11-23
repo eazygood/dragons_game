@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "QNi0asQn",
+      "message": "Help Guendolen Suggitt to fix their pot",
+      "reward": 1,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Sure thing"
+    },
+    {
+      "adId": "QjryI6bR",
+      "message": "Help Colombano Harrelson to clean their pot",
+      "reward": 10,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "ZWLpsDMI",
+      "message": "Help Paco Christopher to reach an agreement with Keti Broadbent on the matters of disputed house",
+      "reward": 10,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Sure thing"
+    },
+    {
+      "adId": "fyBlqjyO",
+      "message": "Steal turnips delivery to Alecto Atteberry and share some of the profits with the people.",
+      "reward": 45,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "5kYx99Vm",
+      "message": "Help Anzhelina Outterridge to fix their turnips",
+      "reward": 10,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Sure thing"
+    },
+    {
+      "adId": "TRYgGLvN",
+      "message": "Escort Alysa Sappington to field in Frostshore where they can meet with their long lost sheep",
+      "reward": 71,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "OMY7njq3",
+      "message": "Help Annet Daniell to fix their water",
+      "reward": 2,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Sure thing"
+    },
+    {
+      "adId": "FHg5f3zo",
+      "message": "Create an advertisement campaign for Sergey Kjartansson to promote their cat based business",
+      "reward": 27,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "nTP39Mu1",
+      "message": "Help Kotone Brittain to sell an unordinary house on the local market",
+      "reward": 26,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "XeQ8w3dG",
+      "message": "Help Ave Gabrielson to transport a magic house to grassland in Eastton",
+      "reward": 24,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    }
+  ]
+}

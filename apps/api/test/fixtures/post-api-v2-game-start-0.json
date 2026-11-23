@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "path": "/api/v2/game/start",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": {
+    "gameId": "xuRILCk8",
+    "lives": 3,
+    "gold": 0,
+    "level": 0,
+    "score": 0,
+    "highScore": 0,
+    "turn": 0
+  }
+}

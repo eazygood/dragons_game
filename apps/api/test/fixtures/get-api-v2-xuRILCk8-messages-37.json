@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "K56bZTs7",
+      "message": "Help defending plains in Oldpool from the intruders",
+      "reward": 73,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Rather detrimental"
+    },
+    {
+      "adId": "9dMjrN4Q",
+      "message": "Help defending pasture in Eastkeep from the intruders",
+      "reward": 99,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "tE2Q3lct",
+      "message": "Help defending thrift shoppe in Snowpine from the intruders",
+      "reward": 89,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "Jma806PH",
+      "message": "Help defending pasture in Burnssheen from the intruders",
+      "reward": 81,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Gamble"
+    },
+    {
+      "adId": "3E0cC83p",
+      "message": "Help defending thrift shoppe in Redcrest from the intruders",
+      "reward": 80,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "fXd1f6cc",
+      "message": "Help defending peninsula in Ridgechester from the intruders",
+      "reward": 85,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "HfpdQra0",
+      "message": "Help defending peninsula in Dornfair from the intruders",
+      "reward": 108,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Rather detrimental"
+    },
+    {
+      "adId": "8OJ9uehO",
+      "message": "Help defending field in Lightdrone from the intruders",
+      "reward": 98,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "v908GK64",
+      "message": "Help defending pasture in Metalcawl from the intruders",
+      "reward": 76,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Gamble"
+    },
+    {
+      "adId": "5mqzaHOo",
+      "message": "Help defending steppe in Orrinspring from the intruders",
+      "reward": 101,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    }
+  ]
+}

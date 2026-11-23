@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "path": "/api/v2/capture-unknown-game/messages",
+  "status": 404,
+  "contentType": "text/html; charset=utf-8",
+  "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Not Found</pre>\n</body>\n</html>\n"
+}

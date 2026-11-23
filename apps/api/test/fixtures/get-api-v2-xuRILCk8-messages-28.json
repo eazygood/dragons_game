@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "4fY41I9p",
+      "message": "Help defending meadow in Millergannon from the intruders",
+      "reward": 82,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "ojGtdZ7n",
+      "message": "Escort Guálter Granville to savannah in Towerwatch where they can meet with their long lost sheep",
+      "reward": 78,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "d7RYwwbI",
+      "message": "Help defending pasture in Thornmire from the intruders",
+      "reward": 115,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "rotsG8o2",
+      "message": "Help defending grassland in Ravenburg from the intruders",
+      "reward": 106,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "NyAwTJg0",
+      "message": "Xvyy Enl Jraqyre jvgu gheavcf naq znxr Nang Znfgref sebz sbeg va Terlcvar gb gnxr gur oynzr",
+      "reward": 101,
+      "expiresIn": 1,
+      "encrypted": 2,
+      "probability": "Vzcbffvoyr"
+    },
+    {
+      "adId": "r2yksKPm",
+      "message": "Help defending village in Strongwatch from the intruders",
+      "reward": 90,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "bWNCMmhVbXU=",
+      "message": "SW5maWx0cmF0ZSBUaGUgRWJvbnkgQ3Jvc3NlcyBhbmQgcmVjb3ZlciB0aGVpciBzZWNyZXRzLg==",
+      "reward": 154,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "UmF0aGVyIGRldHJpbWVudGFs"
+    },
+    {
+      "adId": "v6xUbCxe",
+      "message": "Help defending steppe in Dornwhyte from the intruders",
+      "reward": 102,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "QXhycG1wYWs=",
+      "message": "SW52ZXN0aWdhdGUgTnlvbWFuIFNwb29uZXIgYW5kIGZpbmQgb3V0IHRoZWlyIHJlbGF0aW9uIHRvIHRoZSBtYWdpYyBiZWVyIG11Zy4=",
+      "reward": 152,
+      "expiresIn": 3,
+      "encrypted": 1,
+      "probability": "R2FtYmxl"
+    },
+    {
+      "adId": "ZGpvaUx6TGs=",
+      "message": "SW5maWx0cmF0ZSBUaGUgWWVsbG93IFNhYmVyIFNpc3Rlcmhvb2QgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 155,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "U3VpY2lkZSBtaXNzaW9u"
+    }
+  ]
+}

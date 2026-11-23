@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "fxniva8h",
+      "message": "Create an advertisement campaign for Reva Lawrence to promote their chicken based business",
+      "reward": 29,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "DhTJTbkg",
+      "message": "Help Ryker Meadows to write their biographical novel about their difficulties with a deranged squirrel",
+      "reward": 30,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Playing with fire"
+    },
+    {
+      "adId": "hJzggfhO",
+      "message": "Help Murray Waldroup to write their biographical novel about their difficulties with a deranged cat",
+      "reward": 40,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "jj549uZx",
+      "message": "Create an advertisement campaign for Janez Prudhomme to promote their pan based business",
+      "reward": 27,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Playing with fire"
+    },
+    {
+      "adId": "ZVJxeEk4bTQ=",
+      "message": "SW52ZXN0aWdhdGUgRXZlbiBTdHJpbmdlciBhbmQgZmluZCBvdXQgdGhlaXIgcmVsYXRpb24gdG8gdGhlIG1hZ2ljIGhvdXNlLg==",
+      "reward": 147,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "STNMTWtWcHA=",
+      "message": "SW5maWx0cmF0ZSBUaGUgSXZvcnkgUHlnbXkgUG9zc2UgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 142,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "U3VpY2lkZSBtaXNzaW9u"
+    },
+    {
+      "adId": "V0txRTVTNzY=",
+      "message": "SW5maWx0cmF0ZSBUaGUgQ3J5c3RhbCBEcmFnb250b290aCBBc3NvY2lhdGlvbiBhbmQgcmVjb3ZlciB0aGVpciBzZWNyZXRzLg==",
+      "reward": 132,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "TkEoGrsw",
+      "message": "Help defending peninsula in Snowhill from the intruders",
+      "reward": 114,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "aTRrbUg1b0w=",
+      "message": "SW52ZXN0aWdhdGUgUm9zaGVlbiBGYXJuaGFtIGFuZCBmaW5kIG91dCB0aGVpciByZWxhdGlvbiB0byB0aGUgbWFnaWMgYmVlciBtdWcu",
+      "reward": 154,
+      "expiresIn": 3,
+      "encrypted": 1,
+      "probability": "SW1wb3NzaWJsZQ=="
+    },
+    {
+      "adId": "dKUPbuhG",
+      "message": "Help defending peninsula in Scaledean from the intruders",
+      "reward": 117,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    }
+  ]
+}

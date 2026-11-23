@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "fxniva8h",
+      "message": "Create an advertisement campaign for Reva Lawrence to promote their chicken based business",
+      "reward": 29,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "DhTJTbkg",
+      "message": "Help Ryker Meadows to write their biographical novel about their difficulties with a deranged squirrel",
+      "reward": 30,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Playing with fire"
+    },
+    {
+      "adId": "hJzggfhO",
+      "message": "Help Murray Waldroup to write their biographical novel about their difficulties with a deranged cat",
+      "reward": 40,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "jj549uZx",
+      "message": "Create an advertisement campaign for Janez Prudhomme to promote their pan based business",
+      "reward": 27,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Playing with fire"
+    },
+    {
+      "adId": "ZVJxeEk4bTQ=",
+      "message": "SW52ZXN0aWdhdGUgRXZlbiBTdHJpbmdlciBhbmQgZmluZCBvdXQgdGhlaXIgcmVsYXRpb24gdG8gdGhlIG1hZ2ljIGhvdXNlLg==",
+      "reward": 147,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "TkEoGrsw",
+      "message": "Help defending peninsula in Snowhill from the intruders",
+      "reward": 114,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "aTRrbUg1b0w=",
+      "message": "SW52ZXN0aWdhdGUgUm9zaGVlbiBGYXJuaGFtIGFuZCBmaW5kIG91dCB0aGVpciByZWxhdGlvbiB0byB0aGUgbWFnaWMgYmVlciBtdWcu",
+      "reward": 154,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "SW1wb3NzaWJsZQ=="
+    },
+    {
+      "adId": "ZnlZaUJGNWU=",
+      "message": "SW52ZXN0aWdhdGUgRGVjbGFuIENoZXNoaXJlIGFuZCBmaW5kIG91dCB0aGVpciByZWxhdGlvbiB0byB0aGUgbWFnaWMgaG91c2Uu",
+      "reward": 140,
+      "expiresIn": 3,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "lzapoDNJ",
+      "message": "Help defending peninsula in Snowshore from the intruders",
+      "reward": 115,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "jgUtJgtI",
+      "message": "Help defending peninsula in Strongport from the intruders",
+      "reward": 98,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    }
+  ]
+}

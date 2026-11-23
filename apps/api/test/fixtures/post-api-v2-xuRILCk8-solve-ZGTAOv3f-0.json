@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "path": "/api/v2/xuRILCk8/solve/ZGTAOv3f",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": {
+    "success": true,
+    "lives": 3,
+    "gold": 1048,
+    "score": 1048,
+    "highScore": 0,
+    "turn": 26,
+    "message": "You successfully solved the mission!"
+  }
+}

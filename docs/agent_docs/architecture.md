@@ -143,7 +143,9 @@ An ad:
 `probability`** — never to `reward` or `expiresIn`.
 
 - `encrypted: 1` → **Base64**. Verified.
-- `encrypted: 2` → **ROT13**. Assumed; must be confirmed by a capture session.
+- `encrypted: 2` → **ROT13**. Verified 2026-11-23 by `pnpm capture`: probability
+  `Vzcbffvoyr` → `Impossible`. Rare — one board in four capture sessions. That ad
+  was `Impossible`, so solving with a decoded ROT13 `adId` is still unobserved.
 
 **The `adId` must be decoded before use in the solve URL.** Verified:
 
@@ -286,7 +288,7 @@ Recorded as they are established. A documented negative result is a finding.
 | Question                           | Status | Result                                           |
 | ---------------------------------- | ------ | ------------------------------------------------ |
 | Does levelling up pay?             | open   | run the benchmark with level-ups on and off      |
-| Is `encrypted: 2` ROT13?           | open   | needs a capture session                          |
+| Is `encrypted: 2` ROT13?           | yes    | captured 2026-11-23; see _Encryption_            |
 | Does reputation affect anything?   | open   | endpoint exists; no use found in the spike       |
 | Does `calibrated` beat `baseline`? | open   | Phase 1 experiment                               |
 | Is there upstream rate limiting?   | open   | none observed; benchmark makes hundreds of calls |

@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "1PfR7AMC",
+      "message": "Help defending grassland in Orrinhill from the intruders",
+      "reward": 129,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Risky"
+    },
+    {
+      "adId": "PHaQLRX8",
+      "message": "Help defending plains in Dovedrone from the intruders",
+      "reward": 95,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "cm1FRWo2d2g=",
+      "message": "SW52ZXN0aWdhdGUgTGp1Ym8gTm9yd29vZCBhbmQgZmluZCBvdXQgdGhlaXIgcmVsYXRpb24gdG8gdGhlIG1hZ2ljIGRvZy4=",
+      "reward": 129,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "WTFlYTFxaVM=",
+      "message": "SW5maWx0cmF0ZSBUaGUgRWFnbGUgU29sZGllcnMgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 137,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "U3VpY2lkZSBtaXNzaW9u"
+    },
+    {
+      "adId": "R01DMlRGZUg=",
+      "message": "SW5maWx0cmF0ZSBUaGUgR3JpenpseSBCb2FyIEJyb3RoZXJob29kIGFuZCByZWNvdmVyIHRoZWlyIHNlY3JldHMu",
+      "reward": 151,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "V2FsayBpbiB0aGUgcGFyaw=="
+    },
+    {
+      "adId": "RGVTa3hIaUs=",
+      "message": "SW5maWx0cmF0ZSBUaGUgRWJvbnkgQ3Jvc3NlcyBhbmQgcmVjb3ZlciB0aGVpciBzZWNyZXRzLg==",
+      "reward": 146,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "R2FtYmxl"
+    },
+    {
+      "adId": "cnpYYU5XUDE=",
+      "message": "SW52ZXN0aWdhdGUgTWF0dGFueWFodSBTdW1tZXJzIGFuZCBmaW5kIG91dCB0aGVpciByZWxhdGlvbiB0byB0aGUgbWFnaWMgYnVja2V0Lg==",
+      "reward": 119,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "aTlSYXZkcUY=",
+      "message": "SW5maWx0cmF0ZSBUaGUgUm95YWwgU2hhcmt0ZWV0aCBhbmQgcmVjb3ZlciB0aGVpciBzZWNyZXRzLg==",
+      "reward": 120,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "U3VpY2lkZSBtaXNzaW9u"
+    },
+    {
+      "adId": "K56bZTs7",
+      "message": "Help defending plains in Oldpool from the intruders",
+      "reward": 73,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Rather detrimental"
+    },
+    {
+      "adId": "S09KRVRoSHQ=",
+      "message": "SW5maWx0cmF0ZSBUaGUgRW1lcmFsZCBGb3JzYWtlbiBTcXVhZCBhbmQgcmVjb3ZlciB0aGVpciBzZWNyZXRzLg==",
+      "reward": 125,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "SG1tbS4uLi4="
+    }
+  ]
+}

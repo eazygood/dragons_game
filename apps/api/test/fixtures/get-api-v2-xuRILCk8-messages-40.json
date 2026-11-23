@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "tE2Q3lct",
+      "message": "Help defending thrift shoppe in Snowpine from the intruders",
+      "reward": 89,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "Jma806PH",
+      "message": "Help defending pasture in Burnssheen from the intruders",
+      "reward": 81,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Gamble"
+    },
+    {
+      "adId": "3E0cC83p",
+      "message": "Help defending thrift shoppe in Redcrest from the intruders",
+      "reward": 80,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "HfpdQra0",
+      "message": "Help defending peninsula in Dornfair from the intruders",
+      "reward": 108,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Rather detrimental"
+    },
+    {
+      "adId": "8OJ9uehO",
+      "message": "Help defending field in Lightdrone from the intruders",
+      "reward": 98,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "v908GK64",
+      "message": "Help defending pasture in Metalcawl from the intruders",
+      "reward": 76,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Gamble"
+    },
+    {
+      "adId": "EwRwyoTu",
+      "message": "Help defending steppe in Dorngill from the intruders",
+      "reward": 77,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Gamble"
+    },
+    {
+      "adId": "vTIsWyz2",
+      "message": "Help defending peninsula in Newham from the intruders",
+      "reward": 90,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "3vd4uw45",
+      "message": "Help defending peninsula in Darkburg from the intruders",
+      "reward": 80,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "rc4msZNG",
+      "message": "Help defending pasture in Fernmoore from the intruders",
+      "reward": 84,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Risky"
+    }
+  ]
+}

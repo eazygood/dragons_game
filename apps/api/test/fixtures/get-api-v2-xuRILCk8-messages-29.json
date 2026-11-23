@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "d7RYwwbI",
+      "message": "Help defending pasture in Thornmire from the intruders",
+      "reward": 115,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "rotsG8o2",
+      "message": "Help defending grassland in Ravenburg from the intruders",
+      "reward": 106,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "r2yksKPm",
+      "message": "Help defending village in Strongwatch from the intruders",
+      "reward": 90,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "bWNCMmhVbXU=",
+      "message": "SW5maWx0cmF0ZSBUaGUgRWJvbnkgQ3Jvc3NlcyBhbmQgcmVjb3ZlciB0aGVpciBzZWNyZXRzLg==",
+      "reward": 154,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "UmF0aGVyIGRldHJpbWVudGFs"
+    },
+    {
+      "adId": "QXhycG1wYWs=",
+      "message": "SW52ZXN0aWdhdGUgTnlvbWFuIFNwb29uZXIgYW5kIGZpbmQgb3V0IHRoZWlyIHJlbGF0aW9uIHRvIHRoZSBtYWdpYyBiZWVyIG11Zy4=",
+      "reward": 152,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "R2FtYmxl"
+    },
+    {
+      "adId": "ZGpvaUx6TGs=",
+      "message": "SW5maWx0cmF0ZSBUaGUgWWVsbG93IFNhYmVyIFNpc3Rlcmhvb2QgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 155,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "U3VpY2lkZSBtaXNzaW9u"
+    },
+    {
+      "adId": "OXpURE1IekI=",
+      "message": "SW5maWx0cmF0ZSBUaGUgWWVsbG93IFNhYmVyIFNpc3Rlcmhvb2QgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 154,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "SW1wb3NzaWJsZQ=="
+    },
+    {
+      "adId": "1PfR7AMC",
+      "message": "Help defending grassland in Orrinhill from the intruders",
+      "reward": 129,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Risky"
+    },
+    {
+      "adId": "V0toa3ZvWGE=",
+      "message": "SW5maWx0cmF0ZSBUaGUgRW1lcmFsZCBGb3JzYWtlbiBTcXVhZCBhbmQgcmVjb3ZlciB0aGVpciBzZWNyZXRzLg==",
+      "reward": 125,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "Umlza3k="
+    },
+    {
+      "adId": "PHaQLRX8",
+      "message": "Help defending plains in Dovedrone from the intruders",
+      "reward": 95,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    }
+  ]
+}

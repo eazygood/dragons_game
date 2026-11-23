@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "path": "/api/v2/xuRILCk8/solve/nbYecrES",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": {
+    "success": true,
+    "lives": 3,
+    "gold": 33,
+    "score": 33,
+    "highScore": 0,
+    "turn": 6,
+    "message": "You successfully solved the mission!"
+  }
+}
