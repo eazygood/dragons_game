@@ -137,5 +137,10 @@ docker compose up -d mysql
 pnpm db:migrate
 ```
 
+The container also creates `dragon_test` on first start
+(`docker/mysql/01-test-database.sql`). `pnpm test:integration` migrates that
+database from scratch and never touches `dragon`. An init script only runs on an
+empty volume — after changing it, `docker compose down -v`.
+
 Docker runtime is Colima. Container failures usually mean it isn't running —
 check `colima status`, restart with `colima restart`.

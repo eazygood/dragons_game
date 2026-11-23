@@ -21,7 +21,7 @@ const EnvSchema = z.object({
     .default(DEFAULT_MUGLOAR_RETRY_BASE_DELAY_MS),
   MUGLOAR_RATE_PER_SECOND: z.coerce.number().positive().default(DEFAULT_MUGLOAR_RATE_PER_SECOND),
   MUGLOAR_BURST: z.coerce.number().int().positive().default(DEFAULT_MUGLOAR_BURST),
-  DATABASE_URL: z.url().default(DEFAULT_DATABASE_URL),
+  DATABASE_URL: z.url({ protocol: /^mysql$/ }).default(DEFAULT_DATABASE_URL),
   LOG_LEVEL: LogLevelSchema.default('info'),
 });
 

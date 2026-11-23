@@ -20,6 +20,10 @@ describe('loadConfig', () => {
     expect(config).toMatchObject({ mugloarTimeoutMs: 750, logLevel: 'debug' });
   });
 
+  it('refuses a DATABASE_URL that is not MySQL', () => {
+    expect(() => loadConfig({ env: { DATABASE_URL: 'postgres://u:p@host/db' } })).toThrow();
+  });
+
   it('refuses a malformed value rather than running with it', () => {
     expect(() => loadConfig({ env: { MUGLOAR_READ_RETRIES: 'many' } })).toThrow();
   });

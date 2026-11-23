@@ -6,10 +6,15 @@
   "scripts": {
     "capture": "tsx src/tools/capture.ts",
     "test": "vitest run --project unit --project contract",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:integration": "vitest run --project integration",
+    "db:migrate": "tsx node_modules/knex/bin/cli.js --knexfile knexfile.ts migrate:latest",
+    "db:make": "tsx node_modules/knex/bin/cli.js --knexfile knexfile.ts migrate:make -x ts"
   },
   "dependencies": {
     "@bigbank-dragon/contracts": "workspace:*",
+    "knex": "3.3.0",
+    "mysql2": "3.24.6",
     "zod": "4.6.7"
   },
   "devDependencies": {

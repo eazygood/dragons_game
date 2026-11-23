@@ -1,0 +1,24 @@
+name: bigbank-dragon
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: dragon
+      MYSQL_USER: dragon
+      MYSQL_PASSWORD: dragon
+      MYSQL_ROOT_PASSWORD: dragon-root-local-only
+    ports:
+      - '${MYSQL_PORT:-3306}:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-udragon', '-pdragon']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  mysql-data:

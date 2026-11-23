@@ -15,7 +15,10 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
-    "capture": "pnpm --filter @bigbank-dragon/api capture"
+    "capture": "pnpm --filter @bigbank-dragon/api capture",
+    "test:integration": "pnpm --filter @bigbank-dragon/api test:integration",
+    "db:migrate": "pnpm --filter @bigbank-dragon/api db:migrate",
+    "db:make": "pnpm --filter @bigbank-dragon/api db:make"
   },
   "devDependencies": {
     "eslint": "10.15.0",
