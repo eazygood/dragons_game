@@ -1,0 +1,44 @@
+import { z } from 'zod';
+
+const DEFAULT_MUGLOAR_BASE_URL = 'https://dragonsofmugloar.com/api/v2';
+const DEFAULT_MUGLOAR_TIMEOUT_MS = 5000;
+const DEFAULT_MUGLOAR_READ_RETRIES = 2;
+const DEFAULT_MUGLOAR_RETRY_BASE_DELAY_MS = 200;
+const DEFAULT_DATABASE_URL = 'mysql://dragon:dragon@127.0.0.1:3306/dragon';
+
+const LogLevelSchema = z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']);
+
+const EnvSchema = z.object({
+  MUGLOAR_BASE_URL: z.url().default(DEFAULT_MUGLOAR_BASE_URL),
+  MUGLOAR_TIMEOUT_MS: z.coerce.number().int().positive().default(DEFAULT_MUGLOAR_TIMEOUT_MS),
+  MUGLOAR_READ_RETRIES: z.coerce.number().int().min(0).default(DEFAULT_MUGLOAR_READ_RETRIES),
+  MUGLOAR_RETRY_BASE_DELAY_MS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(DEFAULT_MUGLOAR_RETRY_BASE_DELAY_MS),
+  DATABASE_URL: z.url().default(DEFAULT_DATABASE_URL),
+  LOG_LEVEL: LogLevelSchema.default('info'),
+});
+
+export type AppConfig = {
+  mugloarBaseUrl: string;
+  mugloarTimeoutMs: number;
+  mugloarReadRetries: number;
+  mugloarRetryBaseDelayMs: number;
+  databaseUrl: string;
+  logLevel: z.infer<typeof LogLevelSchema>;
+};
+
+export const loadConfig = ({ env }: { env: NodeJS.ProcessEnv }): AppConfig => {
+  const parsed = EnvSchema.parse(env);
+
+  return {
+    mugloarBaseUrl: parsed.MUGLOAR_BASE_URL,
+    mugloarTimeoutMs: parsed.MUGLOAR_TIMEOUT_MS,
+    mugloarReadRetries: parsed.MUGLOAR_READ_RETRIES,
+    mugloarRetryBaseDelayMs: parsed.MUGLOAR_RETRY_BASE_DELAY_MS,
+    databaseUrl: parsed.DATABASE_URL,
+    logLevel: parsed.LOG_LEVEL,
+  };
+};
