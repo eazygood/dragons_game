@@ -42,7 +42,6 @@ export const up = async (knex: Knex): Promise<void> => {
     table.integer('dragon_level').notNullable();
     table.integer('turn').notNullable();
     table.integer('reward').notNullable();
-    table.boolean('was_encrypted').notNullable();
     table.boolean('success').notNullable();
     table.decimal('estimated_probability', ...PROBABILITY_PRECISION).notNullable();
     table.decimal('expected_value', ...VALUE_PRECISION).notNullable();

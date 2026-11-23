@@ -62,8 +62,8 @@ boolean could not do that.
 
 **`was_encrypted` was a hypothesis, and Phase 1 disproved it.** It tested
 whether encrypted ads behave differently. Over two cold benchmarks they did not
-(0.73 success encrypted, n = 40, against 0.72 plaintext, n = 781), so migration
-`20261124000002` drops it rather than carry an unused column into the
+(0.73 success encrypted, n = 40, against 0.72 plaintext, n = 781), so the
+schema does not create it rather than carry an unused column into the
 submission. The `Ad` contract still says whether an ad was encrypted; only the
 stored dimension went.
 
