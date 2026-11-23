@@ -47,13 +47,16 @@ HTTP mapping:
 
 | Domain error          | HTTP  | Notes                                 |
 | --------------------- | ----- | ------------------------------------- |
-| `GameOver`            | `410` | Terminal, expected. Not a failure.    |
 | `GameNotFound`        | `404` |                                       |
 | `AdExpired`           | `409` | Board is stale; client should refetch |
 | `InsufficientGold`    | `409` |                                       |
 | `ValidationError`     | `400` | From the schema layer                 |
 | `UpstreamUnavailable` | `502` | Mugloar unreachable after retries     |
 | _(unmapped)_          | `500` | Logged with the request id            |
+
+**Game over is not in this table.** The adapter returns `410` as a terminal
+`{ status: 'game_over' }` result and never throws it, so it never reaches the
+error handler. A route that receives that result maps it to `410` itself.
 
 Every one of these has a designed treatment in the UI. Game over is a screen,
 not a toast; an expired ad refreshes the board and says why.

@@ -222,7 +222,7 @@ renders it. That is what makes "watch the bot" explicable instead of a spinner.
 
 Every attempt is written to `ad_attempts` with its label, dragon level, turn,
 reward and outcome. The estimate is a Laplace-smoothed success rate keyed on
-`(label, levelBucket)`:
+`(label, levelBucket, rewardBand)`:
 
 ```
 p̂ = (successes + α·prior) / (attempts + α)      α ≈ 5
@@ -235,6 +235,15 @@ a whiteboard.
 Level **buckets**, not raw levels: the observed degradation is gradual and raw
 cells would be too sparse.
 
+**Reward bands** (edges in `StrategyConfig.rewardBandEdges`) because the label
+alone lies on lucrative ads. Measured over 20 cold runs: `Sure thing` under 100
+gold went 47/47; at 160 and above it went 1/45. Pooling them taught the engine
+that a trap was safe. The repository returns raw rewards; the engine buckets
+them, so the edges are tunable without a query change.
+
+Calibration is **reloaded before every decision**, not once per game: a run's own
+failures, and those of concurrent benchmark games, count from the next turn.
+
 ### Selection
 
 1. **Hard filter** — drop `Impossible`; drop anything unreachable before
@@ -243,8 +252,10 @@ cells would be too sparse.
 3. **Expected value** — `EV = p̂ · reward − (1 − p̂) · lifeCost`, where
    `lifeCost` is a healing potion (50 gold) plus the turn it burns. This converts
    risk into gold so risky-lucrative and safe-cheap ads compare on one axis.
-4. **Survival override** — lives, not gold, are the binding constraint. Below a
-   lives floor the engine buys `hpot` and raises its minimum acceptable `p̂`.
+4. **Survival override** — lives, not gold, are the binding constraint. At or
+   below a lives floor the engine buys `hpot` before anything else. The tuned floor equals the starting lives, so spare gold is always
+   banked as lives: gold is worth nothing at game end, and a potion costs only
+   the turn.
    Measured: a run surviving ~90 turns scored 6840; one dying at turn 24 scored 467. **Survival is the strategy.**
 5. Take the highest EV clearing the floor; else buy if gold allows; else take the
    safest available ad.
@@ -286,10 +297,29 @@ The registry is an interface, so moving the loop out later is contained.
 
 Recorded as they are established. A documented negative result is a finding.
 
-| Question                           | Status | Result                                           |
-| ---------------------------------- | ------ | ------------------------------------------------ |
-| Does levelling up pay?             | open   | run the benchmark with level-ups on and off      |
-| Is `encrypted: 2` ROT13?           | yes    | captured 2026-11-23; see _Encryption_            |
-| Does reputation affect anything?   | open   | endpoint exists; no use found in the spike       |
-| Does `calibrated` beat `baseline`? | open   | Phase 1 experiment                               |
-| Is there upstream rate limiting?   | open   | none observed; benchmark makes hundreds of calls |
+| Question                                 | Status | Result                                                                                      |
+| ---------------------------------------- | ------ | ------------------------------------------------------------------------------------------- |
+| Does `calibrated` beat `baseline`?       | yes    | 90% vs 55% pass over 20 cold runs each, before any tuning                                   |
+| Do labels mean the same at every reward? | **no** | `Sure thing` 47/47 under 100 gold, 1/45 at 160+ — hence reward bands in the calibration key |
+| Does levelling up pay?                   | **no** | off: 100% pass, median 2510; on: 95%, median 3348. Reliability is the brief, so **off**     |
+| Is `encrypted: 2` ROT13?                 | yes    | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)            |
+| Do encrypted ads behave differently?     | no     | 0.73 vs 0.72 success; `was_encrypted` column dropped                                        |
+| Does reputation affect anything?         | skip   | **each call burns a turn**; values move but nothing uses them                               |
+| Is there upstream rate limiting?         | no     | no `429` across every benchmark at 8 req/s, 3 concurrent games                              |
+
+Acceptance (`pnpm bench --runs 20`, cold, tuned defaults): **20/20**, min 1566, median 2687. Raw numbers, the sweep and the acceptance run:
+[`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md).
+
+Tuned `StrategyConfig` (sweep in the findings file):
+
+```ts
+smoothingAlpha: 2,          // a fresh trap cell is unlearned in 3 failures, not 6
+levelBucketEdges: [2, 4, 6],
+rewardBandEdges: [100, 160],
+livesFloor: 3,              // = starting lives: bank spare gold as potions
+minimumProbability: 0.45,   // 0.3 cost 10 points of pass rate
+lifeCostInGold: 50,
+turnCostInGold: 20,
+levelUpEnabled: false,
+levelUpGoldReserve: 350,
+```

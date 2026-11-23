@@ -6,8 +6,11 @@ import { priorCalibration } from '../../src/domain/engine/calibration.ts';
 import type { Calibration } from '../../src/domain/engine/calibration.ts';
 import { decide } from '../../src/domain/engine/decide.ts';
 import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import type { StrategyConfig } from '../../src/domain/engine/strategy-config.ts';
 
-const config = STRATEGY_CONFIG;
+// Mechanism tests pin the values they exercise, so retuning the defaults
+// cannot silently change what they prove.
+const config: StrategyConfig = { ...STRATEGY_CONFIG, livesFloor: 2, levelUpEnabled: true };
 const calibration = priorCalibration({ config });
 const shop: ShopItem[] = [...SHOP_ITEM_PRIOR];
 

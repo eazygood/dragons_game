@@ -22,14 +22,14 @@ describe('calibration', () => {
     ).toBeCloseTo(0.95);
   });
 
-  it('applies Laplace smoothing with alpha 5', () => {
+  it('applies Laplace smoothing with the configured alpha', () => {
     const calibration = calibratedFrom([
       { probability: 'Sure thing', dragonLevel: 6, reward: CHEAP, attempts: 12, successes: 2 },
     ]);
 
     // p̂ = (successes + α·prior) / (attempts + α)
     expect(calibration.estimate({ label: 'Sure thing', level: 6, reward: CHEAP })).toBeCloseTo(
-      (2 + 5 * 0.95) / 17,
+      (2 + config.smoothingAlpha * 0.95) / (12 + config.smoothingAlpha),
       5,
     );
   });

@@ -9,7 +9,8 @@ import { DbTables } from '../../src/entities/db-tables.ts';
 import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';
 import { createScriptedClient } from '../support/scripted-client.ts';
 
-const config = STRATEGY_CONFIG;
+// Below the scripted game's starting lives, so the engine solves every turn.
+const config = { ...STRATEGY_CONFIG, livesFloor: 2 };
 const SCRIPTED_TURNS = 12;
 // Rewards 31..42 over twelve successful turns.
 const SCRIPTED_SCORE = 438;

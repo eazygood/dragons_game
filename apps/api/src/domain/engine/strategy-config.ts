@@ -15,13 +15,13 @@ export interface StrategyConfig {
 
 // Every strategy threshold lives here and nowhere else.
 export const STRATEGY_CONFIG: StrategyConfig = {
-  smoothingAlpha: 5,
+  smoothingAlpha: 2,
   levelBucketEdges: [2, 4, 6],
   rewardBandEdges: [100, 160],
-  livesFloor: 2,
+  livesFloor: 3,
   minimumProbability: 0.45,
   lifeCostInGold: 50,
   turnCostInGold: 20,
-  levelUpEnabled: true,
+  levelUpEnabled: false,
   levelUpGoldReserve: 350,
 };
