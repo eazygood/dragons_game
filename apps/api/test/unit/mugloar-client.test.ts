@@ -84,7 +84,7 @@ describe('mugloar client: shapes and errors', () => {
 
   // Review Focus #2
   it('rejects a 200 whose body does not match the contract', async () => {
-    stub.get('/:gameId/shop', () => ({ items: [{ id: 'hpot' }] }));
+    stub.get('/:gameId/shop', () => [{ id: 'hpot' }]);
 
     await expect(client.fetchShop({ gameId: 'g1' })).rejects.toBeInstanceOf(
       UpstreamUnavailableError,
@@ -99,10 +99,9 @@ describe('mugloar client: shapes and errors', () => {
     );
   });
 
-  it('reads shoppingSuccess as a boolean and unwraps the shop listing', async () => {
-    stub.get('/:gameId/shop', () => ({
-      items: [{ id: 'hpot', name: 'Healing potion', cost: 50 }],
-    }));
+  // Verified live 2026-11-23: /shop is a bare array, like /messages.
+  it('reads shoppingSuccess as a boolean and the shop as a bare array', async () => {
+    stub.get('/:gameId/shop', () => [{ id: 'hpot', name: 'Healing potion', cost: 50 }]);
     stub.post('/:gameId/shop/buy/:itemId', () => ({
       shoppingSuccess: false,
       gold: 10,

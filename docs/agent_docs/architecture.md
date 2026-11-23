@@ -106,7 +106,7 @@ Base URL: `https://dragonsofmugloar.com/api/v2`. No auth, no API key.
 | POST   | `/game/start`                      | `{ gameId, lives, gold, level, score, highScore, turn }`    |
 | GET    | `/{gameId}/messages`               | **bare array** of ads                                       |
 | POST   | `/{gameId}/solve/{adId}`           | `{ success, lives, gold, score, highScore, turn, message }` |
-| GET    | `/{gameId}/shop`                   | `{ items: [{ id, name, cost }] }`                           |
+| GET    | `/{gameId}/shop`                   | **bare array** of `{ id, name, cost }`                      |
 | POST   | `/{gameId}/shop/buy/{itemId}`      | `{ shoppingSuccess, gold, lives, level, turn }`             |
 | POST   | `/{gameId}/investigate/reputation` | `{ people, state, underworld }`                             |
 
@@ -117,6 +117,7 @@ A new game starts at `lives: 3, gold: 0, level: 0, score: 0, turn: 0`.
 | Docs say                                  | Reality                         |
 | ----------------------------------------- | ------------------------------- |
 | `/messages` returns `{ messages: [...] }` | returns a **bare array**        |
+| `/shop` returns `{ items: [...] }`        | returns a **bare array**        |
 | `reward` is a String                      | it is a **Number**              |
 | `shoppingSuccess` is a String             | it is a **Boolean**             |
 | _(not mentioned)_                         | ads carry **`probability`**     |

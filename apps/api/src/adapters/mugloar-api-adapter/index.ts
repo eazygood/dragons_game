@@ -46,7 +46,6 @@ const NO_RETRIES = 0;
 const segment = (value: string) => encodeURIComponent(value);
 
 const DecodedAdListSchema = AdListWireSchema.transform((raws) => decodeAds({ raws }));
-const ShopItemsSchema = ShopWireSchema.transform(({ items }) => items);
 
 export const createMugloarClient = ({
   config,
@@ -94,7 +93,7 @@ export const createMugloarClient = ({
         method: 'GET',
         path: `/${segment(gameId)}/shop`,
         retries: readRetries,
-        schema: ShopItemsSchema,
+        schema: ShopWireSchema,
       }),
     buyItem: ({ gameId, itemId }) =>
       request({

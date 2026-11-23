@@ -16,7 +16,7 @@ export const SolveWireSchema = z.object({
   message: z.string(),
 });
 
-export const ShopWireSchema = z.object({ items: z.array(ShopItemSchema) });
+export const ShopWireSchema = z.array(ShopItemSchema);
 
 export const BuyWireSchema = z.object({
   shoppingSuccess: z.boolean(),

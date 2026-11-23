@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "bot": "tsx src/tools/bot.ts",
     "capture": "tsx src/tools/capture.ts",
     "test": "vitest run --project unit --project contract",
     "typecheck": "tsc --noEmit",

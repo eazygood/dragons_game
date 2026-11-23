@@ -49,7 +49,7 @@ The bot executes the `Decision`. The UI renders it. Same function.
 ## Critical rules
 
 - **The published API docs are wrong.** `docs/agent_docs/architecture.md` §API
-  is ground truth. `/messages` returns a bare array, `reward` is a number,
+  is ground truth. `/messages` and `/shop` return bare arrays, `reward` is a number,
   `shoppingSuccess` is a boolean, errors are HTML, and `probability` and
   `encrypted` are undocumented.
 - **Encrypted `adId` must be decoded before use in the solve URL.** Sending the

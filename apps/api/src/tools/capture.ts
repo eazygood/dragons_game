@@ -97,6 +97,7 @@ const main = async () => {
     throttle,
   });
   const { gameId } = await client.startGame();
+  const shop = await client.fetchShop({ gameId });
   const notFound = await rejectsWith(
     client.fetchAds({ gameId: UNKNOWN_GAME_ID }),
     GameNotFoundError,
@@ -105,6 +106,7 @@ const main = async () => {
   const { gameOver, staleRejected } = await playToGameOver({ client, gameId });
   const { base64, rot13 } = await encryptionModesSeen({ gameId });
   const findings: Findings = {
+    'shop listing (bare array)': shop.status === 'ok' && shop.value.length > 0,
     'encrypted: 1 (base64) ad': base64,
     'encrypted: 2 ad': rot13,
     'HTML 404 for an unknown gameId': notFound,
