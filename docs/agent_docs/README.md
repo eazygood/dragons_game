@@ -9,7 +9,7 @@ the entry point and stays short; the detail lives here.
 | [`database.md`](database.md)         | Schema and ERD, knex patterns, migrations, transaction boundaries, why dragon level is persisted                                                 |
 | [`routes.md`](routes.md)             | Route organisation, request/response schemas, validation, error mapping, SSE                                                                     |
 | [`frontend.md`](frontend.md)         | State management, the three validation boundaries, error states, component rules, responsiveness, a11y                                           |
-| [`testing.md`](testing.md)           | Test levels, the fixture recording harness, the benchmark, what CI may and may not touch                                                         |
+| [`testing.md`](testing.md)           | Test levels, recorded fixtures and replay, the benchmark, what CI may and may not touch                                                          |
 
 ## Where to start
 

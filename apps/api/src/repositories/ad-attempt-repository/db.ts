@@ -1,8 +1,8 @@
 import { ProbabilityLabelSchema } from '@bigbank-dragon/contracts';
 
-import type { DbExecutor } from '../adapters/mysql-adapter.ts';
-import type { AdAttempt, CalibrationCount } from '../entities/ad-attempt.ts';
-import { DbTables } from '../entities/db-tables.ts';
+import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
+import type { AdAttempt, CalibrationCount } from '../../entities/ad-attempt.ts';
+import { DbTables } from '../../entities/db-tables.ts';
 
 export interface AdAttemptRow {
   game_run_id: number;
@@ -77,4 +77,4 @@ const findCalibrationCounts = async ({
   return rows.map((row) => reverseTransform({ row }));
 };
 
-export const adAttemptRepository = { createOne, findCalibrationCounts };
+export const dbRepository = { createOne, findCalibrationCounts };

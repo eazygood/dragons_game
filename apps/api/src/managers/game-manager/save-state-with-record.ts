@@ -23,7 +23,7 @@ export const saveStateWithRecord = async ({
     await withTransaction({
       db,
       callback: async (trx) => {
-        await gameRunRepository.updateOne({
+        await gameRunRepository.db.updateOne({
           db: trx,
           id: run.id,
           patch: {

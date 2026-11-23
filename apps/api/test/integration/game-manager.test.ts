@@ -2,14 +2,17 @@ import type { Ad, GameState, ShopItem } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { MugloarClient } from '../../src/adapters/mugloar-api-adapter/index.ts';
 import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import { DbTables } from '../../src/entities/db-tables.ts';
 import type { GameRun } from '../../src/entities/game-run.ts';
 import { PersistenceFailedError } from '../../src/errors/errors.ts';
 import { buyItem, finishRun, solveAd, startGame } from '../../src/managers/game-manager/index.ts';
-import { gameRunRepository, purchaseRepository } from '../../src/repositories/index.ts';
+import {
+  adAttemptRepository,
+  gameRunRepository,
+  purchaseRepository,
+} from '../../src/repositories/index.ts';
 
 const CLAW_HONING: ShopItem = { id: 'ch', name: 'Claw Honing', cost: 300 };
 
@@ -29,14 +32,6 @@ const REASONING = {
   consideredCount: 4,
 } as const;
 
-const stubClient = {
-  startGame: vi.fn<MugloarClient['startGame']>(),
-  fetchAds: vi.fn<MugloarClient['fetchAds']>(),
-  solveAd: vi.fn<MugloarClient['solveAd']>(),
-  fetchShop: vi.fn<MugloarClient['fetchShop']>(),
-  buyItem: vi.fn<MugloarClient['buyItem']>(),
-} satisfies MugloarClient;
-
 describe('game manager', () => {
   let db: Knex;
   let run: GameRun;
@@ -52,7 +47,7 @@ describe('game manager', () => {
 
   beforeEach(async () => {
     await db(DbTables.GameRuns).delete();
-    stubClient.startGame.mockResolvedValue({
+    vi.spyOn(gameRunRepository.mugloar, 'createOne').mockResolvedValue({
       gameId: 'mgr-game',
       lives: 3,
       gold: 0,
@@ -61,16 +56,16 @@ describe('game manager', () => {
       highScore: 0,
       turn: 0,
     });
-    stubClient.solveAd.mockResolvedValue({
+    vi.spyOn(adAttemptRepository.mugloar, 'createOne').mockResolvedValue({
       status: 'ok',
       value: { success: true, lives: 3, gold: 20, score: 20, highScore: 0, turn: 1, message: 'ok' },
     });
-    stubClient.buyItem.mockResolvedValue({
+    vi.spyOn(purchaseRepository.mugloar, 'createOne').mockResolvedValue({
       status: 'ok',
       value: { shoppingSuccess: true, gold: 0, lives: 3, level: 2, turn: 5 },
     });
 
-    ({ run, state } = await startGame({ db, client: stubClient, strategy: 'calibrated' }));
+    ({ run, state } = await startGame({ db, strategy: 'calibrated' }));
     state = { ...state, gold: 300, turn: 4 };
   });
 
@@ -79,7 +74,7 @@ describe('game manager', () => {
   });
 
   it('persists a new run in its starting state', async () => {
-    expect(await gameRunRepository.findOne({ db, gameId: run.gameId })).toMatchObject({
+    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
       lives: 3,
       gold: 0,
       dragonLevel: 0,
@@ -91,7 +86,7 @@ describe('game manager', () => {
   });
 
   it('writes an ad attempt carrying the prediction it acted on', async () => {
-    await solveAd({ db, client: stubClient, run, state, ad: AD, reasoning: REASONING });
+    await solveAd({ db, run, state, ad: AD, reasoning: REASONING });
 
     expect(await db(DbTables.AdAttempts).first()).toMatchObject({
       ad_id: 'a1',
@@ -101,7 +96,7 @@ describe('game manager', () => {
       expected_value: 12.5,
       success: 1,
     });
-    expect(await gameRunRepository.findOne({ db, gameId: run.gameId })).toMatchObject({
+    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
       gold: 20,
       score: 20,
       turn: 1,
@@ -109,22 +104,22 @@ describe('game manager', () => {
   });
 
   it('raises the dragon level and the purchase row in one transaction', async () => {
-    await buyItem({ db, client: stubClient, run, state, item: CLAW_HONING });
+    await buyItem({ db, run, state, item: CLAW_HONING });
 
-    expect(await gameRunRepository.findOne({ db, gameId: run.gameId })).toMatchObject({
+    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
       dragonLevel: 2,
     });
     expect(await db(DbTables.Purchases).first()).toMatchObject({ item_id: 'ch', success: 1 });
   });
 
   it('leaves no purchase row and no level change when the transaction fails', async () => {
-    vi.spyOn(purchaseRepository, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
+    vi.spyOn(purchaseRepository.db, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
 
-    const attempt = buyItem({ db, client: stubClient, run, state, item: CLAW_HONING });
+    const attempt = buyItem({ db, run, state, item: CLAW_HONING });
 
     await expect(attempt).rejects.toBeInstanceOf(PersistenceFailedError);
     await expect(attempt).rejects.toMatchObject({ state: { dragonLevel: 2, turn: 5 } });
-    expect(await gameRunRepository.findOne({ db, gameId: run.gameId })).toMatchObject({
+    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
       dragonLevel: 0,
     });
     expect(await db(DbTables.Purchases).count({ count: '*' })).toEqual([{ count: 0 }]);
@@ -132,12 +127,12 @@ describe('game manager', () => {
 
   // Review Focus #4
   it('advances the turn but not the level when a purchase fails', async () => {
-    stubClient.buyItem.mockResolvedValue({
+    vi.mocked(purchaseRepository.mugloar.createOne).mockResolvedValue({
       status: 'ok',
       value: { shoppingSuccess: false, gold: 10, lives: 3, level: 0, turn: 6 },
     });
 
-    const result = await buyItem({ db, client: stubClient, run, state, item: CLAW_HONING });
+    const result = await buyItem({ db, run, state, item: CLAW_HONING });
 
     expect(result).toMatchObject({ status: 'ok', value: { turn: 6, dragonLevel: 0 } });
     expect(await db(DbTables.Purchases).first()).toMatchObject({
@@ -148,18 +143,18 @@ describe('game manager', () => {
   });
 
   it('reports game over from the manager rather than throwing', async () => {
-    stubClient.solveAd.mockResolvedValue({ status: 'game_over' });
+    vi.mocked(adAttemptRepository.mugloar.createOne).mockResolvedValue({ status: 'game_over' });
 
-    await expect(
-      solveAd({ db, client: stubClient, run, state, ad: AD, reasoning: REASONING }),
-    ).resolves.toEqual({ status: 'game_over' });
+    await expect(solveAd({ db, run, state, ad: AD, reasoning: REASONING })).resolves.toEqual({
+      status: 'game_over',
+    });
     expect(await db(DbTables.AdAttempts).count({ count: '*' })).toEqual([{ count: 0 }]);
   });
 
   it('closes a run when it finishes', async () => {
     await finishRun({ db, run, state: { ...state, score: 1234 } });
 
-    const finished = await gameRunRepository.findOne({ db, gameId: run.gameId });
+    const finished = await gameRunRepository.db.findOne({ db, gameId: run.gameId });
 
     expect(finished).toMatchObject({ status: 'game_over', score: 1234 });
     expect(finished?.endedAt).toBeInstanceOf(Date);

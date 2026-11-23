@@ -1,10 +1,10 @@
 import { StrategyNameSchema } from '@bigbank-dragon/contracts';
 import { z } from 'zod';
 
-import type { DbExecutor } from '../adapters/mysql-adapter.ts';
-import { DbTables } from '../entities/db-tables.ts';
-import { RUN_STATUSES } from '../entities/game-run.ts';
-import type { GameRun, GameRunId, GameRunPatch, NewGameRun } from '../entities/game-run.ts';
+import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
+import { DbTables } from '../../entities/db-tables.ts';
+import { RUN_STATUSES } from '../../entities/game-run.ts';
+import type { GameRun, GameRunId, GameRunPatch, NewGameRun } from '../../entities/game-run.ts';
 
 export interface GameRunRow {
   id: number;
@@ -126,4 +126,4 @@ const findMany = async ({
   return rows.map((row) => reverseTransform({ row }));
 };
 
-export const gameRunRepository = { createOne, findOne, updateOne, findMany };
+export const dbRepository = { createOne, findOne, updateOne, findMany };

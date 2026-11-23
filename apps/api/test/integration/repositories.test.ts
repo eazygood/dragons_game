@@ -63,26 +63,26 @@ describe('repositories', () => {
   afterAll(() => db.destroy());
 
   it('round-trips a game run through transform and back', async () => {
-    id = await gameRunRepository.createOne({ db, gameRun: ACTIVE_RUN });
+    id = await gameRunRepository.db.createOne({ db, gameRun: ACTIVE_RUN });
 
-    expect(await gameRunRepository.findOne({ db, gameId: ACTIVE_RUN.gameId })).toEqual({
+    expect(await gameRunRepository.db.findOne({ db, gameId: ACTIVE_RUN.gameId })).toEqual({
       ...ACTIVE_RUN,
       id,
     });
   });
 
   it('returns null for an unknown game', async () => {
-    expect(await gameRunRepository.findOne({ db, gameId: 'never-started' })).toBeNull();
+    expect(await gameRunRepository.db.findOne({ db, gameId: 'never-started' })).toBeNull();
   });
 
   it('updates live state in place, touching nothing else', async () => {
-    await gameRunRepository.updateOne({
+    await gameRunRepository.db.updateOne({
       db,
       id,
       patch: { lives: 2, gold: 120, turn: 7, score: 300 },
     });
 
-    expect(await gameRunRepository.findOne({ db, gameId: ACTIVE_RUN.gameId })).toMatchObject({
+    expect(await gameRunRepository.db.findOne({ db, gameId: ACTIVE_RUN.gameId })).toMatchObject({
       lives: 2,
       gold: 120,
       turn: 7,
@@ -95,9 +95,9 @@ describe('repositories', () => {
   it('finalises a run with its status and end time', async () => {
     const endedAt = new Date('2026-11-24T10:05:00.000Z');
 
-    await gameRunRepository.updateOne({ db, id, patch: { status: 'game_over', endedAt } });
+    await gameRunRepository.db.updateOne({ db, id, patch: { status: 'game_over', endedAt } });
 
-    expect(await gameRunRepository.findOne({ db, gameId: ACTIVE_RUN.gameId })).toMatchObject({
+    expect(await gameRunRepository.db.findOne({ db, gameId: ACTIVE_RUN.gameId })).toMatchObject({
       status: 'game_over',
       endedAt,
     });
@@ -112,10 +112,13 @@ describe('repositories', () => {
     ] as const;
 
     for (const seed of seeds) {
-      await adAttemptRepository.createOne({ db, attempt: attemptOf({ gameRunId: id, ...seed }) });
+      await adAttemptRepository.db.createOne({
+        db,
+        attempt: attemptOf({ gameRunId: id, ...seed }),
+      });
     }
 
-    const counts = await adAttemptRepository.findCalibrationCounts({ db });
+    const counts = await adAttemptRepository.db.findCalibrationCounts({ db });
 
     expect(counts).toHaveLength(3);
     expect(counts).toContainEqual({
@@ -135,12 +138,12 @@ describe('repositories', () => {
   });
 
   it('counts only the attempts of one benchmark when scoped to it', async () => {
-    const benchmarkRunId = await gameRunRepository.createOne({
+    const benchmarkRunId = await gameRunRepository.db.createOne({
       db,
       gameRun: { ...ACTIVE_RUN, gameId: 'repo-bench', benchmarkId: 'bench-scope' },
     });
 
-    await adAttemptRepository.createOne({
+    await adAttemptRepository.db.createOne({
       db,
       attempt: attemptOf({
         gameRunId: benchmarkRunId,
@@ -151,12 +154,12 @@ describe('repositories', () => {
     });
 
     expect(
-      await adAttemptRepository.findCalibrationCounts({ db, benchmarkId: 'bench-scope' }),
+      await adAttemptRepository.db.findCalibrationCounts({ db, benchmarkId: 'bench-scope' }),
     ).toEqual([{ probability: 'Gamble', dragonLevel: 0, reward: 10, attempts: 1, successes: 1 }]);
   });
 
   it('records a failed purchase', async () => {
-    await purchaseRepository.createOne({
+    await purchaseRepository.db.createOne({
       db,
       purchase: {
         gameRunId: id,
@@ -175,18 +178,18 @@ describe('repositories', () => {
 
   it('finds every run of one benchmark invocation', async () => {
     for (const gameId of ['bench-1', 'bench-2']) {
-      await gameRunRepository.createOne({
+      await gameRunRepository.db.createOne({
         db,
         gameRun: { ...ACTIVE_RUN, gameId, benchmarkId: 'bench-a' },
       });
     }
 
-    await gameRunRepository.createOne({
+    await gameRunRepository.db.createOne({
       db,
       gameRun: { ...ACTIVE_RUN, gameId: 'bench-3', benchmarkId: 'bench-b' },
     });
 
-    const runs = await gameRunRepository.findMany({ db, benchmarkId: 'bench-a' });
+    const runs = await gameRunRepository.db.findMany({ db, benchmarkId: 'bench-a' });
 
     expect(runs.map(({ gameId }) => gameId)).toEqual(['bench-1', 'bench-2']);
   });

@@ -7,11 +7,11 @@ import { loadConfig } from '../../src/config/index.ts';
 import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
 import { DbTables } from '../../src/entities/db-tables.ts';
 import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';
-import { createScriptedClient } from '../support/scripted-client.ts';
+import { scriptGame } from '../support/scripted-game.ts';
 
 const config = STRATEGY_CONFIG;
 const SCRIPTED_TURNS = 3;
-// The scripted client holds one game at a time, so runs must not overlap.
+// The scripted game holds one game at a time, so runs must not overlap.
 const SEQUENTIAL = 1;
 const SEEDED_GAME_ID = 'seeded-before-benchmark';
 
@@ -41,7 +41,7 @@ describe('runBenchmark', () => {
 
   beforeEach(async () => {
     await db(DbTables.GameRuns).delete();
-    seededRunId = await gameRunRepository.createOne({
+    seededRunId = await gameRunRepository.db.createOne({
       db,
       gameRun: {
         gameId: SEEDED_GAME_ID,
@@ -57,7 +57,7 @@ describe('runBenchmark', () => {
         endedAt: new Date(),
       },
     });
-    await adAttemptRepository.createOne({
+    await adAttemptRepository.db.createOne({
       db,
       attempt: {
         gameRunId: seededRunId,
@@ -74,13 +74,14 @@ describe('runBenchmark', () => {
     });
   });
 
-  const client = () => createScriptedClient({ turnsUntilGameOver: SCRIPTED_TURNS });
+  beforeEach(() => {
+    scriptGame({ turnsUntilGameOver: SCRIPTED_TURNS });
+  });
 
   it('keeps earlier history out of a cold benchmark without deleting it', async () => {
-    const counts = vi.spyOn(adAttemptRepository, 'findCalibrationCounts');
+    const counts = vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts');
     const summary = await runBenchmark({
       db,
-      client: client(),
       strategy: 'calibrated',
       runs: 1,
       warm: false,
@@ -95,11 +96,10 @@ describe('runBenchmark', () => {
   });
 
   it('reads all accumulated calibration when warm', async () => {
-    const counts = vi.spyOn(adAttemptRepository, 'findCalibrationCounts');
+    const counts = vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts');
 
     await runBenchmark({
       db,
-      client: client(),
       strategy: 'calibrated',
       runs: 1,
       warm: true,
@@ -113,14 +113,13 @@ describe('runBenchmark', () => {
   it('groups every run of one invocation under a single benchmark id', async () => {
     const summary = await runBenchmark({
       db,
-      client: client(),
       strategy: 'baseline',
       runs: 3,
       warm: false,
       concurrency: SEQUENTIAL,
       config,
     });
-    const runs = await gameRunRepository.findMany({ db, benchmarkId: summary.benchmarkId });
+    const runs = await gameRunRepository.db.findMany({ db, benchmarkId: summary.benchmarkId });
 
     expect(runs).toHaveLength(3);
     expect(new Set(runs.map((run) => run.strategy))).toEqual(new Set(['baseline']));

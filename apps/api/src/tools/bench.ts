@@ -29,10 +29,10 @@ const main = async () => {
   });
   const args = BenchArgsSchema.parse(values);
   const config = applyStrategyOverride({ json: args.override });
-  const { client, db } = createLiveRuntime();
+  const { db } = createLiveRuntime();
 
   try {
-    const summary = await runBenchmark({ db, client, ...args, config, logger: consoleLogger });
+    const summary = await runBenchmark({ db, ...args, config, logger: consoleLogger });
 
     console.log(formatSummary({ summary }));
     console.log(`  config ${JSON.stringify(config)}`);

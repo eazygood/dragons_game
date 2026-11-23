@@ -27,7 +27,7 @@ flowchart TB
     R --> MED --> MAN
     MAN --> ENG
     MAN --> REPO --> DB
-    MAN --> ADP --> EXT
+    REPO --> ADP --> EXT
 ```
 
 Why everything goes through Fastify: one source of truth for game state; the
@@ -45,14 +45,14 @@ Routes → Mediators → Managers → Repositories → Adapters
 
 Dependencies move **downward only**. Never skip a layer, never call upward.
 
-| Layer            | May call                                       | Must not                                               |
-| ---------------- | ---------------------------------------------- | ------------------------------------------------------ |
-| **Routes**       | Mediators, Managers                            | contain business logic; touch repositories or adapters |
-| **Mediators**    | Managers                                       | contain game rules; touch repositories                 |
-| **Managers**     | Repositories, Adapters, Engine, other Managers | be called by anything below them                       |
-| **Repositories** | one data-source Adapter                        | span entities; call managers or other repositories     |
-| **Adapters**     | one external system                            | contain business logic                                 |
-| **Engine**       | nothing                                        | perform I/O of any kind                                |
+| Layer            | May call                             | Must not                                               |
+| ---------------- | ------------------------------------ | ------------------------------------------------------ |
+| **Routes**       | Mediators, Managers                  | contain business logic; touch repositories or adapters |
+| **Mediators**    | Managers                             | contain game rules; touch repositories                 |
+| **Managers**     | Repositories, Engine, other Managers | be called by anything below them; touch adapters       |
+| **Repositories** | one data-source Adapter              | span entities; call managers or other repositories     |
+| **Adapters**     | one external system                  | contain business logic                                 |
+| **Engine**       | nothing                              | perform I/O of any kind                                |
 
 ### Routes
 
@@ -76,8 +76,25 @@ purchase row, atomically.
 
 ### Repositories
 
-Persist one entity. Enforce no business rules. `transform` / `reverseTransform`
-convert between the DB row shape (snake_case) and the domain entity (camelCase).
+One entity each, with one file per data source:
+`<entity>-repository/{db.ts, mugloar.ts}`, exposed as
+`gameRunRepository.db.createOne(...)` and `gameRunRepository.mugloar.createOne()`.
+Enforce no business rules. On the DB side, `transform` / `reverseTransform`
+convert between the row shape (snake_case) and the domain entity (camelCase).
+
+The `mugloar` side owns the endpoints: the path, the wire schema, and decoding
+encrypted ads.
+
+| Upstream call                  | Repository                              |
+| ------------------------------ | --------------------------------------- |
+| `POST /game/start`             | `gameRunRepository.mugloar.createOne`   |
+| `GET /{gameId}/messages`       | `adRepository.mugloar.findMany`         |
+| `POST /{gameId}/solve/{adId}`  | `adAttemptRepository.mugloar.createOne` |
+| `GET /{gameId}/shop`           | `shopItemRepository.mugloar.findMany`   |
+| `POST /{gameId}/shop/buy/{id}` | `purchaseRepository.mugloar.createOne`  |
+
+Every repository is a plain object, never a bare module export: ESM namespaces
+are frozen, and `vi.spyOn` needs something it can patch.
 
 ### Adapters
 
@@ -85,6 +102,12 @@ Wrap exactly one external system. `mugloar-api-adapter` is the only code in the
 repo that knows the upstream exists, and the only place that knows it is
 unreliable — timeouts, bounded retry, HTML-body tolerance and the `410`
 translation all live there and nowhere else.
+
+It exposes one generic call, `mugloarApiAdapter.request({ operation, method,
+path, schema })`, which repositories use. GET is retried and POST never is,
+which puts the rule in one place rather than in every caller. It reads config
+from the environment on each call, uses the global `fetch`, and takes a token
+from the process-wide `mugloarThrottle` before every attempt.
 
 ### Engine
 
@@ -144,8 +167,8 @@ An ad:
 `probability`** — never to `reward` or `expiresIn`.
 
 - `encrypted: 1` → **Base64**. Verified.
-- `encrypted: 2` → **ROT13**. Verified 2026-11-23 by `pnpm capture`: probability
-  `Vzcbffvoyr` → `Impossible`. Rare — one board in four capture sessions. That ad
+- `encrypted: 2` → **ROT13**. Verified 2026-11-23 from recorded live responses: probability
+  `Vzcbffvoyr` → `Impossible`. Rare — one board in four recording sessions. That ad
   was `Impossible`, so solving with a decoded ROT13 `adId` is still unobserved.
 
 **The `adId` must be decoded before use in the solve URL.** Verified:
@@ -284,7 +307,7 @@ falls.
 ## Bot runtime
 
 **Phase 1 ships the loop as CLIs** (`pnpm bot`, `pnpm bench`). They call the
-adapter and the calibration loader directly. Before the advisor lands, that
+upstream repositories and the calibration loader directly. Before the advisor lands, that
 "load calibration, fetch board, decide" path moves behind a manager, so the bot
 and the UI share one code path. The registry and `/watch` below are the Phase 2
 design and are not built yet.

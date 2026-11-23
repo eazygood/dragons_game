@@ -25,7 +25,6 @@ pnpm db:make <name>     # new migration
 pnpm bot                # one headless run
 pnpm bench              # 20 cold runs, reports pass rate vs 1000
 pnpm bench --warm       # same, reading all history instead of this run's
-pnpm capture            # record live API responses into test fixtures
 ```
 
 Docker runtime is Colima. If containers fail, check `colima status`.
@@ -109,6 +108,6 @@ definition. A rule that drifts is worse than no rule. Detail in
 | [`database.md`](docs/agent_docs/database.md)         | Schema, knex patterns, migrations, transactions                        |
 | [`routes.md`](docs/agent_docs/routes.md)             | Route organisation, schemas, error mapping, SSE                        |
 | [`frontend.md`](docs/agent_docs/frontend.md)         | State management, validation boundaries, error states, component rules |
-| [`testing.md`](docs/agent_docs/testing.md)           | Test levels, fixtures, recording harness, benchmark                    |
+| [`testing.md`](docs/agent_docs/testing.md)           | Test levels, recorded fixtures, benchmark                              |
 
 Working design notes live in `docs/superpowers/` and are gitignored.

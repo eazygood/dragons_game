@@ -1,6 +1,6 @@
-import type { DbExecutor } from '../adapters/mysql-adapter.ts';
-import { DbTables } from '../entities/db-tables.ts';
-import type { Purchase } from '../entities/purchase.ts';
+import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
+import { DbTables } from '../../entities/db-tables.ts';
+import type { Purchase } from '../../entities/purchase.ts';
 
 export interface PurchaseRow {
   game_run_id: number;
@@ -24,4 +24,4 @@ const createOne = async ({ db, purchase }: { db: DbExecutor; purchase: Purchase 
   await db(DbTables.Purchases).insert(transform({ purchase }));
 };
 
-export const purchaseRepository = { createOne };
+export const dbRepository = { createOne };

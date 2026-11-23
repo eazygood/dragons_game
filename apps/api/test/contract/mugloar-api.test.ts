@@ -1,28 +1,27 @@
 import { fileURLToPath } from 'node:url';
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
-import type { MugloarClient } from '../../src/adapters/mugloar-api-adapter/index.ts';
-import { createMugloarClient } from '../../src/adapters/mugloar-api-adapter/index.ts';
-import type { StoredRecording } from '../../src/adapters/mugloar-api-adapter/recorder.ts';
-import {
-  createReplayFetch,
-  readRecordings,
-} from '../../src/adapters/mugloar-api-adapter/recorder.ts';
 import { AdExpiredError, GameNotFoundError } from '../../src/errors/errors.ts';
-import { NO_THROTTLE, testConfig } from '../support/mugloar-client.ts';
+import {
+  adAttemptRepository,
+  adRepository,
+  purchaseRepository,
+} from '../../src/repositories/index.ts';
+import { pointAdapterAt } from '../support/mugloar-api.ts';
+import type { StoredRecording } from '../support/replay-fetch.ts';
+import { createReplayFetch, readRecordings } from '../support/replay-fetch.ts';
 
 const FIXTURES = fileURLToPath(new URL('../fixtures/', import.meta.url));
 // Recorded paths carry the live base path, so replay must be mounted under it.
 const REPLAY_BASE_URL = 'https://replay.invalid/api/v2';
 const ROT13 = 2;
 
-const replayClient = (): MugloarClient =>
-  createMugloarClient({
-    config: testConfig({ baseUrl: REPLAY_BASE_URL }),
-    fetchImpl: createReplayFetch({ directory: FIXTURES }),
-    throttle: NO_THROTTLE,
-  });
+// Replay counts what it has served, so every replay needs a fresh fetch.
+const startReplay = () => {
+  pointAdapterAt({ baseUrl: REPLAY_BASE_URL });
+  vi.stubGlobal('fetch', createReplayFetch({ directory: FIXTURES }));
+};
 
 const segments = ({ path }: StoredRecording) => path.split('/').slice(3);
 
@@ -35,18 +34,18 @@ const replayThrough = async <T>({
   call,
 }: {
   recording: StoredRecording;
-  call: (client: MugloarClient) => Promise<T>;
+  call: () => Promise<T>;
 }): Promise<T> => {
-  const client = replayClient();
+  startReplay();
 
   for (let earlier = 0; earlier < recording.sequence; earlier += 1) {
-    await call(client).catch(() => undefined);
+    await call().catch(() => undefined);
   }
 
-  return call(client);
+  return call();
 };
 
-describe('Mugloar client against recorded live responses', () => {
+describe('Mugloar API against recorded live responses', () => {
   let recordings: StoredRecording[];
 
   const find = (predicate: (recording: StoredRecording) => boolean) => {
@@ -74,7 +73,7 @@ describe('Mugloar client against recorded live responses', () => {
     for (const recording of boards) {
       const result = await replayThrough({
         recording,
-        call: (client) => client.fetchAds({ gameId: gameIdOf(recording) }),
+        call: () => adRepository.mugloar.findMany({ gameId: gameIdOf(recording) }),
       });
 
       expect(result.status).toBe('ok');
@@ -90,7 +89,7 @@ describe('Mugloar client against recorded live responses', () => {
     );
     const result = await replayThrough({
       recording,
-      call: (client) => client.fetchAds({ gameId: gameIdOf(recording) }),
+      call: () => adRepository.mugloar.findMany({ gameId: gameIdOf(recording) }),
     });
 
     expect(result.status === 'ok' && result.value.some(({ wasEncrypted }) => wasEncrypted)).toBe(
@@ -105,7 +104,7 @@ describe('Mugloar client against recorded live responses', () => {
     await expect(
       replayThrough({
         recording,
-        call: (client) => client.fetchAds({ gameId: gameIdOf(recording) }),
+        call: () => adRepository.mugloar.findMany({ gameId: gameIdOf(recording) }),
       }),
     ).rejects.toBeInstanceOf(GameNotFoundError);
   });
@@ -116,7 +115,10 @@ describe('Mugloar client against recorded live responses', () => {
 
     expect(recording.body).toContain('<html');
     await expect(
-      replayThrough({ recording, call: (client) => client.solveAd({ gameId, adId }) }),
+      replayThrough({
+        recording,
+        call: () => adAttemptRepository.mugloar.createOne({ gameId, adId }),
+      }),
     ).rejects.toBeInstanceOf(AdExpiredError);
   });
 
@@ -126,7 +128,7 @@ describe('Mugloar client against recorded live responses', () => {
     await expect(
       replayThrough({
         recording,
-        call: (client) => client.fetchAds({ gameId: gameIdOf(recording) }),
+        call: () => adRepository.mugloar.findMany({ gameId: gameIdOf(recording) }),
       }),
     ).resolves.toEqual({ status: 'game_over' });
   });
@@ -140,7 +142,7 @@ describe('Mugloar client against recorded live responses', () => {
     const [gameId = '', , , itemId = ''] = segments(recording);
     const result = await replayThrough({
       recording,
-      call: (client) => client.buyItem({ gameId, itemId }),
+      call: () => purchaseRepository.mugloar.createOne({ gameId, itemId }),
     });
 
     expect(result.status === 'ok' && result.value.shoppingSuccess).toBe(false);

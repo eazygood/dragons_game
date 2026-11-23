@@ -1,13 +1,13 @@
 import type { Ad, Decision, GameState, ShopItem } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { MugloarClient, UpstreamResult } from '../adapters/mugloar-api-adapter/index.ts';
+import type { UpstreamResult } from '../adapters/mugloar-api-adapter/index.ts';
 import type { GameRun } from '../entities/game-run.ts';
 import { PersistenceFailedError } from '../errors/errors.ts';
 import { buyItem, solveAd } from '../managers/game-manager/index.ts';
 import type { BotLogger } from './types.ts';
 
-type TurnContext = { db: Knex; client: MugloarClient; run: GameRun; state: GameState };
+type TurnContext = { db: Knex; run: GameRun; state: GameState };
 
 export const execute = ({
   context,

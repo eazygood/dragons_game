@@ -15,7 +15,7 @@ export const finishRun = async ({
   state: GameState;
   status?: Exclude<RunStatus, 'active'>;
 }): Promise<void> => {
-  await gameRunRepository.updateOne({
+  await gameRunRepository.db.updateOne({
     db,
     id: run.id,
     patch: {

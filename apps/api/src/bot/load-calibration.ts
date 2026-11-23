@@ -25,7 +25,7 @@ export const loadCalibration = async ({
   }
 
   try {
-    const counts = await adAttemptRepository.findCalibrationCounts({ db, benchmarkId });
+    const counts = await adAttemptRepository.db.findCalibrationCounts({ db, benchmarkId });
 
     return buildCalibration({ counts, config });
   } catch (error) {

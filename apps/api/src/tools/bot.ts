@@ -12,10 +12,10 @@ const main = async () => {
     options: { strategy: { type: 'string', default: 'calibrated' } },
   });
   const strategy = BotStrategySchema.parse(values.strategy);
-  const { client, db } = createLiveRuntime();
+  const { db } = createLiveRuntime();
 
   try {
-    const result = await runBot({ db, client, strategy, logger: consoleLogger });
+    const result = await runBot({ db, strategy, logger: consoleLogger });
 
     console.log(
       `Game ${result.gameId}: score ${result.score} in ${result.turns} turns (${strategy})`,

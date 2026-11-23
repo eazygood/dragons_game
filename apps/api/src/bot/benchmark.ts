@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 
 import type { Knex } from 'knex';
 
-import type { MugloarClient } from '../adapters/mugloar-api-adapter/index.ts';
 import { STRATEGY_CONFIG } from '../domain/engine/strategy-config.ts';
 import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
 import { BENCHMARK_TARGET, summarise } from './benchmark-report.ts';
@@ -15,7 +14,6 @@ export const DEFAULT_CONCURRENCY = 3;
 
 export const runBenchmark = async ({
   db,
-  client,
   strategy,
   runs,
   warm = false,
@@ -24,7 +22,6 @@ export const runBenchmark = async ({
   logger = SILENT_LOGGER,
 }: {
   db: Knex;
-  client: MugloarClient;
   strategy: BotStrategy;
   runs: number;
   warm?: boolean;
@@ -48,7 +45,6 @@ export const runBenchmark = async ({
     task: async (index) => {
       const result = await runBot({
         db,
-        client,
         strategy,
         benchmarkId,
         calibrationBenchmarkId,

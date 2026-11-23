@@ -1,12 +1,12 @@
 import type { GameState } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { MugloarClient } from '../adapters/mugloar-api-adapter/index.ts';
 import { decide } from '../domain/engine/decide.ts';
 import { STRATEGY_CONFIG } from '../domain/engine/strategy-config.ts';
 import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
 import type { GameRun } from '../entities/game-run.ts';
 import { finishRun, startGame } from '../managers/game-manager/index.ts';
+import { adRepository, shopItemRepository } from '../repositories/index.ts';
 import { execute, keepPlayingOnPersistenceFailure } from './execute-decision.ts';
 import { loadCalibration } from './load-calibration.ts';
 import type { BotLogger, BotRunResult, BotStrategy } from './types.ts';
@@ -20,7 +20,6 @@ type Progress = { state: GameState; turns: number; gameOver: boolean };
 
 type PlayInput = {
   db: Knex;
-  client: MugloarClient;
   run: GameRun;
   progress: Progress;
   strategy: BotStrategy;
@@ -33,7 +32,6 @@ type PlayInput = {
 // Writes into `progress` as it goes, so a thrown error still leaves the last known state.
 const play = async ({
   db,
-  client,
   run,
   progress,
   strategy,
@@ -43,7 +41,7 @@ const play = async ({
   maxTurns,
 }: PlayInput) => {
   // Fetched once: the listing can differ between games, not within one.
-  const shop = await client.fetchShop({ gameId: run.gameId });
+  const shop = await shopItemRepository.mugloar.findMany({ gameId: run.gameId });
 
   if (shop.status === 'game_over') {
     progress.gameOver = true;
@@ -51,7 +49,7 @@ const play = async ({
   }
 
   while (progress.turns < maxTurns) {
-    const board = await client.fetchAds({ gameId: run.gameId });
+    const board = await adRepository.mugloar.findMany({ gameId: run.gameId });
 
     if (board.status === 'game_over') {
       progress.gameOver = true;
@@ -77,7 +75,7 @@ const play = async ({
     }
 
     const action = execute({
-      context: { db, client, run, state },
+      context: { db, run, state },
       decision,
       board: board.value,
       shop: shop.value,
@@ -102,7 +100,6 @@ const play = async ({
 
 export const runBot = async ({
   db,
-  client,
   strategy,
   benchmarkId = null,
   calibrationBenchmarkId = null,
@@ -111,7 +108,6 @@ export const runBot = async ({
   maxTurns = DEFAULT_MAX_TURNS,
 }: {
   db: Knex;
-  client: MugloarClient;
   strategy: BotStrategy;
   benchmarkId?: string | null;
   /** Restricts calibration to one benchmark's games; null reads all history. */
@@ -120,13 +116,12 @@ export const runBot = async ({
   logger?: BotLogger;
   maxTurns?: number;
 }): Promise<BotRunResult> => {
-  const { run, state } = await startGame({ db, client, strategy, benchmarkId });
+  const { run, state } = await startGame({ db, strategy, benchmarkId });
   const progress: Progress = { state, turns: 0, gameOver: false };
 
   try {
     await play({
       db,
-      client,
       run,
       progress,
       strategy,
