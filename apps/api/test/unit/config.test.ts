@@ -8,6 +8,8 @@ describe('loadConfig', () => {
       mugloarBaseUrl: 'https://dragonsofmugloar.com/api/v2',
       mugloarTimeoutMs: 5000,
       mugloarReadRetries: 2,
+      mugloarRatePerSecond: 8,
+      mugloarBurst: 8,
       logLevel: 'info',
     });
   });

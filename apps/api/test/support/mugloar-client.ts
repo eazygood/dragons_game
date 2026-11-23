@@ -19,6 +19,8 @@ export const testConfig = ({ baseUrl }: { baseUrl: string }): AppConfig => ({
   mugloarTimeoutMs: 200,
   mugloarReadRetries: 2,
   mugloarRetryBaseDelayMs: 1,
+  mugloarRatePerSecond: 1000,
+  mugloarBurst: 1000,
   databaseUrl: 'mysql://unused:unused@127.0.0.1:3306/unused',
   logLevel: 'silent',
 });
