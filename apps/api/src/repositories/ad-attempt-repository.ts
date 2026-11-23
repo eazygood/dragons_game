@@ -11,7 +11,6 @@ export interface AdAttemptRow {
   dragon_level: number;
   turn: number;
   reward: number;
-  was_encrypted: boolean;
   success: boolean;
   estimated_probability: number;
   expected_value: number;
@@ -33,7 +32,6 @@ export const transform = ({ attempt }: { attempt: AdAttempt }): AdAttemptRow => 
   dragon_level: attempt.dragonLevel,
   turn: attempt.turn,
   reward: attempt.reward,
-  was_encrypted: attempt.wasEncrypted,
   success: attempt.success,
   estimated_probability: attempt.estimatedProbability,
   expected_value: attempt.expectedValue,

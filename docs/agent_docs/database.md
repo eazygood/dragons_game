@@ -31,7 +31,6 @@ erDiagram
         int dragon_level
         int turn
         int reward
-        boolean was_encrypted
         boolean success
         decimal estimated_probability
         decimal expected_value
@@ -61,10 +60,16 @@ This schema was deliberately trimmed. What was removed and why:
 needs to group the runs of a single invocation to report a pass rate, and a
 boolean could not do that.
 
-**`was_encrypted` on `ad_attempts` is a hypothesis, not a known dimension** — it
-tests whether encrypted ads behave differently. One boolean is cheap enough to
-keep, but if the Phase 1 data shows no effect, drop it rather than carry an
-unused column into the submission.
+**`was_encrypted` was a hypothesis, and Phase 1 disproved it.** It tested
+whether encrypted ads behave differently. Over two cold benchmarks they did not
+(0.73 success encrypted, n = 40, against 0.72 plaintext, n = 781), so migration
+`20261124000002` drops it rather than carry an unused column into the
+submission. The `Ad` contract still says whether an ad was encrypted; only the
+stored dimension went.
+
+**`reward` is a calibration key**, bucketed into bands by the engine — see
+[`architecture.md`](architecture.md) _Calibration_ for the measurement behind
+it.
 
 ## Why live state is persisted
 
@@ -90,7 +95,8 @@ regardless of whether resume is supported.
 
 `ad_attempts` is the only table the engine reads. It is the evidence behind every
 estimate the advisor shows and every pick the bot makes. Indexed on
-`(probability, dragon_level)` — the calibration lookup key.
+`(probability, dragon_level)`, the leading columns of the calibration lookup key
+`(probability, dragon_level, reward)`.
 
 `estimated_probability` and `expected_value` are stored, not just computed, so
 the calibration-quality view can plot **predicted against actual**. That plot is

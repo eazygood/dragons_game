@@ -9,7 +9,6 @@ export interface AdAttempt {
   dragonLevel: number;
   turn: number;
   reward: number;
-  wasEncrypted: boolean;
   success: boolean;
   estimatedProbability: number;
   expectedValue: number;

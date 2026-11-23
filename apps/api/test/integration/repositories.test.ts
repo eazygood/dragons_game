@@ -44,7 +44,6 @@ const attemptOf = ({
   dragonLevel,
   turn: 1,
   reward,
-  wasEncrypted: false,
   success,
   estimatedProbability: 0.95,
   expectedValue: 9.5,

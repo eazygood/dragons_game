@@ -51,7 +51,6 @@ export const solveAd = async ({
           dragonLevel: state.dragonLevel,
           turn: outcome.turn,
           reward: ad.reward,
-          wasEncrypted: ad.wasEncrypted,
           success: outcome.success,
           estimatedProbability: reasoning.estimatedProbability,
           expectedValue: reasoning.expectedValue,

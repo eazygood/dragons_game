@@ -51,6 +51,14 @@ describe('core schema migration', () => {
     expect(columns).not.toContain('mode');
   });
 
+  // Phase 1 measured no effect (0.73 encrypted vs 0.72 plaintext), so it went.
+  it('does not carry the disproven was_encrypted hypothesis', async () => {
+    const columns = Object.keys(await db(DbTables.AdAttempts).columnInfo());
+
+    expect(columns).toContain('reward');
+    expect(columns).not.toContain('was_encrypted');
+  });
+
   it('indexes ad_attempts on the calibration lookup key', async () => {
     const [indexes] = (await db.raw('SHOW INDEX FROM ad_attempts')) as [IndexRow[]];
     const calibrationKey = indexes.filter(

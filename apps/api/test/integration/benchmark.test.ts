@@ -62,7 +62,6 @@ describe('runBenchmark', () => {
         dragonLevel: 0,
         turn: 1,
         reward: 50,
-        wasEncrypted: false,
         success: false,
         estimatedProbability: 0.5,
         expectedValue: -10,
