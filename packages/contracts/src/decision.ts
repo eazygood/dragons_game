@@ -8,7 +8,10 @@ export type Reasoning = {
   consideredCount: number;
 };
 
+// A solve always acted on an estimate, and ad_attempts records it, so it is never null.
+export type ScoredReasoning = Reasoning & { estimatedProbability: number; expectedValue: number };
+
 export type Decision =
-  | { kind: 'solve'; adId: string; reasoning: Reasoning }
+  | { kind: 'solve'; adId: string; reasoning: ScoredReasoning }
   | { kind: 'buy'; itemId: string; reasoning: Reasoning }
   | { kind: 'stop'; reasoning: Reasoning };

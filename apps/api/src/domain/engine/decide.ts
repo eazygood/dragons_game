@@ -40,7 +40,12 @@ const solve = ({
 }): Decision => ({
   kind: 'solve',
   adId: pick.ad.adId,
-  reasoning: reasoningFor({ rule, scored, pick }),
+  reasoning: {
+    rule,
+    estimatedProbability: pick.estimatedProbability,
+    expectedValue: pick.expectedValue,
+    consideredCount: scored.length,
+  },
 });
 
 const buy = ({
