@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "hJzggfhO",
+      "message": "Help Murray Waldroup to write their biographical novel about their difficulties with a deranged cat",
+      "reward": 40,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "jj549uZx",
+      "message": "Create an advertisement campaign for Janez Prudhomme to promote their pan based business",
+      "reward": 27,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Playing with fire"
+    },
+    {
+      "adId": "TkEoGrsw",
+      "message": "Help defending peninsula in Snowhill from the intruders",
+      "reward": 114,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "4fY41I9p",
+      "message": "Help defending meadow in Millergannon from the intruders",
+      "reward": 82,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "ojGtdZ7n",
+      "message": "Escort Guálter Granville to savannah in Towerwatch where they can meet with their long lost sheep",
+      "reward": 78,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "Vkt5RVNvMHA=",
+      "message": "SW52ZXN0aWdhdGUgWWFzZW4gU3RhbmxleSBhbmQgZmluZCBvdXQgdGhlaXIgcmVsYXRpb24gdG8gdGhlIG1hZ2ljIGhvdXNlLg==",
+      "reward": 124,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "Umlza3k="
+    },
+    {
+      "adId": "x6qeO5JG",
+      "message": "Escort Mojca Sinclair to savannah in Thornscale where they can meet with their long lost sheep",
+      "reward": 49,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "FZ9jEcCG",
+      "message": "Help defending village in Frostville from the intruders",
+      "reward": 110,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "GcD8lIQG",
+      "message": "Help defending peninsula in Evermire from the intruders",
+      "reward": 85,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "ZGTAOv3f",
+      "message": "Help defending thrift shoppe in Penhole from the intruders",
+      "reward": 101,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Sure thing"
+    }
+  ]
+}

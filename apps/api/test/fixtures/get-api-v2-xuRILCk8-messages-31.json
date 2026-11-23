@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "r2yksKPm",
+      "message": "Help defending village in Strongwatch from the intruders",
+      "reward": 90,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "1PfR7AMC",
+      "message": "Help defending grassland in Orrinhill from the intruders",
+      "reward": 129,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Risky"
+    },
+    {
+      "adId": "PHaQLRX8",
+      "message": "Help defending plains in Dovedrone from the intruders",
+      "reward": 95,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "bDlRZUYxQUo=",
+      "message": "SW5maWx0cmF0ZSBUaGUgSXZvcnkgUHlnbXkgUG9zc2UgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 96,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "SG1tbS4uLi4="
+    },
+    {
+      "adId": "VkRhR1I1bk8=",
+      "message": "SW5maWx0cmF0ZSBUaGUgWWVsbG93IFNhYmVyIFNpc3Rlcmhvb2QgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 126,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "R2FtYmxl"
+    },
+    {
+      "adId": "cm1FRWo2d2g=",
+      "message": "SW52ZXN0aWdhdGUgTGp1Ym8gTm9yd29vZCBhbmQgZmluZCBvdXQgdGhlaXIgcmVsYXRpb24gdG8gdGhlIG1hZ2ljIGRvZy4=",
+      "reward": 129,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "WTFlYTFxaVM=",
+      "message": "SW5maWx0cmF0ZSBUaGUgRWFnbGUgU29sZGllcnMgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 137,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "U3VpY2lkZSBtaXNzaW9u"
+    },
+    {
+      "adId": "R01DMlRGZUg=",
+      "message": "SW5maWx0cmF0ZSBUaGUgR3JpenpseSBCb2FyIEJyb3RoZXJob29kIGFuZCByZWNvdmVyIHRoZWlyIHNlY3JldHMu",
+      "reward": 151,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "V2FsayBpbiB0aGUgcGFyaw=="
+    },
+    {
+      "adId": "RGVTa3hIaUs=",
+      "message": "SW5maWx0cmF0ZSBUaGUgRWJvbnkgQ3Jvc3NlcyBhbmQgcmVjb3ZlciB0aGVpciBzZWNyZXRzLg==",
+      "reward": 146,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "R2FtYmxl"
+    },
+    {
+      "adId": "cnpYYU5XUDE=",
+      "message": "SW52ZXN0aWdhdGUgTWF0dGFueWFodSBTdW1tZXJzIGFuZCBmaW5kIG91dCB0aGVpciByZWxhdGlvbiB0byB0aGUgbWFnaWMgYnVja2V0Lg==",
+      "reward": 119,
+      "expiresIn": 3,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    }
+  ]
+}

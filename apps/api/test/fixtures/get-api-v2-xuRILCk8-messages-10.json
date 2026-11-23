@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "R62edJFx",
+      "message": "Help Nsonowa Akerman to reach an agreement with Chantel Hameldon on the matters of disputed potatoes",
+      "reward": 11,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "fbSN51Ru",
+      "message": "Create an advertisement campaign for Shevaun Ódinsson to promote their squirrel based business",
+      "reward": 49,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "twQeuf98",
+      "message": "Help Balder Howland to transport a magic house to pasture in Lightgannon",
+      "reward": 21,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "9tdlgUWA",
+      "message": "Help Sharla Rennell to reach an agreement with Christianus Lynwood on the matters of disputed house",
+      "reward": 9,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "hwfD8d09",
+      "message": "Help Hải Hameldon to reach an agreement with Wigburg Björnsdóttir on the matters of disputed clothes",
+      "reward": 15,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "bR0OlRos",
+      "message": "Help Nurgül Colbert to sell an unordinary chicken on the local market",
+      "reward": 20,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "IFrtAwjt",
+      "message": "Help Gaye Shepherd to reach an agreement with Metoděj Royceston on the matters of disputed potatoes",
+      "reward": 8,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "gUVSJDFb",
+      "message": "Create an advertisement campaign for Amon Sempers to promote their potatoes based business",
+      "reward": 28,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "FjrNVd1D",
+      "message": "Escort Raúl Thurstan to pasture in Greyburg where they can meet with their long lost wagon",
+      "reward": 77,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "69lPlq3W",
+      "message": "Help Annunciata Eldridge to sell an unordinary house on the local market",
+      "reward": 28,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    }
+  ]
+}

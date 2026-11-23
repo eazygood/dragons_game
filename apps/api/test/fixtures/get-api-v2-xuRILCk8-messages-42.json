@@ -1,0 +1,9 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 410,
+  "contentType": "application/json; charset=utf-8",
+  "body": {
+    "status": "Game Over"
+  }
+}

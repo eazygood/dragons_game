@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "1PfR7AMC",
+      "message": "Help defending grassland in Orrinhill from the intruders",
+      "reward": 129,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Risky"
+    },
+    {
+      "adId": "K56bZTs7",
+      "message": "Help defending plains in Oldpool from the intruders",
+      "reward": 73,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Rather detrimental"
+    },
+    {
+      "adId": "b0RocDdPeVY=",
+      "message": "SW52ZXN0aWdhdGUgU2V2acyHbmogSHVkZGxlc3RvbiBhbmQgZmluZCBvdXQgdGhlaXIgcmVsYXRpb24gdG8gdGhlIG1hZ2ljIHdhZ29uLg==",
+      "reward": 136,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "Umlza3k="
+    },
+    {
+      "adId": "9dMjrN4Q",
+      "message": "Help defending pasture in Eastkeep from the intruders",
+      "reward": 99,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "d1o4MjM2ZUY=",
+      "message": "SW5maWx0cmF0ZSBUaGUgWWVsbG93IEhvcm4gQXNzb2NpYXRpb24gYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 126,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "U3VpY2lkZSBtaXNzaW9u"
+    },
+    {
+      "adId": "Sm5WNFI0d0M=",
+      "message": "SW5maWx0cmF0ZSBUaGUgQ3J5c3RhbCBEcmFnb250b290aCBBc3NvY2lhdGlvbiBhbmQgcmVjb3ZlciB0aGVpciBzZWNyZXRzLg==",
+      "reward": 130,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "15qowxGj",
+      "message": "Help defending pasture in Orrincaster from the intruders",
+      "reward": 86,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "tE2Q3lct",
+      "message": "Help defending thrift shoppe in Snowpine from the intruders",
+      "reward": 89,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Hmmm...."
+    },
+    {
+      "adId": "NxA9aF6g",
+      "message": "Help defending meadow in Whitedinny from the intruders",
+      "reward": 100,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "1fhiz3BX",
+      "message": "Help defending steppe in Ridgedinny from the intruders",
+      "reward": 93,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Sure thing"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "method": "POST",
+  "path": "/api/v2/xuRILCk8/shop/buy/hpot",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": {
+    "shoppingSuccess": false,
+    "gold": 0,
+    "lives": 3,
+    "level": 0,
+    "turn": 1
+  }
+}

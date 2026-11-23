@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "4fY41I9p",
+      "message": "Help defending meadow in Millergannon from the intruders",
+      "reward": 82,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "ojGtdZ7n",
+      "message": "Escort Guálter Granville to savannah in Towerwatch where they can meet with their long lost sheep",
+      "reward": 78,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "GcD8lIQG",
+      "message": "Help defending peninsula in Evermire from the intruders",
+      "reward": 85,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "ZTBCWmE4R2g=",
+      "message": "SW52ZXN0aWdhdGUgTGF1cmVudGlhIEJpc3NldHRlIGFuZCBmaW5kIG91dCB0aGVpciByZWxhdGlvbiB0byB0aGUgbWFnaWMgcG90YXRvZXMu",
+      "reward": 160,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "Umlza3k="
+    },
+    {
+      "adId": "d7RYwwbI",
+      "message": "Help defending pasture in Thornmire from the intruders",
+      "reward": 115,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "S2U0RUVQS3Q=",
+      "message": "SW52ZXN0aWdhdGUgQ3Jpc3RpYW4gU255ZGVycyBhbmQgZmluZCBvdXQgdGhlaXIgcmVsYXRpb24gdG8gdGhlIG1hZ2ljIHdlZWQu",
+      "reward": 149,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "SG1tbS4uLi4="
+    },
+    {
+      "adId": "WERMTlh0TEg=",
+      "message": "SW5maWx0cmF0ZSBUaGUgU2NhcmxldCBDcm9jb2RpbGUgVHJpYmUgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 131,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "UmF0aGVyIGRldHJpbWVudGFs"
+    },
+    {
+      "adId": "rotsG8o2",
+      "message": "Help defending grassland in Ravenburg from the intruders",
+      "reward": 106,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "NyAwTJg0",
+      "message": "Xvyy Enl Jraqyre jvgu gheavcf naq znxr Nang Znfgref sebz sbeg va Terlcvar gb gnxr gur oynzr",
+      "reward": 101,
+      "expiresIn": 2,
+      "encrypted": 2,
+      "probability": "Vzcbffvoyr"
+    },
+    {
+      "adId": "r2yksKPm",
+      "message": "Help defending village in Strongwatch from the intruders",
+      "reward": 90,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    }
+  ]
+}

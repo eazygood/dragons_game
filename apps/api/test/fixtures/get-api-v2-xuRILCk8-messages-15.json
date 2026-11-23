@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "FjrNVd1D",
+      "message": "Escort Raúl Thurstan to pasture in Greyburg where they can meet with their long lost wagon",
+      "reward": 77,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "Ijfp8p4k",
+      "message": "Create an advertisement campaign for Zhaleh Björnsdóttir to promote their potatoes based business",
+      "reward": 32,
+      "expiresIn": 3,
+      "encrypted": null,
+      "probability": "Risky"
+    },
+    {
+      "adId": "qKrKpa86",
+      "message": "Create an advertisement campaign for Micaiah Beasley to promote their horse based business",
+      "reward": 25,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Gamble"
+    },
+    {
+      "adId": "DkaOEwBE",
+      "message": "Create an advertisement campaign for Reijo Fairchild to promote their sheep based business",
+      "reward": 38,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Rather detrimental"
+    },
+    {
+      "adId": "QIjMv0Ae",
+      "message": "Help Rizwan Yohe to sell an unordinary dog on the local market",
+      "reward": 26,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "sxM7Nxym",
+      "message": "Help Young-ja Shackleford to write their biographical novel about their difficulties with a deranged pot",
+      "reward": 39,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "1M6fnqUJ",
+      "message": "Help Zinaida Aimar to write their biographical novel about their difficulties with a deranged pot",
+      "reward": 25,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Risky"
+    },
+    {
+      "adId": "EXEO2ajy",
+      "message": "Escort Athanaric Harrelson to thrift shoppe in Greyville where they can meet with their long lost pot",
+      "reward": 63,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "fxniva8h",
+      "message": "Create an advertisement campaign for Reva Lawrence to promote their chicken based business",
+      "reward": 29,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "Mm5XSXdMRkg=",
+      "message": "SW5maWx0cmF0ZSBUaGUgVGh1bmRlciBNYW1iYXMgYW5kIHJlY292ZXIgdGhlaXIgc2VjcmV0cy4=",
+      "reward": 147,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "Umlza3k="
+    }
+  ]
+}

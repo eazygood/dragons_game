@@ -24,8 +24,7 @@ pnpm db:make <name>     # new migration
 
 pnpm bot                # one headless run
 pnpm bench              # 20 cold runs, reports pass rate vs 1000
-pnpm bench --warm       # same, without truncating calibration
-pnpm capture            # record live API responses into test fixtures
+pnpm bench --warm       # same, reading all history instead of this run's
 ```
 
 Docker runtime is Colima. If containers fail, check `colima status`.
@@ -41,7 +40,7 @@ bot and the human player's advisor cannot disagree, and why the strategy is
 testable without a network or a database.
 
 ```
-decide(state, board, calibration) → Decision
+decide({ state, board, shop, calibration, config }) → Decision
 ```
 
 The bot executes the `Decision`. The UI renders it. Same function.
@@ -49,7 +48,7 @@ The bot executes the `Decision`. The UI renders it. Same function.
 ## Critical rules
 
 - **The published API docs are wrong.** `docs/agent_docs/architecture.md` §API
-  is ground truth. `/messages` returns a bare array, `reward` is a number,
+  is ground truth. `/messages` and `/shop` return bare arrays, `reward` is a number,
   `shoppingSuccess` is a boolean, errors are HTML, and `probability` and
   `encrypted` are undocumented.
 - **Encrypted `adId` must be decoded before use in the solve URL.** Sending the
@@ -91,7 +90,7 @@ definition. A rule that drifts is worse than no rule. Detail in
   state exists that isn't derived from the server.
 - `useEffect` only where genuinely unavoidable.
 - Styles colocated with components over a shared stylesheet.
-- Comments explain *why*, never *what*, maximum 3 lines.
+- Comments explain _why_, never _what_, maximum 3 lines.
 
 ## Delivery
 
@@ -103,12 +102,12 @@ definition. A rule that drifts is worse than no rule. Detail in
 
 ## Agent docs
 
-| Document | Content |
-| --- | --- |
-| [`architecture.md`](docs/agent_docs/architecture.md) | Layers, verified API reference, decision engine, diagrams |
-| [`database.md`](docs/agent_docs/database.md) | Schema, knex patterns, migrations, transactions |
-| [`routes.md`](docs/agent_docs/routes.md) | Route organisation, schemas, error mapping, SSE |
-| [`frontend.md`](docs/agent_docs/frontend.md) | State management, validation boundaries, error states, component rules |
-| [`testing.md`](docs/agent_docs/testing.md) | Test levels, fixtures, recording harness, benchmark |
+| Document                                             | Content                                                                |
+| ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| [`architecture.md`](docs/agent_docs/architecture.md) | Layers, verified API reference, decision engine, diagrams              |
+| [`database.md`](docs/agent_docs/database.md)         | Schema, knex patterns, migrations, transactions                        |
+| [`routes.md`](docs/agent_docs/routes.md)             | Route organisation, schemas, error mapping, SSE                        |
+| [`frontend.md`](docs/agent_docs/frontend.md)         | State management, validation boundaries, error states, component rules |
+| [`testing.md`](docs/agent_docs/testing.md)           | Test levels, recorded fixtures, benchmark                              |
 
 Working design notes live in `docs/superpowers/` and are gitignored.

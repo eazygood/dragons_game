@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "qKrKpa86",
+      "message": "Create an advertisement campaign for Micaiah Beasley to promote their horse based business",
+      "reward": 25,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Gamble"
+    },
+    {
+      "adId": "DkaOEwBE",
+      "message": "Create an advertisement campaign for Reijo Fairchild to promote their sheep based business",
+      "reward": 38,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Rather detrimental"
+    },
+    {
+      "adId": "sxM7Nxym",
+      "message": "Help Young-ja Shackleford to write their biographical novel about their difficulties with a deranged pot",
+      "reward": 39,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "1M6fnqUJ",
+      "message": "Help Zinaida Aimar to write their biographical novel about their difficulties with a deranged pot",
+      "reward": 25,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Risky"
+    },
+    {
+      "adId": "fxniva8h",
+      "message": "Create an advertisement campaign for Reva Lawrence to promote their chicken based business",
+      "reward": 29,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "I1TnJSy3",
+      "message": "Steal dog delivery to Tena Kitchen and share some of the profits with the people.",
+      "reward": 52,
+      "expiresIn": 5,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "DhTJTbkg",
+      "message": "Help Ryker Meadows to write their biographical novel about their difficulties with a deranged squirrel",
+      "reward": 30,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Playing with fire"
+    },
+    {
+      "adId": "WmRsYmNPZU8=",
+      "message": "SW52ZXN0aWdhdGUgUGF1bGluZSBIYW1ibGVkb24gYW5kIGZpbmQgb3V0IHRoZWlyIHJlbGF0aW9uIHRvIHRoZSBtYWdpYyB3YXRlci4=",
+      "reward": 136,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "hJzggfhO",
+      "message": "Help Murray Waldroup to write their biographical novel about their difficulties with a deranged cat",
+      "reward": 40,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "jj549uZx",
+      "message": "Create an advertisement campaign for Janez Prudhomme to promote their pan based business",
+      "reward": 27,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Playing with fire"
+    }
+  ]
+}

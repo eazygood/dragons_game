@@ -1,0 +1,88 @@
+{
+  "method": "GET",
+  "path": "/api/v2/xuRILCk8/messages",
+  "status": 200,
+  "contentType": "application/json; charset=utf-8",
+  "body": [
+    {
+      "adId": "DhTJTbkg",
+      "message": "Help Ryker Meadows to write their biographical novel about their difficulties with a deranged squirrel",
+      "reward": 30,
+      "expiresIn": 1,
+      "encrypted": null,
+      "probability": "Playing with fire"
+    },
+    {
+      "adId": "hJzggfhO",
+      "message": "Help Murray Waldroup to write their biographical novel about their difficulties with a deranged cat",
+      "reward": 40,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Suicide mission"
+    },
+    {
+      "adId": "jj549uZx",
+      "message": "Create an advertisement campaign for Janez Prudhomme to promote their pan based business",
+      "reward": 27,
+      "expiresIn": 2,
+      "encrypted": null,
+      "probability": "Playing with fire"
+    },
+    {
+      "adId": "TkEoGrsw",
+      "message": "Help defending peninsula in Snowhill from the intruders",
+      "reward": 114,
+      "expiresIn": 4,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "ZnlZaUJGNWU=",
+      "message": "SW52ZXN0aWdhdGUgRGVjbGFuIENoZXNoaXJlIGFuZCBmaW5kIG91dCB0aGVpciByZWxhdGlvbiB0byB0aGUgbWFnaWMgaG91c2Uu",
+      "reward": 140,
+      "expiresIn": 1,
+      "encrypted": 1,
+      "probability": "UGxheWluZyB3aXRoIGZpcmU="
+    },
+    {
+      "adId": "4fY41I9p",
+      "message": "Help defending meadow in Millergannon from the intruders",
+      "reward": 82,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Walk in the park"
+    },
+    {
+      "adId": "ojGtdZ7n",
+      "message": "Escort Guálter Granville to savannah in Towerwatch where they can meet with their long lost sheep",
+      "reward": 78,
+      "expiresIn": 6,
+      "encrypted": null,
+      "probability": "Quite likely"
+    },
+    {
+      "adId": "Vkt5RVNvMHA=",
+      "message": "SW52ZXN0aWdhdGUgWWFzZW4gU3RhbmxleSBhbmQgZmluZCBvdXQgdGhlaXIgcmVsYXRpb24gdG8gdGhlIG1hZ2ljIGhvdXNlLg==",
+      "reward": 124,
+      "expiresIn": 2,
+      "encrypted": 1,
+      "probability": "Umlza3k="
+    },
+    {
+      "adId": "6FpObiev",
+      "message": "Help defending meadow in Southwell from the intruders",
+      "reward": 110,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    },
+    {
+      "adId": "x6qeO5JG",
+      "message": "Escort Mojca Sinclair to savannah in Thornscale where they can meet with their long lost sheep",
+      "reward": 49,
+      "expiresIn": 7,
+      "encrypted": null,
+      "probability": "Piece of cake"
+    }
+  ]
+}
