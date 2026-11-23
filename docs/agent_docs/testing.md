@@ -2,15 +2,15 @@
 
 ## Levels
 
-| Level | Tool | Covers |
-| --- | --- | --- |
-| Unit | Vitest | Engine (table-driven across labels, levels, boards), decoders, EV maths, calibration |
-| Integration | Vitest + MySQL container | Repositories, migrations, manager transactions |
-| Contract | Vitest + mock server | Adapter against **recorded** fixtures: HTML errors, `410`, both encryption modes |
-| API | Vitest + `fastify.inject` | Routes, schemas, error mapping |
-| Component | Vitest + Testing Library | Components with three or more states |
-| E2E | Playwright | Full game flow against a stubbed upstream, 3 browsers, 2 viewports |
-| Benchmark | CLI, manual | 20 live runs, pass rate against 1000 |
+| Level       | Tool                      | Covers                                                                               |
+| ----------- | ------------------------- | ------------------------------------------------------------------------------------ |
+| Unit        | Vitest                    | Engine (table-driven across labels, levels, boards), decoders, EV maths, calibration |
+| Integration | Vitest + MySQL container  | Repositories, migrations, manager transactions                                       |
+| Contract    | Vitest + mock server      | Adapter against **recorded** fixtures: HTML errors, `410`, both encryption modes     |
+| API         | Vitest + `fastify.inject` | Routes, schemas, error mapping                                                       |
+| Component   | Vitest + Testing Library  | Components with three or more states                                                 |
+| E2E         | Playwright                | Full game flow against a stubbed upstream, 3 browsers, 2 viewports                   |
+| Benchmark   | CLI, manual               | 20 live runs, pass rate against 1000                                                 |
 
 The engine being **pure** is what makes the most important tests fast and
 deterministic — no network, no database, no clock.
@@ -27,7 +27,7 @@ ads. That table is the regression suite for the whole submission.
 
 ## Fixtures are recorded, never written by hand
 
-Hand-written fixtures would assert *our reading* of the upstream API rather than
+Hand-written fixtures would assert _our reading_ of the upstream API rather than
 the API itself — the exact mistake this project exists to avoid, given that the
 published docs are wrong in six separate ways.
 

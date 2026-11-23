@@ -35,11 +35,11 @@ The app has few real inputs — most interactions are clicks on server-supplied
 ids, which need no validation because the user never typed them. Validate the
 ones that are genuinely free-form:
 
-| Input | Where | Rule |
-| --- | --- | --- |
-| `gameId` to resume a run | `/play` | **The important one.** Free text that ends up in an outbound URL path. Validate shape and length, reject anything else, never interpolate raw. |
-| Bot run config | `/watch` | Strategy is a closed set; run count is a bounded integer. |
-| History filters, pagination | `/history`, `/stats` | Bounded ranges; reject negative or absurd page sizes. |
+| Input                       | Where                | Rule                                                                                                                                           |
+| --------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gameId` to resume a run    | `/play`              | **The important one.** Free text that ends up in an outbound URL path. Validate shape and length, reject anything else, never interpolate raw. |
+| Bot run config              | `/watch`             | Strategy is a closed set; run count is a bounded integer.                                                                                      |
+| History filters, pagination | `/history`, `/stats` | Bounded ranges; reject negative or absurd page sizes.                                                                                          |
 
 Validate with the **same zod schemas** from `packages/contracts` that the API
 uses. One definition, both sides — a rule that drifts is worse than no rule.
@@ -49,7 +49,7 @@ uses. One definition, both sides — a rule that drifts is worse than no rule.
 Covered by Fastify schemas on every route. See [`routes.md`](routes.md). The
 server re-validates everything regardless of what the client checked.
 
-### 3. API → client *(the one most often skipped)*
+### 3. API → client _(the one most often skipped)_
 
 **Parse every API response with its contract schema at the boundary**, in the
 query function, before it reaches a component.
@@ -70,13 +70,13 @@ any other — not a silent fallback to empty state.
 Every domain error in [`routes.md`](routes.md) has a designed treatment. These
 are UI work, not `catch` blocks:
 
-| State | Treatment |
-| --- | --- |
-| `GameOver` (`410`) | A screen with the final score and a "new game" action. Not a toast. |
-| `AdExpired` (`409`) | Refresh the board and say why the ad vanished. |
-| `InsufficientGold` (`409`) | The buy control is disabled with the reason visible *before* the click. |
+| State                         | Treatment                                                               |
+| ----------------------------- | ----------------------------------------------------------------------- |
+| `GameOver` (`410`)            | A screen with the final score and a "new game" action. Not a toast.     |
+| `AdExpired` (`409`)           | Refresh the board and say why the ad vanished.                          |
+| `InsufficientGold` (`409`)    | The buy control is disabled with the reason visible _before_ the click. |
 | `UpstreamUnavailable` (`502`) | Retry affordance; make clear the game is intact and the remote is down. |
-| Response parse failure | Generic error with a retry; log the detail. |
+| Response parse failure        | Generic error with a retry; log the detail.                             |
 
 A game in progress must survive a transient failure. Losing a run to a dropped
 request is the worst outcome in this app.
@@ -93,7 +93,7 @@ request is the worst outcome in this app.
 - `useEffect` only where genuinely unavoidable. Server state is Query's job;
   derived values are computed during render, not synced in an effect.
 - Styles colocated with components over a shared stylesheet.
-- Comments explain *why*, never *what*, maximum 3 lines.
+- Comments explain _why_, never _what_, maximum 3 lines.
 - Naming is self-explanatory — if a variable needs a comment to be understood,
   rename it instead.
 - Zero linter errors.

@@ -52,10 +52,10 @@ erDiagram
 
 This schema was deliberately trimmed. What was removed and why:
 
-| Removed | Reason |
-| --- | --- |
-| `final_score`, `final_turn` | Pure duplication. When `status = game_over`, `score` and `turn` **are** the final values. |
-| `mode` | Derivable. `strategy = manual` means a human played; a non-null `benchmark_id` means a benchmark run; otherwise it's a bot run. |
+| Removed                     | Reason                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `final_score`, `final_turn` | Pure duplication. When `status = game_over`, `score` and `turn` **are** the final values.                                       |
+| `mode`                      | Derivable. `strategy = manual` means a human played; a non-null `benchmark_id` means a benchmark run; otherwise it's a bot run. |
 
 `benchmark_id` replaces what `mode` did and earns more than it: `pnpm bench`
 needs to group the runs of a single invocation to report a pass rate, and a

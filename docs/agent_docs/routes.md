@@ -45,15 +45,15 @@ Errors are **typed domain values**, never strings, and never caught in routes.
 They bubble to the one registered Fastify error handler, which owns the entire
 HTTP mapping:
 
-| Domain error | HTTP | Notes |
-| --- | --- | --- |
-| `GameOver` | `410` | Terminal, expected. Not a failure. |
-| `GameNotFound` | `404` | |
-| `AdExpired` | `409` | Board is stale; client should refetch |
-| `InsufficientGold` | `409` | |
-| `ValidationError` | `400` | From the schema layer |
-| `UpstreamUnavailable` | `502` | Mugloar unreachable after retries |
-| *(unmapped)* | `500` | Logged with the request id |
+| Domain error          | HTTP  | Notes                                 |
+| --------------------- | ----- | ------------------------------------- |
+| `GameOver`            | `410` | Terminal, expected. Not a failure.    |
+| `GameNotFound`        | `404` |                                       |
+| `AdExpired`           | `409` | Board is stale; client should refetch |
+| `InsufficientGold`    | `409` |                                       |
+| `ValidationError`     | `400` | From the schema layer                 |
+| `UpstreamUnavailable` | `502` | Mugloar unreachable after retries     |
+| _(unmapped)_          | `500` | Logged with the request id            |
 
 Every one of these has a designed treatment in the UI. Game over is a screen,
 not a toast; an expired ad refreshes the board and says why.

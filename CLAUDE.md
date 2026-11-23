@@ -91,7 +91,7 @@ definition. A rule that drifts is worse than no rule. Detail in
   state exists that isn't derived from the server.
 - `useEffect` only where genuinely unavoidable.
 - Styles colocated with components over a shared stylesheet.
-- Comments explain *why*, never *what*, maximum 3 lines.
+- Comments explain _why_, never _what_, maximum 3 lines.
 
 ## Delivery
 
@@ -103,12 +103,12 @@ definition. A rule that drifts is worse than no rule. Detail in
 
 ## Agent docs
 
-| Document | Content |
-| --- | --- |
-| [`architecture.md`](docs/agent_docs/architecture.md) | Layers, verified API reference, decision engine, diagrams |
-| [`database.md`](docs/agent_docs/database.md) | Schema, knex patterns, migrations, transactions |
-| [`routes.md`](docs/agent_docs/routes.md) | Route organisation, schemas, error mapping, SSE |
-| [`frontend.md`](docs/agent_docs/frontend.md) | State management, validation boundaries, error states, component rules |
-| [`testing.md`](docs/agent_docs/testing.md) | Test levels, fixtures, recording harness, benchmark |
+| Document                                             | Content                                                                |
+| ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| [`architecture.md`](docs/agent_docs/architecture.md) | Layers, verified API reference, decision engine, diagrams              |
+| [`database.md`](docs/agent_docs/database.md)         | Schema, knex patterns, migrations, transactions                        |
+| [`routes.md`](docs/agent_docs/routes.md)             | Route organisation, schemas, error mapping, SSE                        |
+| [`frontend.md`](docs/agent_docs/frontend.md)         | State management, validation boundaries, error states, component rules |
+| [`testing.md`](docs/agent_docs/testing.md)           | Test levels, fixtures, recording harness, benchmark                    |
 
 Working design notes live in `docs/superpowers/` and are gitignored.

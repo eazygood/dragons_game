@@ -46,14 +46,14 @@ Routes → Mediators → Managers → Repositories → Adapters
 
 Dependencies move **downward only**. Never skip a layer, never call upward.
 
-| Layer | May call | Must not |
-| --- | --- | --- |
-| **Routes** | Mediators, Managers | contain business logic; touch repositories or adapters |
-| **Mediators** | Managers | contain game rules; touch repositories |
-| **Managers** | Repositories, Adapters, Engine, other Managers | be called by anything below them |
-| **Repositories** | one data-source Adapter | span entities; call managers or other repositories |
-| **Adapters** | one external system | contain business logic |
-| **Engine** | nothing | perform I/O of any kind |
+| Layer            | May call                                       | Must not                                               |
+| ---------------- | ---------------------------------------------- | ------------------------------------------------------ |
+| **Routes**       | Mediators, Managers                            | contain business logic; touch repositories or adapters |
+| **Mediators**    | Managers                                       | contain game rules; touch repositories                 |
+| **Managers**     | Repositories, Adapters, Engine, other Managers | be called by anything below them                       |
+| **Repositories** | one data-source Adapter                        | span entities; call managers or other repositories     |
+| **Adapters**     | one external system                            | contain business logic                                 |
+| **Engine**       | nothing                                        | perform I/O of any kind                                |
 
 ### Routes
 
@@ -101,28 +101,28 @@ Base URL: `https://dragonsofmugloar.com/api/v2`. No auth, no API key.
 
 ### Endpoints
 
-| Method | Path | Returns |
-| --- | --- | --- |
-| POST | `/game/start` | `{ gameId, lives, gold, level, score, highScore, turn }` |
-| GET | `/{gameId}/messages` | **bare array** of ads |
-| POST | `/{gameId}/solve/{adId}` | `{ success, lives, gold, score, highScore, turn, message }` |
-| GET | `/{gameId}/shop` | `{ items: [{ id, name, cost }] }` |
-| POST | `/{gameId}/shop/buy/{itemId}` | `{ shoppingSuccess, gold, lives, level, turn }` |
-| POST | `/{gameId}/investigate/reputation` | `{ people, state, underworld }` |
+| Method | Path                               | Returns                                                     |
+| ------ | ---------------------------------- | ----------------------------------------------------------- |
+| POST   | `/game/start`                      | `{ gameId, lives, gold, level, score, highScore, turn }`    |
+| GET    | `/{gameId}/messages`               | **bare array** of ads                                       |
+| POST   | `/{gameId}/solve/{adId}`           | `{ success, lives, gold, score, highScore, turn, message }` |
+| GET    | `/{gameId}/shop`                   | `{ items: [{ id, name, cost }] }`                           |
+| POST   | `/{gameId}/shop/buy/{itemId}`      | `{ shoppingSuccess, gold, lives, level, turn }`             |
+| POST   | `/{gameId}/investigate/reputation` | `{ people, state, underworld }`                             |
 
 A new game starts at `lives: 3, gold: 0, level: 0, score: 0, turn: 0`.
 
 ### Where the published docs lie
 
-| Docs say | Reality |
-| --- | --- |
-| `/messages` returns `{ messages: [...] }` | returns a **bare array** |
-| `reward` is a String | it is a **Number** |
-| `shoppingSuccess` is a String | it is a **Boolean** |
-| *(not mentioned)* | ads carry **`probability`** |
-| *(not mentioned)* | ads carry **`encrypted`** |
-| *(not mentioned)* | errors are **HTML**, never JSON |
-| *(not mentioned)* | game over is **HTTP 410** |
+| Docs say                                  | Reality                         |
+| ----------------------------------------- | ------------------------------- |
+| `/messages` returns `{ messages: [...] }` | returns a **bare array**        |
+| `reward` is a String                      | it is a **Number**              |
+| `shoppingSuccess` is a String             | it is a **Boolean**             |
+| _(not mentioned)_                         | ads carry **`probability`**     |
+| _(not mentioned)_                         | ads carry **`encrypted`**       |
+| _(not mentioned)_                         | errors are **HTML**, never JSON |
+| _(not mentioned)_                         | game over is **HTTP 410**       |
 
 An ad:
 
@@ -173,24 +173,24 @@ Impossible
 
 Effects verified by buying each item in a fresh game.
 
-| id | name | cost | effect |
-| --- | --- | --- | --- |
-| `hpot` | Healing potion | 50 | **+1 life** |
-| `cs` `gas` `wax` `tricks` `wingpot` | — | 100 | +1 level |
-| `ch` `rf` `iron` `mtrix` `wingpotmax` | — | 300 | **+2 levels** |
+| id                                    | name           | cost | effect        |
+| ------------------------------------- | -------------- | ---- | ------------- |
+| `hpot`                                | Healing potion | 50   | **+1 life**   |
+| `cs` `gas` `wax` `tricks` `wingpot`   | —              | 100  | +1 level      |
+| `ch` `rf` `iron` `mtrix` `wingpotmax` | —              | 300  | **+2 levels** |
 
 Items of equal cost are interchangeable. The listing is not guaranteed static —
 read `/shop` rather than hard-coding ids; keep this table as the fallback prior.
 
 ### Errors and lifecycle
 
-| Situation | Response |
-| --- | --- |
-| Unknown `gameId` | `404`, **HTML** body |
-| Unknown or expired `adId` | `400`, **HTML** body |
-| Insufficient gold | `200` + `{"shoppingSuccess": false}` |
-| Unknown item id | `200` + `{"shoppingSuccess": false}` |
-| Any call after lives reach 0 | `410` + `{"status": "Game Over"}` |
+| Situation                    | Response                             |
+| ---------------------------- | ------------------------------------ |
+| Unknown `gameId`             | `404`, **HTML** body                 |
+| Unknown or expired `adId`    | `400`, **HTML** body                 |
+| Insufficient gold            | `200` + `{"shoppingSuccess": false}` |
+| Unknown item id              | `200` + `{"shoppingSuccess": false}` |
+| Any call after lives reach 0 | `410` + `{"status": "Game Over"}`    |
 
 Three consequences that cause real bugs if missed:
 
@@ -242,8 +242,7 @@ cells would be too sparse.
    risk into gold so risky-lucrative and safe-cheap ads compare on one axis.
 4. **Survival override** — lives, not gold, are the binding constraint. Below a
    lives floor the engine buys `hpot` and raises its minimum acceptable `p̂`.
-   Measured: a run surviving ~90 turns scored 6840; one dying at turn 24 scored
-   467. **Survival is the strategy.**
+   Measured: a run surviving ~90 turns scored 6840; one dying at turn 24 scored 467. **Survival is the strategy.**
 5. Take the highest EV clearing the floor; else buy if gold allows; else take the
    safest available ad.
 
@@ -252,10 +251,10 @@ engine.
 
 ### Two strategies
 
-| Strategy | Uses history | Purpose |
-| --- | --- | --- |
-| `baseline` | no — priors only | EV + survival floor. Tests whether the database is needed at all. |
-| `calibrated` | yes | The designed engine. |
+| Strategy     | Uses history     | Purpose                                                           |
+| ------------ | ---------------- | ----------------------------------------------------------------- |
+| `baseline`   | no — priors only | EV + survival floor. Tests whether the database is needed at all. |
+| `calibrated` | yes              | The designed engine.                                              |
 
 Both satisfy the same signature and differ only in the `Calibration` passed in.
 The comparison is run in Phase 1 and the result recorded below, whichever way it
@@ -284,10 +283,10 @@ The registry is an interface, so moving the loop out later is contained.
 
 Recorded as they are established. A documented negative result is a finding.
 
-| Question | Status | Result |
-| --- | --- | --- |
-| Does levelling up pay? | open | run the benchmark with level-ups on and off |
-| Is `encrypted: 2` ROT13? | open | needs a capture session |
-| Does reputation affect anything? | open | endpoint exists; no use found in the spike |
-| Does `calibrated` beat `baseline`? | open | Phase 1 experiment |
-| Is there upstream rate limiting? | open | none observed; benchmark makes hundreds of calls |
+| Question                           | Status | Result                                           |
+| ---------------------------------- | ------ | ------------------------------------------------ |
+| Does levelling up pay?             | open   | run the benchmark with level-ups on and off      |
+| Is `encrypted: 2` ROT13?           | open   | needs a capture session                          |
+| Does reputation affect anything?   | open   | endpoint exists; no use found in the spike       |
+| Does `calibrated` beat `baseline`? | open   | Phase 1 experiment                               |
+| Is there upstream rate limiting?   | open   | none observed; benchmark makes hundreds of calls |
