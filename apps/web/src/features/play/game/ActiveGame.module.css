@@ -1,0 +1,17 @@
+.game {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.columns {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+@media (min-width: 60rem) {
+  .columns {
+    grid-template-columns: 2fr 1fr;
+    align-items: start;
+  }
+}

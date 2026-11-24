@@ -1,5 +1,14 @@
-import { SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
-import type { AdvisedAd, GameView, MoveResult, TurnView } from '@bigbank-dragon/contracts';
+import { HEALING_POTION_ID, SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
+import type {
+  AdVerdict,
+  AdvisedAd,
+  Decision,
+  GameView,
+  MoveResult,
+  TurnView,
+} from '@bigbank-dragon/contracts';
+
+import type { MoveControls } from '../src/features/play/moves/move-controls.ts';
 
 export const GAME_ID = 'g1';
 
@@ -48,3 +57,33 @@ export const MOVE_RESULT: MoveResult = {
   success: true,
   message: 'You successfully defended the village',
 };
+
+export const IDLE_MOVES: MoveControls = {
+  solve: () => undefined,
+  buy: () => undefined,
+  isPending: false,
+};
+
+export const BUY_POTION: Decision = {
+  kind: 'buy',
+  itemId: HEALING_POTION_ID,
+  reasoning: {
+    rule: 'survival_floor',
+    estimatedProbability: null,
+    expectedValue: null,
+    consideredCount: 9,
+  },
+};
+
+export const STOP: Decision = {
+  kind: 'stop',
+  reasoning: {
+    rule: 'no_viable_option',
+    estimatedProbability: null,
+    expectedValue: null,
+    consideredCount: 0,
+  },
+};
+
+export const withVerdict = ({ verdict }: { verdict: AdVerdict }) =>
+  buildAdvisedAd({ advice: { verdict, estimatedProbability: 0.5, expectedValue: 5 } });
