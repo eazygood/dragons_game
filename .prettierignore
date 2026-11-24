@@ -6,3 +6,5 @@ coverage/
 pnpm-lock.yaml
 apps/api/test/fixtures/
 apps/web/src/routeTree.gen.ts
+playwright-report/
+test-results/

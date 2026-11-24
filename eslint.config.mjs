@@ -7,6 +7,8 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/dist/**',
       '**/coverage/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
       '.worktrees/**',
       '*.mjs',
       '**/routeTree.gen.ts',
