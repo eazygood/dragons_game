@@ -2,7 +2,7 @@
 
 Fullstack solution to the Bigbank test task. A Fastify API owns the only client
 to `dragonsofmugloar.com`, runs a decision engine that plays the game, and serves
-a React app that lets a human play with the engine's advice.
+a React app that lets a human play with the engine's advice, or watch the bot play.
 
 Read [`docs/agent_docs/architecture.md`](docs/agent_docs/architecture.md) before
 changing code.
@@ -10,13 +10,14 @@ changing code.
 ## Commands
 
 ```bash
+docker compose up --build   # whole stack on http://localhost:3000
 pnpm dev                # api + web, watch mode
 pnpm lint               # eslint, zero warnings tolerated
 pnpm format             # prettier
 pnpm typecheck          # tsc --noEmit, all workspaces
 pnpm test               # unit + component
 pnpm test:integration   # needs MySQL (docker compose up -d mysql)
-pnpm test:e2e           # Playwright, 3 browsers
+pnpm test:e2e           # Playwright, 3 browsers x 2 widths, /api intercepted
 pnpm build
 
 pnpm db:migrate         # knex latest
@@ -106,7 +107,7 @@ definition. A rule that drifts is worse than no rule. Detail in
 | ---------------------------------------------------- | ---------------------------------------------------------------------- |
 | [`architecture.md`](docs/agent_docs/architecture.md) | Layers, verified API reference, decision engine, diagrams              |
 | [`database.md`](docs/agent_docs/database.md)         | Schema, knex patterns, migrations, transactions                        |
-| [`routes.md`](docs/agent_docs/routes.md)             | Route organisation, schemas, error mapping, SSE                        |
+| [`routes.md`](docs/agent_docs/routes.md)             | Route organisation, schemas, error mapping, serving the web app        |
 | [`frontend.md`](docs/agent_docs/frontend.md)         | State management, validation boundaries, error states, component rules |
 | [`testing.md`](docs/agent_docs/testing.md)           | Test levels, recorded fixtures, benchmark                              |
 

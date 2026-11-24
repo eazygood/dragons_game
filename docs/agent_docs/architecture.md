@@ -3,7 +3,8 @@
 ## Overview
 
 One pnpm monorepo, three runtime pieces. Fastify is the **only** thing that talks
-to `dragonsofmugloar.com`; the browser never does.
+to `dragonsofmugloar.com`; the browser never does. In Docker the same Fastify
+process also serves the built React app, so the app and `/api` share one origin.
 
 ```mermaid
 flowchart TB
@@ -14,7 +15,7 @@ flowchart TB
     subgraph api["Fastify API — apps/api"]
         R["Routes — HTTP only"]
         MED["Mediators — compose responses"]
-        MAN["Managers — game rules, transactions"]
+        MAN["Managers — game rules, transactions, the bot loop"]
         ENG["Decision engine — PURE"]
         REPO["Repositories — one entity each"]
         ADP["Mugloar adapter — only outbound caller"]
@@ -23,7 +24,7 @@ flowchart TB
     DB[("MySQL 8")]
     EXT["dragonsofmugloar.com/api/v2"]
 
-    UI -->|"REST + SSE"| R
+    UI -->|"REST, polled while a bot plays"| R
     R --> MED --> MAN
     MAN --> ENG
     MAN --> REPO --> DB
@@ -46,6 +47,8 @@ Routes → Mediators → Managers → Repositories → Adapters
 Dependencies move **downward only**. Never skip a layer, never call upward.
 `eslint.config.mjs` enforces this with `no-restricted-imports` for `routes/`,
 `mediators/`, `bot/`, `managers/`, `repositories/` and `domain/`, so a shortcut fails `pnpm lint`.
+No rule is relaxed for the bot: the loop that calls `decide()` is a manager precisely
+so that routes and mediators never import the engine.
 
 | Layer            | May call                             | Must not                                               |
 | ---------------- | ------------------------------------ | ------------------------------------------------------ |
@@ -59,9 +62,11 @@ Dependencies move **downward only**. Never skip a layer, never call upward.
 ¹ The one exception is `withTransaction` from `mysql-adapter`: a manager owns
 the transaction boundary, so it opens the transaction and hands it to repositories.
 
-`bot/` stands at the mediator level: it calls managers only. Routes reach
-managers through `mediators/game-mediator/`, which turns manager results into
-the `packages/contracts` response shapes (`GameView`, `TurnView`, `MoveResult`).
+`bot/` holds what only the CLIs use (the `runBot` wrapper, the benchmark, its
+pool and report) and stands at the mediator level: it calls managers only. Routes
+reach managers through `mediators/game-mediator/` and `mediators/bot-mediator/`,
+which turn manager results into the `packages/contracts` response shapes
+(`GameView`, `TurnView`, `MoveResult`, `Move`).
 Shared types that cross layers live in `entities/` (`UpstreamResult`, the solve
 and buy outcomes) rather than in the adapter that first produces them.
 
@@ -84,9 +89,11 @@ Own one entity's lifecycle, its rules and its transaction boundary. A manager
 may compose every repository its transaction writes: `game-manager/` owns the
 game state machine and writes a turn's run update together with its attempt or
 purchase row, atomically. It also fronts the turn's reads (`findAds`,
-`findShopItems`) so that callers never reach a repository.
+`findShopItems`, `findMoves`) so that callers never reach a repository.
 `calibration-manager/` turns stored attempts into a `Calibration`, falling back
-to the prior when the read fails.
+to the prior when the read fails. `bot-manager/` owns the bot's play loop
+(`playGame`) and `execute-decision.ts`, which turns a `Decision` into a call on
+`game-manager`; see _Bot runtime_.
 
 ### Repositories
 
@@ -277,8 +284,8 @@ the engine's estimate for that ad, with rule `player_choice`.
 ### Calibration
 
 Every attempt is written to `ad_attempts` with its label, dragon level, turn,
-reward and outcome. The estimate is a Laplace-smoothed success rate keyed on
-`(label, levelBucket, rewardBand)`:
+reward and outcome. The estimate is a success rate shrunk toward a per-label
+prior, keyed on `(label, levelBucket, rewardBand)`:
 
 ```
 p̂ = (successes + α·prior) / (attempts + α)      α = smoothingAlpha (tuned: 2)
@@ -302,8 +309,8 @@ failures, and those of concurrent benchmark games, count from the next turn.
 
 ### Selection
 
-1. **Hard filter** — drop `Impossible`; drop anything unreachable before
-   `expiresIn`.
+1. **Hard filter** — drop `Impossible`; drop ads that have already expired
+   (`expiresIn` of 0 or less).
 2. **Estimate** `p̂` from calibration.
 3. **Expected value** — `EV = p̂ · reward − (1 − p̂) · lifeCost`, where
    `lifeCost` is a healing potion (50 gold) plus the turn it burns. This converts
@@ -332,31 +339,61 @@ engine.
 | `calibrated` | yes              | The designed engine.                                              |
 
 Both satisfy the same signature and differ only in the `Calibration` passed in.
-The comparison is run in Phase 1 and the result recorded below, whichever way it
-falls.
+The comparison was run in Phase 1 and the result is recorded below, whichever way
+it fell.
 
 ---
 
 ## Bot runtime
 
-**Phase 1 ships the loop as CLIs** (`pnpm bot`, `pnpm bench`). The "load
-calibration, fetch board, decide" path goes through `calibration-manager` and
-`game-manager`, which the advisor will reuse, so the bot and the UI share one
-code path. The registry and `/watch` below are the Phase 2 design and are not
-built yet.
+One loop, three callers. `managers/bot-manager/play-game.ts` plays a game from
+its start state to the end: load the shop once, then each turn fetch the board,
+reload calibration, call `decide`, and execute the `Decision` through
+`game-manager`. The loop lives in a manager because it calls the engine, and
+`eslint.config.mjs` forbids routes and mediators from importing `domain/`.
 
-In Phase 2 the bot runs **in the Fastify process**. A `BotRunRegistry` holds active runs by
-`gameId`; `/watch` subscribes and fans out to any number of SSE viewers from one
-run. Viewers never drive the loop — a disconnect does not stop a game, and a
-reconnect replays from the persisted decision trail.
+| Caller                         | How it uses the loop                                                      |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| `pnpm bot` (`bot/run-bot.ts`)  | Starts a game, awaits `playGame`, prints the result.                      |
+| `pnpm bench` (`bot/benchmark`) | Runs `runBot` concurrently and reports the pass rate against 1000.        |
+| `POST /api/bot-games`          | `bot-mediator/start-bot-game.ts` starts a game and **detaches** the loop. |
 
-Concurrent runs are allowed but bounded. The outbound throttle is a **single
-process-wide token bucket** shared by bot, benchmark and human traffic, because
-what's being protected is the remote host.
+The `advisor-manager` and the bot go through the same `game-manager` and
+`calibration-manager`, so the human's advice and the bot's moves share one code
+path.
+
+### Detached bot games
+
+`POST /api/bot-games` answers `201` with the new `GameView` as soon as the
+upstream game exists. The mediator starts `playGame` with `void` and a `.catch`
+that logs; nothing awaits it. The game then plays inside the API process, after the
+request has returned, with strategy `calibrated` and calibration over **all**
+history (`calibrationBenchmarkId: null`, as `pnpm bot` does).
+
+- **No unhandled rejection.** `playGame` finalises the run as `abandoned` before it
+  rethrows, so the row never stays `active` after an error; the mediator's catch
+  only reports the failure through `app.log`.
+- **How a game ends.** Lives reaching zero is `game_over`. The engine returning
+  `stop` is `abandoned`, because the upstream game is still alive. The usual real
+  ending is `abandoned` (the board has run dry, from turn ~95) with a score well
+  over 1000; both are finished.
+- **Viewing.** There is no registry, no SSE and no push. The loop writes the same
+  rows a human's moves do, and a viewer reads them: `GET /api/games/:gameId` and
+  `GET /api/games/:gameId/moves` are database reads, polled by the web app. Any
+  number of viewers can come and go without affecting the run. A bot game is
+  refused by the player routes with `409`.
+- **Concurrency.** Bot games, benchmark games and human moves share one
+  process-wide token bucket on the outbound side (`MUGLOAR_RATE_PER_SECOND`, 8 by
+  default), because what is protected is the remote host. There is no cap on the
+  number of concurrent bot games; they simply slow each other down.
+- **Restart.** The loop lives in the process. An API restart (or `docker compose
+down`) stops it mid-game and leaves the run `active`; it is not resumed. A
+  human's game is unaffected, because its state is persisted per move.
 
 A separate worker would need a queue, a second deployable and a cross-process
-event path to reach SSE — real cost, no reviewer-visible benefit at this size.
-The registry is an interface, so moving the loop out later is contained.
+event path to reach a viewer: real cost, no reviewer-visible benefit at this
+size. `playGame` takes everything it needs as arguments, so moving it out later is
+contained.
 
 ---
 
@@ -364,25 +401,31 @@ The registry is an interface, so moving the loop out later is contained.
 
 Recorded as they are established. A documented negative result is a finding.
 
-| Question                                 | Status  | Result                                                                                                                   |
-| ---------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Does `calibrated` beat `baseline`?       | yes     | 90% vs 55% pass over 20 cold runs each, before any tuning                                                                |
-| Do labels mean the same at every reward? | **no**  | `Sure thing` 47/47 under 100 gold, 1/45 at 160+ — hence reward bands in the calibration key                              |
-| Does levelling up pay?                   | partly  | proactive: off 100% pass / median 2510, on 95% / 3348, one run apart, so **off**. On an exhausted board: **no**          |
-| Does the board run dry?                  | **yes** | by turn ~95 every ad is `Impossible`, and 8–22 level-ups bought there won nothing more; the game is over in all but name |
-| Can lives exceed the starting 3?         | yes     | observed up to 12 from repeated potions                                                                                  |
-| Is `encrypted: 2` ROT13?                 | yes     | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)                                         |
-| Do encrypted ads behave differently?     | no      | 0.73 vs 0.72 success; `was_encrypted` column dropped                                                                     |
-| Does reputation affect anything?         | skip    | **each call burns a turn**; values move but nothing uses them                                                            |
-| Is there upstream rate limiting?         | no      | no `429` across every benchmark at 8 req/s, 3 concurrent games                                                           |
+| Question                                 | Status  | Result                                                                                                                          |
+| ---------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Does `calibrated` beat `baseline`?       | yes     | 90% vs 55% pass over 20 cold runs each, before any tuning                                                                       |
+| Do labels mean the same at every reward? | **no**  | `Sure thing` 47/47 under 100 gold, 1/45 at 160+ — hence reward bands in the calibration key                                     |
+| Does levelling up pay?                   | partly  | proactive (20 runs each): off 100% pass / median 2510, on 95% / 3348, one game apart, so **off**. On an exhausted board: **no** |
+| Does the board run dry?                  | **yes** | by turn ~95 every ad is `Impossible`, and 8–22 level-ups bought there won nothing more; the game is over in all but name        |
+| Can lives exceed the starting 3?         | yes     | observed up to 12 from repeated potions                                                                                         |
+| Is `encrypted: 2` ROT13?                 | yes     | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)                                                |
+| Do encrypted ads behave differently?     | no      | 0.73 vs 0.72 success; `was_encrypted` column dropped                                                                            |
+| Does reputation affect anything?         | skip    | **each call burns a turn**; values move but nothing uses them                                                                   |
+| Is there upstream rate limiting?         | no      | no `429` across every benchmark at 8 req/s, 3 concurrent games                                                                  |
 
-Acceptance (`pnpm bench --runs 20`, cold, tuned defaults): **20/20**, min 1566, median 2687.
-Cold means "this benchmark's own games only", so the 20 games share evidence as
-they go. 16 of the 20 stopped on an exhausted board. A re-run of the same
-config scored 19/20 (min 21, median 2428): one game lost its 3 lives in 5 turns
-before it could afford a potion. Read the pass rate as 95–100%, not a
-guarantee. Raw numbers, the sweep and both runs:
-[`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md).
+Measured 2026-11-24 with `pnpm bench` (20 cold runs, `calibrated` strategy, tuned
+defaults): **95% (19/20)** at 1000 or more. Score min 955, median 2723.5, max
+3993; mean 107.6 turns. This is one measurement, not a guarantee. Cold means
+"this benchmark's own games only", so the 20 games share evidence as they go.
+
+Two things from the earlier runs on 2026-11-23, both in
+[`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md):
+
+- In the acceptance run, 16 of the 20 games stopped on an exhausted board (§7).
+- A separate experiment, an exhausted-board level-up rule, was benchmarked and
+  reverted. The rule never acted in its one miss: that game lost its 3 lives in 5
+  turns on ads estimated at 0.73 to 0.88, with too little gold for a potion, and
+  scored 21. Nothing in the engine guards the opening turns.
 
 Tuned `StrategyConfig` (sweep in the findings file):
 
@@ -394,6 +437,6 @@ livesFloor: 3,              // = starting lives: buy back every lost life
 minimumProbability: 0.45,   // 0.3 cost 10 points of pass rate
 lifeCostInGold: 50,
 turnCostInGold: 20,
-levelUpEnabled: false,      // 100% vs 95% pass, one run apart: weak evidence
+levelUpEnabled: false,      // off 100% vs on 95% in one 20-run pair: weak evidence
 levelUpGoldReserve: 350,
 ```

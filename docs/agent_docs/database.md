@@ -34,18 +34,26 @@ erDiagram
         boolean success
         decimal estimated_probability
         decimal expected_value
+        enum rule "nullable — decision rule that chose the ad"
         datetime created_at
     }
     purchases {
         bigint id PK
         bigint game_run_id FK
         varchar item_id
+        varchar item_name "nullable"
         int cost
         int turn
         boolean success
+        enum rule "nullable — decision rule that chose the purchase"
         datetime created_at
     }
 ```
+
+Two migrations build this schema: `20261124000001_create_core_tables.ts` creates
+the three tables, and `20261124000002_add_move_rule.ts` adds the three nullable
+columns that the move log reads (`ad_attempts.rule`, `purchases.rule`,
+`purchases.item_name`). See _The move log columns_ below.
 
 ## Every column has to earn its place
 
@@ -70,6 +78,31 @@ stored dimension went.
 **`reward` is a calibration key**, bucketed into bands by the engine — see
 [`architecture.md`](architecture.md) _Calibration_ for the measurement behind
 it.
+
+## The move log columns
+
+`GET /api/games/:gameId/moves` shows the reason for every move, and the engine's
+`Reasoning.rule` was not stored, nor was the shop item's name (only `item_id`,
+such as `hpot`). The second migration adds them, additively:
+
+| Column                | Type                       | Written by                                                  |
+| --------------------- | -------------------------- | ----------------------------------------------------------- |
+| `ad_attempts.rule`    | enum of the decision rules | the solve path, from the decision's `reasoning.rule`        |
+| `purchases.rule`      | enum of the decision rules | the buy path, from the decision's `reasoning.rule`          |
+| `purchases.item_name` | `varchar(64)`              | the buy path, from the `ShopItem` the move was made against |
+
+The enum values are `survival_floor`, `level_up`, `best_expected_value`,
+`safest_available`, `no_viable_option` and `player_choice`. A move a human makes
+through `/play` records `player_choice`.
+
+All three are **nullable**, because rows written before the migration have no
+recorded rule and must stay valid. The API and the web app treat `null` as "no
+reason to show", not as an error. The migration lists the enum values as
+literals rather than importing the contracts' constant: it is a frozen record of
+the schema at one point in time and must not change when the code does.
+
+`rule` is not a calibration key, so the engine never reads it. These columns
+exist for the move log only.
 
 ## Why live state is persisted
 
@@ -99,8 +132,9 @@ estimate the advisor shows and every pick the bot makes. Indexed on
 `(probability, dragon_level, reward)`.
 
 `estimated_probability` and `expected_value` are stored, not just computed, so
-the calibration-quality view can plot **predicted against actual**. That plot is
-how the engine's honesty gets demonstrated rather than claimed.
+the engine's estimate can be compared with the outcome afterwards, and so the
+move log can show the numbers the engine acted on. A calibration-quality view
+that plots **predicted against actual** is not built; the data for it is there.
 
 ## Writes must never break a game
 
@@ -133,8 +167,9 @@ pnpm db:migrate                      # apply
 - Migrations are forward-only in practice; write `down` anyway.
 - Never edit a migration that has run anywhere but your own machine.
 - Schema changes land with the code that needs them, in the same branch.
-- The integration suite runs migrations from scratch against a throwaway
-  container, so a broken migration fails CI rather than a reviewer's laptop.
+- `pnpm test:integration` rolls back every migration and re-applies them on
+  `dragon_test`, so a broken migration fails that command rather than a
+  reviewer's first `docker compose up`.
 
 ## Local
 
