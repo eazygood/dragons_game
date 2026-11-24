@@ -1,17 +1,37 @@
-export type DecisionRule =
-  'survival_floor' | 'level_up' | 'best_expected_value' | 'safest_available' | 'no_viable_option';
+import { z } from 'zod';
 
-export type Reasoning = {
-  rule: DecisionRule;
-  estimatedProbability: number | null;
-  expectedValue: number | null;
-  consideredCount: number;
-};
+export const DecisionRuleSchema = z.enum([
+  'survival_floor',
+  'level_up',
+  'best_expected_value',
+  'safest_available',
+  'no_viable_option',
+  'player_choice',
+]);
+
+export type DecisionRule = z.infer<typeof DecisionRuleSchema>;
+
+export const ReasoningSchema = z.object({
+  rule: DecisionRuleSchema,
+  estimatedProbability: z.number().nullable(),
+  expectedValue: z.number().nullable(),
+  consideredCount: z.number().int().min(0),
+});
+
+export type Reasoning = z.infer<typeof ReasoningSchema>;
 
 // A solve always acted on an estimate, and ad_attempts records it, so it is never null.
-export type ScoredReasoning = Reasoning & { estimatedProbability: number; expectedValue: number };
+export const ScoredReasoningSchema = ReasoningSchema.extend({
+  estimatedProbability: z.number(),
+  expectedValue: z.number(),
+});
 
-export type Decision =
-  | { kind: 'solve'; adId: string; reasoning: ScoredReasoning }
-  | { kind: 'buy'; itemId: string; reasoning: Reasoning }
-  | { kind: 'stop'; reasoning: Reasoning };
+export type ScoredReasoning = z.infer<typeof ScoredReasoningSchema>;
+
+export const DecisionSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('solve'), adId: z.string().min(1), reasoning: ScoredReasoningSchema }),
+  z.object({ kind: z.literal('buy'), itemId: z.string().min(1), reasoning: ReasoningSchema }),
+  z.object({ kind: z.literal('stop'), reasoning: ReasoningSchema }),
+]);
+
+export type Decision = z.infer<typeof DecisionSchema>;

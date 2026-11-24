@@ -1,8 +1,7 @@
-import type { StrategyName } from '@bigbank-dragon/contracts';
+import type { RunStatus, StrategyName } from '@bigbank-dragon/contracts';
 
-export const RUN_STATUSES = ['active', 'game_over', 'abandoned'] as const;
-
-export type RunStatus = (typeof RUN_STATUSES)[number];
+export { RUN_STATUSES } from '@bigbank-dragon/contracts';
+export type { RunStatus } from '@bigbank-dragon/contracts';
 
 export type GameRunId = number;
 
