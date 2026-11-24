@@ -2,23 +2,25 @@ import type { TurnView } from '@bigbank-dragon/contracts';
 
 import { RecommendationBanner } from '../advice/RecommendationBanner.tsx';
 import { AdBoard } from '../board/AdBoard.tsx';
-import type { MoveControls } from '../moves/move-controls.ts';
+import { MoveFeedback } from '../moves/MoveFeedback.tsx';
+import { usePlayerMoves } from '../moves/use-player-moves.ts';
+import { ShopPanel } from '../shop/ShopPanel.tsx';
 import { GameStatusBar } from './GameStatusBar.tsx';
 import styles from './ActiveGame.module.css';
 
-// Replaced by real moves in the next task; until then nothing on the board is clickable.
-const DISABLED_MOVES: MoveControls = {
-  solve: () => undefined,
-  buy: () => undefined,
-  isPending: true,
-};
+export const ActiveGame = ({ turn }: { turn: TurnView }) => {
+  const { state } = turn.game;
+  const { lastMove, notice, ...moves } = usePlayerMoves({ gameId: state.gameId });
 
-export const ActiveGame = ({ turn }: { turn: TurnView }) => (
-  <div className={styles.game}>
-    <GameStatusBar state={turn.game.state} />
-    <RecommendationBanner turn={turn} />
-    <div className={styles.columns}>
-      <AdBoard board={turn.board} moves={DISABLED_MOVES} />
+  return (
+    <div className={styles.game}>
+      <GameStatusBar state={state} />
+      <RecommendationBanner turn={turn} />
+      <MoveFeedback lastMove={lastMove} notice={notice} />
+      <div className={styles.columns}>
+        <AdBoard board={turn.board} moves={moves} />
+        <ShopPanel shop={turn.shop} gold={state.gold} moves={moves} />
+      </div>
     </div>
-  </div>
-);
+  );
+};

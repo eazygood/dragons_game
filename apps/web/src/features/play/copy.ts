@@ -27,6 +27,19 @@ export const copy = {
       unattemptable: 'Unattemptable',
     } satisfies Record<AdVerdict, string>,
   },
+  shop: {
+    title: 'Shop',
+    buy: 'Buy',
+    buyLabel: (itemName: string) => `Buy ${itemName}`,
+    cost: (gold: number) => `${gold} gold`,
+    needMoreGold: (missingGold: number) => `Needs ${missingGold} more gold`,
+  },
+  moves: {
+    succeeded: 'Success.',
+    failed: 'Failed.',
+    adExpired: 'That ad expired before you got to it. The board has been refreshed.',
+    purchaseRefused: 'The shop refused the purchase. The board has been refreshed.',
+  },
   status: {
     label: 'Game status',
     score: 'Score',

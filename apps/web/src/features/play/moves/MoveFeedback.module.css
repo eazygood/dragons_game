@@ -1,0 +1,14 @@
+.feedback {
+  min-height: 1.5em;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.feedback[data-tone='success'] {
+  color: var(--color-success);
+}
+
+.feedback[data-tone='failure'],
+.feedback[data-tone='notice'] {
+  color: var(--color-danger);
+}

@@ -11,10 +11,13 @@ import type { ReactElement } from 'react';
 const createTestQueryClient = () =>
   new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
 
-// Mirrors Testing Library's render(ui) so call sites read the same.
-export const renderWithQuery = (ui: ReactElement) => {
-  const queryClient = createTestQueryClient();
+type RenderOptions = { queryClient?: QueryClient };
 
+// Mirrors Testing Library's render(ui, options) so call sites read the same.
+export const renderWithQuery = (
+  ui: ReactElement,
+  { queryClient = createTestQueryClient() }: RenderOptions = {},
+) => {
   return {
     queryClient,
     ...render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>),
@@ -22,11 +25,11 @@ export const renderWithQuery = (ui: ReactElement) => {
 };
 
 // For components that render <Link>; the router mounts asynchronously, so query with findBy.
-export const renderInRouter = (ui: ReactElement) => {
+export const renderInRouter = (ui: ReactElement, options: RenderOptions = {}) => {
   const router = createRouter({
     routeTree: createRootRoute({ component: () => ui }),
     history: createMemoryHistory({ initialEntries: ['/'] }),
   });
 
-  return renderWithQuery(<RouterProvider router={router} />);
+  return renderWithQuery(<RouterProvider router={router} />, options);
 };

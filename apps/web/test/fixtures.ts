@@ -34,6 +34,7 @@ export const TURN_VIEW: TurnView = {
     buildAdvisedAd(),
     buildAdvisedAd({
       adId: 'risky1',
+      message: 'Escort the merchant through the swamp',
       probability: 'Risky',
       reward: 60,
       advice: { verdict: 'long_shot', estimatedProbability: 0.4, expectedValue: -18 },

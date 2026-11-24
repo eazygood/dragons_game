@@ -1,6 +1,7 @@
+import { isApiError } from '../../../api/api-error.ts';
 import { useGame, useTurn } from '../../../api/game-queries.ts';
 import { copy } from '../copy.ts';
-import { errorCopy } from '../error-copy.ts';
+import { ErrorNotice } from '../moves/ErrorNotice.tsx';
 import { ActiveGame } from './ActiveGame.tsx';
 import { GameOverScreen } from './GameOverScreen.tsx';
 
@@ -14,19 +15,20 @@ export const GameScreen = ({ gameId }: { gameId: string }) => {
   }
 
   if (gameQuery.isError) {
-    return <p role="alert">{errorCopy({ error: gameQuery.error })}</p>;
+    return <ErrorNotice error={gameQuery.error} onRetry={() => void gameQuery.refetch()} />;
   }
 
   if (!isActive) {
     return <GameOverScreen game={gameQuery.data} />;
   }
 
-  if (turnQuery.isPending) {
+  // A 410 here already triggered a refetch of the game, which brings the end screen.
+  if (turnQuery.isPending || isApiError({ error: turnQuery.error, code: 'game_over' })) {
     return <p role="status">{copy.game.loadingTurn}</p>;
   }
 
   if (turnQuery.isError) {
-    return <p role="alert">{errorCopy({ error: turnQuery.error })}</p>;
+    return <ErrorNotice error={turnQuery.error} onRetry={() => void turnQuery.refetch()} />;
   }
 
   return <ActiveGame turn={turnQuery.data} />;
