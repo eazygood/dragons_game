@@ -16,6 +16,7 @@ const buildTestApp = async () => {
   app.get('/api/test/crash', () => {
     throw new Error('secret connection string');
   });
+  app.post('/api/test/echo', () => ({ ok: true }));
   app.get('/api/test/:gameId', { schema: { params: GameParamsSchema } }, () => ({ ok: true }));
 
   return app;
@@ -53,6 +54,18 @@ describe('app', () => {
 
   it('rejects an invalid path param at the boundary', async () => {
     const response = await app.inject({ url: '/api/test/..%2Fx' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: { code: 'invalid_request' } });
+  });
+
+  it('answers a malformed body as a bad request, not a crash', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/test/echo',
+      headers: { 'content-type': 'application/json' },
+      payload: '{not json',
+    });
 
     expect(response.statusCode).toBe(400);
     expect(response.json()).toMatchObject({ error: { code: 'invalid_request' } });

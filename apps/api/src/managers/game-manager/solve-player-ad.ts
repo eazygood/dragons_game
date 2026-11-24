@@ -14,7 +14,7 @@ import { withGameLock } from './game-lock.ts';
 import { keepPlayingOnPersistenceFailure } from './keep-playing.ts';
 import { settleMove } from './settle-move.ts';
 import { solveAd } from './solve-ad.ts';
-import { runState } from './state-patch.ts';
+import { stateFromRun } from './state-patch.ts';
 
 // The board is re-read rather than trusted from the client: an ad the client saw
 // may have expired, and solving it upstream would be a 400.
@@ -32,13 +32,13 @@ export const solvePlayerAd = ({
   withGameLock({
     gameId,
     task: async () => {
-      const playable = await findPlayableRun({ db, gameId });
+      const playableRun = await findPlayableRun({ db, gameId });
 
-      if (playable.status === 'game_over') {
-        return playable;
+      if (playableRun.status === 'game_over') {
+        return playableRun;
       }
 
-      const run = playable.value;
+      const run = playableRun.value;
       const board = await findAds({ gameId });
 
       if (board.status === 'game_over') {
@@ -52,7 +52,7 @@ export const solvePlayerAd = ({
         throw new AdExpiredError({ message: `Ad ${adId} is no longer on the board` });
       }
 
-      const state = runState({ run });
+      const state = stateFromRun({ run });
       const config = STRATEGY_CONFIG;
       const calibration = await loadCalibration({
         db,

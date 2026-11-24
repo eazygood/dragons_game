@@ -4,14 +4,33 @@
 
 ```
 routes/
-├── index.ts              - registration, called from app.ts
-├── schemas/              - request/response schemas, one file per scope
-├── game-routes.ts        - start, state, solve, shop, buy
-├── bot-routes.ts         - start a bot run, SSE stream
-├── stats-routes.ts       - calibration and history reads
-├── health-routes.ts      - liveness/readiness
+├── index.ts              - registration under /api, called from app.ts
+├── game-routes.ts        - start, state, turn, solve, buy
+├── game-over-reply.ts    - the only 410 mapping
+├── health-routes.ts      - liveness
+├── bot-routes.ts         - (Phase 3) start a bot run, SSE stream
 └── error-handlers/       - the single registered handler
 ```
+
+Request schemas are the zod schemas in `packages/contracts`. There is no local
+`schemas/` folder.
+
+## Endpoints
+
+All endpoints are under `/api`.
+
+| Method | Path                              | 2xx              | Other               |
+| ------ | --------------------------------- | ---------------- | ------------------- |
+| GET    | `/health`                         | 200 `{status}`   |                     |
+| POST   | `/games`                          | 201 `GameView`   | 502                 |
+| GET    | `/games/:gameId`                  | 200 `GameView`   | 404 (database only) |
+| GET    | `/games/:gameId/turn`             | 200 `TurnView`   | 404, 409, 410, 502  |
+| POST   | `/games/:gameId/ads/:adId/solve`  | 200 `MoveResult` | 404, 409, 410, 502  |
+| POST   | `/games/:gameId/shop/:itemId/buy` | 200 `MoveResult` | 404, 409, 410, 502  |
+
+`GET /games/:gameId` never answers 410: a finished game reports its final state
+with `status: 'game_over'`. The client calls it after a 410 to render the end
+screen.
 
 One file per scope, each exporting a `register[Scope]Routes` function. `app.ts`
 registers them and does nothing else.
@@ -62,12 +81,14 @@ HTTP mapping:
 | `ShopItemNotFound`    | `404` |                                       |
 | `GameNotPlayable`     | `409` | A bot's game; humans cannot move it   |
 | `ValidationError`     | `400` | From the schema layer                 |
+| Fastify 4xx           | `4xx` | Malformed JSON, wrong content type    |
 | `UpstreamUnavailable` | `502` | Mugloar unreachable after retries     |
 | _(unmapped)_          | `500` | Logged; the message is never sent     |
 
 **Game over is not in this table.** The adapter returns `410` as a terminal
 `{ status: 'game_over' }` result and never throws it, so it never reaches the
-error handler. A route that receives that result maps it to `410` itself.
+error handler. A route that receives that result calls `replyGameOver`, which
+sends `410 { error: { code: 'game_over', message: 'Game over' } }`.
 
 Every one of these has a designed treatment in the UI. Game over is a screen,
 not a toast; an expired ad refreshes the board and says why.

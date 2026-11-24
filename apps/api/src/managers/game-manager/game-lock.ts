@@ -1,8 +1,8 @@
 // One move per game at a time: a double click must not reach the upstream twice
 // concurrently, and the second move must see the state the first one left.
-const queues = new Map<string, Promise<void>>();
+const pendingTasksByGame = new Map<string, Promise<void>>();
 
-const ignore = () => undefined;
+const discardOutcome = () => undefined;
 
 export const withGameLock = <T>({
   gameId,
@@ -11,16 +11,16 @@ export const withGameLock = <T>({
   gameId: string;
   task: () => Promise<T>;
 }): Promise<T> => {
-  const previous = queues.get(gameId) ?? Promise.resolve();
-  const current = previous.then(task);
-  const settled = current.then(ignore, ignore);
+  const previousTask = pendingTasksByGame.get(gameId) ?? Promise.resolve();
+  const currentTask = previousTask.then(task);
+  const settled = currentTask.then(discardOutcome, discardOutcome);
 
-  queues.set(gameId, settled);
+  pendingTasksByGame.set(gameId, settled);
   void settled.then(() => {
-    if (queues.get(gameId) === settled) {
-      queues.delete(gameId);
+    if (pendingTasksByGame.get(gameId) === settled) {
+      pendingTasksByGame.delete(gameId);
     }
   });
 
-  return current;
+  return currentTask;
 };

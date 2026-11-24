@@ -11,12 +11,12 @@ import { DbTables } from '../../src/entities/db-tables.ts';
 import type { GameRun } from '../../src/entities/game-run.ts';
 import { GameNotFoundError } from '../../src/errors/errors.ts';
 import { adviseTurn } from '../../src/managers/advisor-manager/index.ts';
-import { runState, startGame } from '../../src/managers/game-manager/index.ts';
+import { stateFromRun, startGame } from '../../src/managers/game-manager/index.ts';
 import { adRepository, gameRunRepository } from '../../src/repositories/index.ts';
 import {
   PLAYER_BOARD,
   PLAYER_GAME_ID,
-  SILENT,
+  SILENT_LOGGER,
   stubPlayerUpstream,
 } from '../support/player-game.ts';
 
@@ -43,10 +43,10 @@ describe('turn advice', () => {
   });
 
   it('advises exactly what decide() would do', async () => {
-    const turn = await adviseTurn({ db, gameId: PLAYER_GAME_ID, logger: SILENT });
+    const turn = await adviseTurn({ db, gameId: PLAYER_GAME_ID, logger: SILENT_LOGGER });
     const calibration = priorCalibration({ config: STRATEGY_CONFIG });
     const expected = decide({
-      state: runState({ run }),
+      state: stateFromRun({ run }),
       board: PLAYER_BOARD,
       shop: [...SHOP_ITEM_PRIOR],
       calibration,
@@ -59,7 +59,7 @@ describe('turn advice', () => {
   it('ends the run when the upstream reports game over on a read', async () => {
     vi.mocked(adRepository.mugloar.findMany).mockResolvedValue({ status: 'game_over' });
 
-    expect(await adviseTurn({ db, gameId: PLAYER_GAME_ID, logger: SILENT })).toEqual({
+    expect(await adviseTurn({ db, gameId: PLAYER_GAME_ID, logger: SILENT_LOGGER })).toEqual({
       status: 'game_over',
     });
     expect(await gameRunRepository.db.findOne({ db, gameId: PLAYER_GAME_ID })).toMatchObject({
@@ -68,7 +68,7 @@ describe('turn advice', () => {
   });
 
   it('throws not found for an unknown game', async () => {
-    await expect(adviseTurn({ db, gameId: 'nope', logger: SILENT })).rejects.toBeInstanceOf(
+    await expect(adviseTurn({ db, gameId: 'nope', logger: SILENT_LOGGER })).rejects.toBeInstanceOf(
       GameNotFoundError,
     );
   });

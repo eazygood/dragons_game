@@ -5,9 +5,14 @@ import { AppError } from '../../errors/app-error.ts';
 
 const HTTP_BAD_REQUEST = 400;
 const HTTP_NOT_FOUND = 404;
-const HTTP_INTERNAL = 500;
+const HTTP_INTERNAL_SERVER_ERROR = 500;
 
-const body = ({ code, message }: ApiErrorBody['error']): ApiErrorBody => ({
+const isClientError = (statusCode: number | undefined): statusCode is number =>
+  statusCode !== undefined &&
+  statusCode >= HTTP_BAD_REQUEST &&
+  statusCode < HTTP_INTERNAL_SERVER_ERROR;
+
+const errorBody = ({ code, message }: ApiErrorBody['error']): ApiErrorBody => ({
   error: { code, message },
 });
 
@@ -17,22 +22,29 @@ export const errorHandler = (
   reply: FastifyReply,
 ) => {
   if (error instanceof AppError) {
-    return reply.status(error.statusCode).send(body(error));
+    return reply.status(error.statusCode).send(errorBody(error));
   }
 
   if (error.validation) {
     const message = error.validation[0]?.message ?? 'Invalid request';
 
-    return reply.status(HTTP_BAD_REQUEST).send(body({ code: 'invalid_request', message }));
+    return reply.status(HTTP_BAD_REQUEST).send(errorBody({ code: 'invalid_request', message }));
+  }
+
+  // Fastify's own refusals (malformed JSON, wrong content type) are the client's fault.
+  if (isClientError(error.statusCode)) {
+    return reply
+      .status(error.statusCode)
+      .send(errorBody({ code: 'invalid_request', message: error.message }));
   }
 
   // The original message can carry connection strings or upstream HTML; log it, never send it.
   request.log.error({ err: error }, 'request failed');
 
   return reply
-    .status(HTTP_INTERNAL)
-    .send(body({ code: 'internal', message: 'Internal server error' }));
+    .status(HTTP_INTERNAL_SERVER_ERROR)
+    .send(errorBody({ code: 'internal', message: 'Internal server error' }));
 };
 
 export const notFoundHandler = (_request: FastifyRequest, reply: FastifyReply) =>
-  reply.status(HTTP_NOT_FOUND).send(body({ code: 'not_found', message: 'Route not found' }));
+  reply.status(HTTP_NOT_FOUND).send(errorBody({ code: 'not_found', message: 'Route not found' }));

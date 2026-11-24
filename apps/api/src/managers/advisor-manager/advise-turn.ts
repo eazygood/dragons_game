@@ -12,7 +12,7 @@ import {
   findAds,
   findPlayableRun,
   findShopItems,
-  runState,
+  stateFromRun,
 } from '../game-manager/index.ts';
 
 export type PlayerTurn = {
@@ -32,13 +32,13 @@ export const adviseTurn = async ({
   gameId: string;
   logger: Logger;
 }): Promise<UpstreamResult<PlayerTurn>> => {
-  const playable = await findPlayableRun({ db, gameId });
+  const playableRun = await findPlayableRun({ db, gameId });
 
-  if (playable.status === 'game_over') {
-    return playable;
+  if (playableRun.status === 'game_over') {
+    return playableRun;
   }
 
-  const run = playable.value;
+  const run = playableRun.value;
   const [board, shop] = await Promise.all([findAds({ gameId }), findShopItems({ gameId })]);
 
   if (board.status === 'game_over' || shop.status === 'game_over') {
@@ -55,7 +55,7 @@ export const adviseTurn = async ({
     benchmarkId: null,
   });
   const { recommendation, ads } = adviseBoard({
-    state: runState({ run }),
+    state: stateFromRun({ run }),
     board: board.value,
     shop: shop.value,
     calibration,

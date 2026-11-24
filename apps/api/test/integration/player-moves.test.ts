@@ -27,9 +27,9 @@ import {
 } from '../../src/repositories/index.ts';
 import {
   PLAYER_GAME_ID,
-  SILENT,
-  snapshot,
-  solved,
+  SILENT_LOGGER,
+  newGameSnapshot,
+  solvedAdResponse,
   stubPlayerUpstream,
 } from '../support/player-game.ts';
 
@@ -58,7 +58,7 @@ describe('player moves', () => {
 
   it('solves an ad on the board and records the advisor estimate', async () => {
     expect(
-      await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT }),
+      await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT_LOGGER }),
     ).toEqual({
       status: 'ok',
       value: {
@@ -78,7 +78,7 @@ describe('player moves', () => {
   // Review Focus #2
   it('rejects an ad that left the board without calling solve', async () => {
     await expect(
-      solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'vanished', logger: SILENT }),
+      solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'vanished', logger: SILENT_LOGGER }),
     ).rejects.toBeInstanceOf(AdExpiredError);
     expect(adAttemptRepository.mugloar.createOne).not.toHaveBeenCalled();
   });
@@ -86,7 +86,7 @@ describe('player moves', () => {
   // Review Focus #3
   it('refuses a purchase the stored gold cannot cover, without burning a turn', async () => {
     await expect(
-      buyPlayerItem({ db, gameId: PLAYER_GAME_ID, itemId: 'hpot', logger: SILENT }),
+      buyPlayerItem({ db, gameId: PLAYER_GAME_ID, itemId: 'hpot', logger: SILENT_LOGGER }),
     ).rejects.toBeInstanceOf(InsufficientGoldError);
     expect(purchaseRepository.mugloar.createOne).not.toHaveBeenCalled();
     expect(await gameRunRepository.db.findOne({ db, gameId: PLAYER_GAME_ID })).toMatchObject({
@@ -103,7 +103,7 @@ describe('player moves', () => {
     });
 
     expect(
-      await buyPlayerItem({ db, gameId: PLAYER_GAME_ID, itemId: 'hpot', logger: SILENT }),
+      await buyPlayerItem({ db, gameId: PLAYER_GAME_ID, itemId: 'hpot', logger: SILENT_LOGGER }),
     ).toEqual({
       status: 'ok',
       value: {
@@ -117,18 +117,18 @@ describe('player moves', () => {
 
   it('rejects an item the shop does not list', async () => {
     await expect(
-      buyPlayerItem({ db, gameId: PLAYER_GAME_ID, itemId: 'nosuch', logger: SILENT }),
+      buyPlayerItem({ db, gameId: PLAYER_GAME_ID, itemId: 'nosuch', logger: SILENT_LOGGER }),
     ).rejects.toBeInstanceOf(ShopItemNotFoundError);
   });
 
   // Review Focus #5
   it('ends the run when a solve takes the last life', async () => {
     vi.mocked(adAttemptRepository.mugloar.createOne).mockResolvedValue(
-      solved({ success: false, lives: 0, gold: 0, score: 0, message: 'defeated' }),
+      solvedAdResponse({ success: false, lives: 0, gold: 0, score: 0, message: 'defeated' }),
     );
 
     expect(
-      await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT }),
+      await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT_LOGGER }),
     ).toMatchObject({ status: 'ok', value: { status: 'game_over' } });
     expect(await gameRunRepository.db.findOne({ db, gameId: PLAYER_GAME_ID })).toMatchObject({
       status: 'game_over',
@@ -141,7 +141,7 @@ describe('player moves', () => {
     vi.mocked(adRepository.mugloar.findMany).mockClear();
 
     expect(
-      await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT }),
+      await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT_LOGGER }),
     ).toEqual({
       status: 'game_over',
     });
@@ -149,11 +149,11 @@ describe('player moves', () => {
   });
 
   it('refuses to play a bot run', async () => {
-    vi.mocked(gameRunRepository.mugloar.createOne).mockResolvedValue(snapshot('bot-game'));
+    vi.mocked(gameRunRepository.mugloar.createOne).mockResolvedValue(newGameSnapshot('bot-game'));
     await startGame({ db, strategy: 'calibrated' });
 
     await expect(
-      solvePlayerAd({ db, gameId: 'bot-game', adId: 'sure1', logger: SILENT }),
+      solvePlayerAd({ db, gameId: 'bot-game', adId: 'sure1', logger: SILENT_LOGGER }),
     ).rejects.toBeInstanceOf(GameNotPlayableError);
   });
 
@@ -167,12 +167,12 @@ describe('player moves', () => {
       maxInFlight = Math.max(maxInFlight, inFlight);
       await new Promise((resolve) => setTimeout(resolve, 10));
       inFlight -= 1;
-      return solved();
+      return solvedAdResponse();
     });
 
     await Promise.all([
-      solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT }),
-      solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure2', logger: SILENT }),
+      solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT_LOGGER }),
+      solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure2', logger: SILENT_LOGGER }),
     ]);
 
     expect(maxInFlight).toBe(1);
@@ -182,7 +182,7 @@ describe('player moves', () => {
     vi.spyOn(gameRunRepository.db, 'updateOne').mockRejectedValue(new Error('db down'));
 
     expect(
-      await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT }),
+      await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT_LOGGER }),
     ).toMatchObject({ status: 'ok', value: { state: { score: 30 } } });
   });
 });

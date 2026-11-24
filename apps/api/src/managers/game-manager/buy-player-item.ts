@@ -11,7 +11,7 @@ import { findShopItems } from './find-shop-items.ts';
 import { withGameLock } from './game-lock.ts';
 import { keepPlayingOnPersistenceFailure } from './keep-playing.ts';
 import { settleMove } from './settle-move.ts';
-import { runState } from './state-patch.ts';
+import { stateFromRun } from './state-patch.ts';
 
 export const buyPlayerItem = ({
   db,
@@ -27,13 +27,13 @@ export const buyPlayerItem = ({
   withGameLock({
     gameId,
     task: async () => {
-      const playable = await findPlayableRun({ db, gameId });
+      const playableRun = await findPlayableRun({ db, gameId });
 
-      if (playable.status === 'game_over') {
-        return playable;
+      if (playableRun.status === 'game_over') {
+        return playableRun;
       }
 
-      const run = playable.value;
+      const run = playableRun.value;
       const shop = await findShopItems({ gameId });
 
       if (shop.status === 'game_over') {
@@ -47,7 +47,7 @@ export const buyPlayerItem = ({
         throw new ShopItemNotFoundError({ message: `Item ${itemId} is not in the shop` });
       }
 
-      const state = runState({ run });
+      const state = stateFromRun({ run });
 
       // A purchase the upstream refuses still burns a turn, so refuse it here first.
       if (state.gold < item.cost) {

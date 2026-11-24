@@ -9,4 +9,4 @@ export { keepPlayingOnPersistenceFailure } from './keep-playing.ts';
 export { solveAd } from './solve-ad.ts';
 export { solvePlayerAd } from './solve-player-ad.ts';
 export { startGame } from './start-game.ts';
-export { runState } from './state-patch.ts';
+export { stateFromRun } from './state-patch.ts';

@@ -37,6 +37,44 @@ export default tseslint.config(
     },
   },
   {
+    files: ['apps/api/src/routes/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/repositories/**', '**/adapters/**', '**/domain/**', '**/bot/**'],
+              message: 'Routes call mediators only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/mediators/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/repositories/**',
+                '**/adapters/**',
+                '**/domain/**',
+                '**/bot/**',
+                '**/routes/**',
+              ],
+              message: 'Mediators compose managers; they never reach lower or call upward.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['apps/api/src/managers/**/*.ts'],
     rules: {
       'no-restricted-imports': [

@@ -10,7 +10,7 @@ export const statePatch = ({ state }: { state: GameState }): GameRunPatch => ({
   score: state.score,
 });
 
-export const runState = ({ run }: { run: GameRun }): GameState => ({
+export const stateFromRun = ({ run }: { run: GameRun }): GameState => ({
   gameId: run.gameId,
   lives: run.lives,
   gold: run.gold,
