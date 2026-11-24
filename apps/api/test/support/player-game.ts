@@ -1,0 +1,68 @@
+import { SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
+import type { Ad } from '@bigbank-dragon/contracts';
+import { vi } from 'vitest';
+
+import {
+  adAttemptRepository,
+  adRepository,
+  gameRunRepository,
+  purchaseRepository,
+  shopItemRepository,
+} from '../../src/repositories/index.ts';
+
+export const SILENT = { info: vi.fn(), warn: vi.fn() };
+export const PLAYER_GAME_ID = 'player-game';
+
+const ad = (overrides: Partial<Ad>): Ad => ({
+  adId: 'sure1',
+  message: 'Help someone',
+  reward: 30,
+  expiresIn: 5,
+  probability: 'Sure thing',
+  wasEncrypted: false,
+  ...overrides,
+});
+
+export const PLAYER_BOARD = [
+  ad({}),
+  ad({ adId: 'sure2' }),
+  ad({ adId: 'imp', probability: 'Impossible', reward: 200 }),
+];
+
+export const snapshot = (gameId: string) => ({
+  gameId,
+  lives: 3,
+  gold: 0,
+  level: 0,
+  score: 0,
+  highScore: 0,
+  turn: 0,
+});
+
+export const solved = (overrides: object = {}) => ({
+  status: 'ok' as const,
+  value: {
+    success: true,
+    lives: 3,
+    gold: 30,
+    score: 30,
+    turn: 1,
+    message: 'You did it',
+    ...overrides,
+  },
+});
+
+// Every upstream call a player move can make, answered as a fresh game would.
+export const stubPlayerUpstream = () => {
+  vi.spyOn(gameRunRepository.mugloar, 'createOne').mockResolvedValue(snapshot(PLAYER_GAME_ID));
+  vi.spyOn(adRepository.mugloar, 'findMany').mockResolvedValue({
+    status: 'ok',
+    value: PLAYER_BOARD,
+  });
+  vi.spyOn(shopItemRepository.mugloar, 'findMany').mockResolvedValue({
+    status: 'ok',
+    value: [...SHOP_ITEM_PRIOR],
+  });
+  vi.spyOn(adAttemptRepository.mugloar, 'createOne').mockResolvedValue(solved());
+  vi.spyOn(purchaseRepository.mugloar, 'createOne');
+};

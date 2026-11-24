@@ -31,3 +31,23 @@ export class PersistenceFailedError extends AppError {
     this.result = result;
   }
 }
+
+// Checked before the upstream call: a refused purchase there still burns a turn.
+export class InsufficientGoldError extends AppError {
+  constructor({ message, cause }: ErrorDetail) {
+    super({ code: 'conflict', message, statusCode: 409, cause });
+  }
+}
+
+export class ShopItemNotFoundError extends AppError {
+  constructor({ message, cause }: ErrorDetail) {
+    super({ code: 'not_found', message, statusCode: 404, cause });
+  }
+}
+
+// A bot's run belongs to the bot; a human move would desync it.
+export class GameNotPlayableError extends AppError {
+  constructor({ message, cause }: ErrorDetail) {
+    super({ code: 'conflict', message, statusCode: 409, cause });
+  }
+}
