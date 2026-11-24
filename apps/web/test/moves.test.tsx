@@ -111,6 +111,25 @@ describe('player moves', () => {
     expect(await screen.findByRole('heading', { name: copy.gameOver.title })).toBeVisible();
   });
 
+  it('turns a 410 on the move itself into the game over screen', async () => {
+    stubApi({
+      [GAME_ROUTE]: respondInSequence({
+        responders: [respondOk({ body: GAME_VIEW }), respondOk({ body: FINISHED_GAME })],
+      }),
+      [TURN_ROUTE]: respondOk({ body: TURN_VIEW }),
+      [SOLVE_ROUTE]: respondWith({
+        status: 410,
+        body: { error: { code: 'game_over', message: 'Game over' } },
+      }),
+    });
+
+    renderInRouter(<GameScreen gameId="g1" />);
+    await clickSolve();
+
+    expect(await screen.findByRole('heading', { name: copy.gameOver.title })).toBeVisible();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('turns a 410 on the turn into the game over screen', async () => {
     stubApi({
       [GAME_ROUTE]: respondInSequence({

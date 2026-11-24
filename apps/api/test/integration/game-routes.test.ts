@@ -8,6 +8,7 @@ import { DbTables } from '../../src/entities/db-tables.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import { startGame } from '../../src/managers/game-manager/index.ts';
 import {
+  adAttemptRepository,
   adRepository,
   gameRunRepository,
   purchaseRepository,
@@ -122,6 +123,24 @@ describe('game routes', () => {
     expect((await app.inject({ url: `/api/games/${gameId}` })).json()).toMatchObject({
       status: 'game_over',
     });
+  });
+
+  // Review Focus #5
+  it('answers 410 when the solve itself is game over, and plays no further moves', async () => {
+    const url = `/api/games/${gameId}/ads/sure1/solve`;
+
+    vi.mocked(adAttemptRepository.mugloar.createOne).mockResolvedValue({ status: 'game_over' });
+
+    expect((await app.inject({ method: 'POST', url })).statusCode).toBe(410);
+    expect(await gameRunRepository.db.findOne({ db: app.db, gameId })).toMatchObject({
+      status: 'game_over',
+      endedAt: expect.any(Date) as Date,
+    });
+
+    vi.mocked(adAttemptRepository.mugloar.createOne).mockClear();
+
+    expect((await app.inject({ method: 'POST', url })).statusCode).toBe(410);
+    expect(adAttemptRepository.mugloar.createOne).not.toHaveBeenCalled();
   });
 
   it('maps an unreachable upstream to 502', async () => {

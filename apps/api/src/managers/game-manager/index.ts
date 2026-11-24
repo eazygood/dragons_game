@@ -1,6 +1,6 @@
 export { buyItem } from './buy-item.ts';
 export { buyPlayerItem } from './buy-player-item.ts';
-export { endRun } from './end-run.ts';
+export { recordGameOver } from './record-game-over.ts';
 export { findAds } from './find-ads.ts';
 export { findPlayableRun, findRun } from './find-run.ts';
 export { findShopItems } from './find-shop-items.ts';

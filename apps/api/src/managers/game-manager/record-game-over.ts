@@ -8,7 +8,7 @@ import { stateFromRun } from './state-patch.ts';
 
 // The game is over upstream whatever happens here; a failed write must not turn
 // that into a 500 for the player.
-export const endRun = async ({
+export const recordGameOver = async ({
   db,
   run,
   state = stateFromRun({ run }),

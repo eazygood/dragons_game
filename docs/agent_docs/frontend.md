@@ -44,7 +44,7 @@ apps/web/
 │   ├── features/play/
 │   │   ├── copy.ts          - every user-facing string
 │   │   ├── start/           - new game + resume-by-id form
-│   │   ├── game/            - GameScreen, ActiveGame, status bar, game over, invalid id
+│   │   ├── game/            - GameScreen, ActiveGame, status bar, game over, unavailable game
 │   │   ├── board/           - AdBoard, AdCard, AdviceBadge
 │   │   ├── advice/          - RecommendationBanner
 │   │   ├── shop/            - ShopPanel
@@ -112,6 +112,8 @@ are UI work, not `catch` blocks:
 | State                         | Treatment                                                               |
 | ----------------------------- | ----------------------------------------------------------------------- |
 | `GameOver` (`410`)            | A screen with the final score and a "new game" action. Not a toast.     |
+| `GameNotFound` (`404`)        | "No such game" with a way back to the start. No retry.                  |
+| `GameNotPlayable` (`409`)     | "The bot's game" with a way back to the start. No retry.                |
 | `AdExpired` (`409`)           | Refresh the board and say why the ad vanished.                          |
 | `InsufficientGold` (`409`)    | The buy control is disabled with the reason visible _before_ the click. |
 | `UpstreamUnavailable` (`502`) | Retry affordance; make clear the game is intact and the remote is down. |

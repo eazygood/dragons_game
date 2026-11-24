@@ -18,10 +18,10 @@ const describeAction = ({ recommendation, turn }: { recommendation: Decision; tu
 
   const ad = turn.board.find(({ adId }) => adId === recommendation.adId);
   const { estimatedProbability, expectedValue } = recommendation.reasoning;
-  const odds = copy.advice.odds(
-    formatPercent({ probability: estimatedProbability }),
-    formatGold({ gold: expectedValue }),
-  );
+  const odds = copy.advice.odds({
+    percent: formatPercent({ probability: estimatedProbability }),
+    gold: formatGold({ gold: expectedValue }),
+  });
 
   return `${copy.advice.solve(ad?.message ?? recommendation.adId)} ${odds}`;
 };

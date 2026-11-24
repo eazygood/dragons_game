@@ -5,12 +5,12 @@ import type { PlayerMove } from '../../entities/turn-result.ts';
 import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { InsufficientGoldError, ShopItemNotFoundError } from '../../errors/errors.ts';
 import { buyItem } from './buy-item.ts';
-import { endRun } from './end-run.ts';
+import { recordGameOver } from './record-game-over.ts';
 import { findPlayableRun } from './find-run.ts';
 import { findShopItems } from './find-shop-items.ts';
 import { withGameLock } from './game-lock.ts';
 import { keepPlayingOnPersistenceFailure } from './keep-playing.ts';
-import { settleMove } from './settle-move.ts';
+import { applyMoveOutcome } from './apply-move-outcome.ts';
 import { stateFromRun } from './state-patch.ts';
 
 export const buyPlayerItem = ({
@@ -27,17 +27,17 @@ export const buyPlayerItem = ({
   withGameLock({
     gameId,
     task: async () => {
-      const playableRun = await findPlayableRun({ db, gameId });
+      const runLookup = await findPlayableRun({ db, gameId });
 
-      if (playableRun.status === 'game_over') {
-        return playableRun;
+      if (runLookup.status === 'game_over') {
+        return runLookup;
       }
 
-      const run = playableRun.value;
+      const run = runLookup.value;
       const shop = await findShopItems({ gameId });
 
       if (shop.status === 'game_over') {
-        await endRun({ db, run, logger });
+        await recordGameOver({ db, run, logger });
         return shop;
       }
 
@@ -59,6 +59,6 @@ export const buyPlayerItem = ({
       const action = buyItem({ db, run, state, item });
       const result = await keepPlayingOnPersistenceFailure({ action, logger });
 
-      return settleMove({ db, run, result, logger });
+      return applyMoveOutcome({ db, run, result, logger });
     },
   });

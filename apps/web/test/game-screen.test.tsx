@@ -34,4 +34,37 @@ describe('GameScreen', () => {
     expect(await screen.findAllByRole('article')).toHaveLength(TURN_VIEW.board.length);
     expect(screen.getByText(copy.status.score)).toBeVisible();
   });
+
+  it('says there is no such game, without a retry, when the id is unknown', async () => {
+    stubApi({
+      'GET /api/games/g1': () =>
+        jsonResponse({ status: 404, body: { error: { code: 'not_found', message: 'none' } } }),
+    });
+
+    renderInRouter(<GameScreen gameId="g1" />);
+
+    expect(
+      await screen.findByRole('heading', { name: copy.unavailableGame.not_found.title }),
+    ).toBeVisible();
+    expect(screen.getByRole('link', { name: copy.unavailableGame.back })).toHaveAttribute(
+      'href',
+      '/play',
+    );
+    expect(screen.queryByRole('button', { name: copy.errors.retry })).toBeNull();
+  });
+
+  it('says the game belongs to the bot when its turn is refused', async () => {
+    stubApi({
+      'GET /api/games/g1': () => jsonResponse({ status: 200, body: GAME_VIEW }),
+      'GET /api/games/g1/turn': () =>
+        jsonResponse({ status: 409, body: { error: { code: 'conflict', message: 'bot' } } }),
+    });
+
+    renderInRouter(<GameScreen gameId="g1" />);
+
+    expect(
+      await screen.findByRole('heading', { name: copy.unavailableGame.bot_game.title }),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: copy.errors.retry })).toBeNull();
+  });
 });

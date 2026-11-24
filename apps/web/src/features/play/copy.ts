@@ -52,7 +52,8 @@ export const copy = {
     title: 'Engine advice',
     solve: (message: string) => `Solve “${message}”.`,
     buy: (itemName: string) => `Buy ${itemName}.`,
-    odds: (percent: string, gold: string) => `Win chance ${percent}, expected ${gold}.`,
+    odds: ({ percent, gold }: { percent: string; gold: string }) =>
+      `Win chance ${percent}, expected ${gold}.`,
   },
   game: {
     loading: 'Loading game…',
@@ -63,9 +64,13 @@ export const copy = {
     finalScore: (score: number) => `Final score: ${score}`,
     newGame: 'New game',
   },
-  invalidGame: {
-    title: 'Not a game id',
-    body: 'That link does not point to a game.',
+  unavailableGame: {
+    invalid_id: { title: 'Not a game id', body: 'That link does not point to a game.' },
+    not_found: { title: 'No such game', body: 'No game with that id was started here.' },
+    bot_game: {
+      title: "The bot's game",
+      body: 'The bot is playing this one, so it cannot be played by hand.',
+    },
     back: 'Back to start',
   },
   errors: {

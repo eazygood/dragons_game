@@ -8,7 +8,7 @@ import type { GameRun } from '../../entities/game-run.ts';
 import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { loadCalibration } from '../calibration-manager/index.ts';
 import {
-  endRun,
+  recordGameOver,
   findAds,
   findPlayableRun,
   findShopItems,
@@ -32,17 +32,17 @@ export const adviseTurn = async ({
   gameId: string;
   logger: Logger;
 }): Promise<UpstreamResult<PlayerTurn>> => {
-  const playableRun = await findPlayableRun({ db, gameId });
+  const runLookup = await findPlayableRun({ db, gameId });
 
-  if (playableRun.status === 'game_over') {
-    return playableRun;
+  if (runLookup.status === 'game_over') {
+    return runLookup;
   }
 
-  const run = playableRun.value;
+  const run = runLookup.value;
   const [board, shop] = await Promise.all([findAds({ gameId }), findShopItems({ gameId })]);
 
   if (board.status === 'game_over' || shop.status === 'game_over') {
-    await endRun({ db, run, logger });
+    await recordGameOver({ db, run, logger });
     return { status: 'game_over' };
   }
 
