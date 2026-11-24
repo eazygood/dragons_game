@@ -1,11 +1,19 @@
+import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '.worktrees/**', '*.mjs'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      '.worktrees/**',
+      '*.mjs',
+      '**/routeTree.gen.ts',
+    ],
   },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     extends: [tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
@@ -18,6 +26,10 @@ export default tseslint.config(
         { blankLine: 'always', prev: ['const', 'let', 'var'], next: 'expression' },
       ],
     },
+  },
+  {
+    files: ['apps/web/**/*.{ts,tsx}'],
+    extends: [reactHooks.configs.flat.recommended],
   },
   // Layer rules from docs/agent_docs/architecture.md §Layers: dependencies move downward only.
   {
