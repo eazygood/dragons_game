@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
+import { TARGET_SCORE } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
 import { STRATEGY_CONFIG } from '../domain/engine/strategy-config.ts';
 import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
-import { BENCHMARK_TARGET, summarise } from './benchmark-report.ts';
+import { summarise } from './benchmark-report.ts';
 import type { BenchmarkSummary } from './benchmark-report.ts';
 import { runBounded } from './bounded-pool.ts';
 import { runBot, SILENT_LOGGER } from './run-bot.ts';
@@ -58,5 +59,5 @@ export const runBenchmark = async ({
     },
   });
 
-  return { ...summarise({ results, target: BENCHMARK_TARGET }), benchmarkId, strategy };
+  return { ...summarise({ results, target: TARGET_SCORE }), benchmarkId, strategy };
 };

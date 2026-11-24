@@ -1,10 +1,10 @@
 import type { Ad, Decision, GameState, ShopItem } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { GameRun } from '../entities/game-run.ts';
-import type { TurnResult } from '../entities/turn-result.ts';
-import type { UpstreamResult } from '../entities/upstream-result.ts';
-import { buyItem, solveAd } from '../managers/game-manager/index.ts';
+import type { GameRun } from '../../entities/game-run.ts';
+import type { TurnResult } from '../../entities/turn-result.ts';
+import type { UpstreamResult } from '../../entities/upstream-result.ts';
+import { buyItem, solveAd } from '../game-manager/index.ts';
 
 type TurnContext = { db: Knex; run: GameRun; state: GameState };
 
@@ -35,5 +35,5 @@ export const execute = ({
     throw new Error(`Decision names item ${decision.itemId}, which is not in the shop`);
   }
 
-  return buyItem({ ...context, item });
+  return buyItem({ ...context, item, reasoning: decision.reasoning });
 };

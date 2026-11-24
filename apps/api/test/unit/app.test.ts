@@ -1,3 +1,7 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { GameParamsSchema } from '@bigbank-dragon/contracts';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -80,6 +84,79 @@ describe('app', () => {
 
     expect(response.statusCode).toBe(404);
     expect(response.json()).toEqual({ error: { code: 'not_found', message: 'Route not found' } });
+  });
+});
+
+const NOT_FOUND_ENVELOPE = { error: { code: 'not_found', message: 'Route not found' } };
+
+describe('app serving the web app', () => {
+  let app: FastifyInstance;
+  let webDistDir: string;
+
+  beforeAll(async () => {
+    webDistDir = await mkdtemp(join(tmpdir(), 'web-dist-'));
+    await mkdir(join(webDistDir, 'assets'));
+    await writeFile(join(webDistDir, 'index.html'), '<div id="root"></div>');
+    await writeFile(join(webDistDir, 'assets', 'app.js'), 'console.log("app");');
+
+    app = await buildApp({
+      config: loadConfig({ env: { WEB_DIST_DIR: webDistDir } }),
+      logger: false,
+    });
+  });
+
+  afterAll(async () => {
+    await app.close();
+    await rm(webDistDir, { recursive: true });
+  });
+
+  it('serves the web app at the root and its assets', async () => {
+    const page = await app.inject({ url: '/' });
+    const asset = await app.inject({ url: '/assets/app.js' });
+
+    expect(page.statusCode).toBe(200);
+    expect(page.headers['content-type']).toContain('text/html');
+    expect(page.body).toContain('<div id="root">');
+    expect(asset.statusCode).toBe(200);
+    expect(asset.body).toContain('console.log');
+  });
+
+  it('answers client-side routes with the web app', async () => {
+    const response = await app.inject({ url: '/watch/abc' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toContain('text/html');
+    expect(response.body).toContain('<div id="root">');
+  });
+
+  it('keeps unknown API routes as JSON 404s', async () => {
+    const response = await app.inject({ url: '/api/nope' });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual(NOT_FOUND_ENVELOPE);
+  });
+
+  it('keeps the API health route ahead of the web app', async () => {
+    expect((await app.inject({ url: '/api/health' })).json()).toEqual({ status: 'ok' });
+  });
+
+  it('does not answer unknown non-GET routes with HTML', async () => {
+    const response = await app.inject({ method: 'POST', url: '/nope' });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual(NOT_FOUND_ENVELOPE);
+  });
+});
+
+describe('app without a web app', () => {
+  it('serves no web app when none is configured', async () => {
+    const app = await buildApp({ config: loadConfig({ env: {} }), logger: false });
+    const response = await app.inject({ url: '/' });
+
+    await app.close();
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual(NOT_FOUND_ENVELOPE);
   });
 });
 

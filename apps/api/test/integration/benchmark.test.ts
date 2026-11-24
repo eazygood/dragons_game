@@ -1,3 +1,4 @@
+import { TARGET_SCORE } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -69,6 +70,7 @@ describe('runBenchmark', () => {
         success: false,
         estimatedProbability: 0.5,
         expectedValue: -10,
+        rule: null,
         createdAt: new Date(),
       },
     });
@@ -123,6 +125,11 @@ describe('runBenchmark', () => {
 
     expect(runs).toHaveLength(3);
     expect(new Set(runs.map((run) => run.strategy))).toEqual(new Set(['baseline']));
-    expect(summary).toMatchObject({ runs: 3, strategy: 'baseline', passRate: 0 });
+    expect(summary).toMatchObject({
+      runs: 3,
+      strategy: 'baseline',
+      passRate: 0,
+      target: TARGET_SCORE,
+    });
   });
 });

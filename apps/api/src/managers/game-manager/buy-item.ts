@@ -1,4 +1,4 @@
-import type { GameState, ShopItem } from '@bigbank-dragon/contracts';
+import type { GameState, Reasoning, ShopItem } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
 import type { GameRun } from '../../entities/game-run.ts';
@@ -12,11 +12,13 @@ export const buyItem = async ({
   run,
   state,
   item,
+  reasoning,
 }: {
   db: Knex;
   run: GameRun;
   state: GameState;
   item: ShopItem;
+  reasoning: Reasoning;
 }): Promise<UpstreamResult<TurnResult>> => {
   const result = await purchaseRepository.mugloar.createOne({
     gameId: run.gameId,
@@ -49,6 +51,8 @@ export const buyItem = async ({
         purchase: {
           gameRunId: run.id,
           itemId: item.id,
+          itemName: item.name,
+          rule: reasoning.rule,
           cost: item.cost,
           turn: outcome.turn,
           success: outcome.success,

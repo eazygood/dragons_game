@@ -55,6 +55,7 @@ export const solveAd = async ({
           success: outcome.success,
           estimatedProbability: reasoning.estimatedProbability,
           expectedValue: reasoning.expectedValue,
+          rule: reasoning.rule,
           createdAt: new Date(),
         },
       }),

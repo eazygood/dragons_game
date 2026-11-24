@@ -1,3 +1,4 @@
+import { DecisionRuleSchema } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -65,6 +66,15 @@ describe('runBot', () => {
 
     expect(attempts).toHaveLength(SCRIPTED_TURNS);
     expect(attempts[0]).toEqual({ estimated_probability: 0.95, expected_value: 25.95 });
+  });
+
+  it('records the engine rule on every attempt', async () => {
+    await runBot({ db, strategy: 'calibrated', config });
+
+    const rules: unknown[] = await db(DbTables.AdAttempts).pluck('rule');
+
+    expect(rules).toHaveLength(SCRIPTED_TURNS);
+    expect(rules.filter((rule) => !DecisionRuleSchema.safeParse(rule).success)).toEqual([]);
   });
 
   // Review Focus #3

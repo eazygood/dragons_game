@@ -28,6 +28,7 @@ const EnvSchema = z.object({
   LOG_LEVEL: LogLevelSchema.default('info'),
   API_HOST: z.string().min(1).default(DEFAULT_API_HOST),
   API_PORT: z.coerce.number().int().min(1).max(MAX_PORT).default(DEFAULT_API_PORT),
+  WEB_DIST_DIR: z.string().min(1).optional(),
 });
 
 export type AppConfig = {
@@ -41,6 +42,7 @@ export type AppConfig = {
   logLevel: z.infer<typeof LogLevelSchema>;
   apiHost: string;
   apiPort: number;
+  webDistDir: string | null;
 };
 
 export const loadConfig = ({ env }: { env: NodeJS.ProcessEnv }): AppConfig => {
@@ -57,5 +59,6 @@ export const loadConfig = ({ env }: { env: NodeJS.ProcessEnv }): AppConfig => {
     logLevel: parsed.LOG_LEVEL,
     apiHost: parsed.API_HOST,
     apiPort: parsed.API_PORT,
+    webDistDir: parsed.WEB_DIST_DIR ?? null,
   };
 };

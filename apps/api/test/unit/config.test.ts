@@ -18,6 +18,13 @@ describe('loadConfig', () => {
     expect(loadConfig({ env: {} })).toMatchObject({ apiHost: '127.0.0.1', apiPort: 3000 });
   });
 
+  it('serves no web app unless WEB_DIST_DIR is set', () => {
+    expect(loadConfig({ env: {} }).webDistDir).toBeNull();
+    expect(loadConfig({ env: { WEB_DIST_DIR: '/app/apps/web/dist' } }).webDistDir).toBe(
+      '/app/apps/web/dist',
+    );
+  });
+
   it('rejects a non-numeric port', () => {
     expect(() => loadConfig({ env: { API_PORT: 'abc' } })).toThrow();
   });
