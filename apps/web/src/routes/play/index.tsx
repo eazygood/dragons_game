@@ -1,7 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
-const PLAY_HEADING = 'Play';
+import { StartGamePanel } from '../../features/play/start/StartGamePanel.tsx';
 
-const PlayPage = () => <h2>{PLAY_HEADING}</h2>;
+const PlayPage = () => {
+  const navigate = useNavigate();
+
+  const openGame = (gameId: string) => void navigate({ to: '/play/$gameId', params: { gameId } });
+
+  return <StartGamePanel onGameReady={openGame} />;
+};
 
 export const Route = createFileRoute('/play/')({ component: PlayPage });

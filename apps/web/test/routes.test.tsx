@@ -1,8 +1,10 @@
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { copy } from '../src/features/play/copy.ts';
 import { routeTree } from '../src/routeTree.gen.ts';
+import { renderWithQuery } from './render.tsx';
 
 describe('routes', () => {
   it('sends the landing page to /play', async () => {
@@ -11,9 +13,9 @@ describe('routes', () => {
       history: createMemoryHistory({ initialEntries: ['/'] }),
     });
 
-    render(<RouterProvider router={router} />);
+    renderWithQuery(<RouterProvider router={router} />);
 
-    expect(await screen.findByRole('heading', { name: 'Play' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: copy.start.title })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/play');
   });
 });
