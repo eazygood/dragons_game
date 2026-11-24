@@ -34,6 +34,15 @@ Validate, at minimum:
 Request and response types come from `packages/contracts`, so the React client
 and the API cannot drift apart.
 
+Route schemas are the contract's zod schemas, compiled by
+`plugins/zod-validator.ts`. That compiler stands in for `fastify-type-provider-zod`,
+because that package hard-requires `@fastify/swagger` and `openapi-types` and we
+use neither. The compiler returns zod issues as Fastify validation errors, so the
+error handler sees `error.validation` and answers `400 invalid_request`.
+
+Routes read the pool as `app.db`, decorated by `plugins/mysql.ts`, and pass it
+down as `{ db }`. The plugin's `onClose` hook destroys the pool.
+
 **The server never trusts the client.** Client-side validation exists for user
 experience; this layer exists for correctness. Neither substitutes for the other,
 and removing the client's checks must never change what the API accepts. See
@@ -50,9 +59,11 @@ HTTP mapping:
 | `GameNotFound`        | `404` |                                       |
 | `AdExpired`           | `409` | Board is stale; client should refetch |
 | `InsufficientGold`    | `409` |                                       |
+| `ShopItemNotFound`    | `404` |                                       |
+| `GameNotPlayable`     | `409` | A bot's game; humans cannot move it   |
 | `ValidationError`     | `400` | From the schema layer                 |
 | `UpstreamUnavailable` | `502` | Mugloar unreachable after retries     |
-| _(unmapped)_          | `500` | Logged with the request id            |
+| _(unmapped)_          | `500` | Logged; the message is never sent     |
 
 **Game over is not in this table.** The adapter returns `410` as a terminal
 `{ status: 'game_over' }` result and never throws it, so it never reaches the

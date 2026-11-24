@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
     "bot": "tsx src/tools/bot.ts",
     "bench": "tsx src/tools/bench.ts",
     "test": "vitest run --project unit --project contract",
@@ -14,6 +16,8 @@
   },
   "dependencies": {
     "@bigbank-dragon/contracts": "workspace:*",
+    "fastify": "5.12.8",
+    "fastify-plugin": "^6.0.1",
     "knex": "3.3.0",
     "mysql2": "3.24.6",
     "zod": "4.6.7"

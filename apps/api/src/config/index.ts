@@ -7,6 +7,9 @@ const DEFAULT_MUGLOAR_RETRY_BASE_DELAY_MS = 200;
 const DEFAULT_MUGLOAR_RATE_PER_SECOND = 8;
 const DEFAULT_MUGLOAR_BURST = 8;
 const DEFAULT_DATABASE_URL = 'mysql://dragon:dragon@127.0.0.1:3306/dragon';
+const DEFAULT_API_HOST = '127.0.0.1';
+const DEFAULT_API_PORT = 3000;
+const MAX_PORT = 65535;
 
 const LogLevelSchema = z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']);
 
@@ -23,6 +26,8 @@ const EnvSchema = z.object({
   MUGLOAR_BURST: z.coerce.number().int().positive().default(DEFAULT_MUGLOAR_BURST),
   DATABASE_URL: z.url({ protocol: /^mysql$/ }).default(DEFAULT_DATABASE_URL),
   LOG_LEVEL: LogLevelSchema.default('info'),
+  API_HOST: z.string().min(1).default(DEFAULT_API_HOST),
+  API_PORT: z.coerce.number().int().min(1).max(MAX_PORT).default(DEFAULT_API_PORT),
 });
 
 export type AppConfig = {
@@ -34,6 +39,8 @@ export type AppConfig = {
   mugloarBurst: number;
   databaseUrl: string;
   logLevel: z.infer<typeof LogLevelSchema>;
+  apiHost: string;
+  apiPort: number;
 };
 
 export const loadConfig = ({ env }: { env: NodeJS.ProcessEnv }): AppConfig => {
@@ -48,5 +55,7 @@ export const loadConfig = ({ env }: { env: NodeJS.ProcessEnv }): AppConfig => {
     mugloarBurst: parsed.MUGLOAR_BURST,
     databaseUrl: parsed.DATABASE_URL,
     logLevel: parsed.LOG_LEVEL,
+    apiHost: parsed.API_HOST,
+    apiPort: parsed.API_PORT,
   };
 };

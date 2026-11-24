@@ -9,6 +9,7 @@
     "pnpm": ">=12.4.2 <13"
   },
   "scripts": {
+    "dev": "pnpm -r --parallel --if-present dev",
     "build": "pnpm -r --if-present build",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
