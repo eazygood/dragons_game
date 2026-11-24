@@ -2,15 +2,15 @@
 
 ## Levels
 
-| Level       | Tool                      | Covers                                                                               |
-| ----------- | ------------------------- | ------------------------------------------------------------------------------------ |
-| Unit        | Vitest                    | Engine (table-driven across labels, levels, boards), decoders, EV maths, calibration |
-| Integration | Vitest + MySQL container  | Repositories, migrations, manager transactions                                       |
-| Contract    | Vitest + mock server      | Adapter against **recorded** fixtures: HTML errors, `410`, both encryption modes     |
-| API         | Vitest + `fastify.inject` | Routes, schemas, error mapping                                                       |
-| Component   | Vitest + Testing Library  | Components with three or more states                                                 |
-| E2E         | Playwright                | Full game flow against a stubbed upstream, 3 browsers, 2 viewports                   |
-| Benchmark   | CLI, manual               | 20 live runs, pass rate against 1000                                                 |
+| Level       | Tool                      | Covers                                                                                           |
+| ----------- | ------------------------- | ------------------------------------------------------------------------------------------------ |
+| Unit        | Vitest                    | Engine (table-driven across labels, levels, boards), decoders, EV maths, calibration             |
+| Integration | Vitest + MySQL container  | Repositories, migrations, manager transactions                                                   |
+| Contract    | Vitest + mock server      | Adapter against **recorded** fixtures: HTML errors, `410`, both encryption modes                 |
+| API         | Vitest + `fastify.inject` | Routes, schemas, error mapping (`test/integration/game-routes.test.ts`, `test/unit/app.test.ts`) |
+| Component   | Vitest + Testing Library  | `apps/web/test/`: the API client, retry policy, routing, every play-view state                   |
+| E2E         | Playwright                | Full game flow against a stubbed upstream, 3 browsers, 2 viewports                               |
+| Benchmark   | CLI, manual               | 20 live runs, pass rate against 1000                                                             |
 
 The engine being **pure** is what makes the most important tests fast and
 deterministic — no network, no database, no clock.
@@ -53,6 +53,24 @@ Never patch a fixture by hand to make a test pass — re-record instead.
   fixtures through `vi.stubGlobal('fetch', createReplayFetch(...))`.
 - `vitest.config.ts` gives every project fast adapter settings and an
   unreachable base URL, so a test that forgets to stub cannot reach the live API.
+
+## Stubbing the API in web tests
+
+Web tests never reach Fastify. `apps/web/test/fetch-stub.ts` replaces `fetch`:
+
+- `stubApi(routes)` takes keys of the form `'METHOD /path'`, built from the real
+  `gamePaths`, for example `'GET /api/games/g1/turn'`. A request with no key
+  rejects, so the test fails loudly instead of hanging. It returns the stub,
+  and `callCountOf(key)` counts the requests to one route.
+- Responders: `respondOk({ body })`, `respondWith({ status, body })`,
+  `respondNever()` for an in-flight move, and `respondInSequence({ responders })`
+  for a game that changes between fetches.
+- `renderWithQuery(ui)` gives a fresh no-retry query client. `renderInRouter(ui)`
+  also mounts a memory router for components that render `<Link>`. Pass
+  `{ queryClient: createQueryClient() }` to either one to test the production
+  retry and game-over policy.
+- `vitest.config.ts` sets `unstubGlobals: true`, so each test starts with the
+  real `fetch` again.
 
 ## Benchmark
 

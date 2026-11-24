@@ -6,8 +6,14 @@ import { STRATEGY_CONFIG } from '../domain/engine/strategy-config.ts';
 import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
 import type { GameRun } from '../entities/game-run.ts';
 import { loadCalibration } from '../managers/calibration-manager/index.ts';
-import { findAds, findShopItems, finishRun, startGame } from '../managers/game-manager/index.ts';
-import { execute, keepPlayingOnPersistenceFailure } from './execute-decision.ts';
+import {
+  findAds,
+  findShopItems,
+  finishRun,
+  keepPlayingOnPersistenceFailure,
+  startGame,
+} from '../managers/game-manager/index.ts';
+import { execute } from './execute-decision.ts';
 import type { BotLogger, BotRunResult, BotStrategy } from './types.ts';
 
 // Far beyond any observed game; only a misbehaving upstream ever reaches it.
@@ -86,11 +92,11 @@ const play = async ({
       return;
     }
 
-    progress.state = result.value;
+    progress.state = result.value.state;
     progress.turns += 1;
 
     // Lives at zero already ended the game; asking for the next board would be a 410.
-    if (result.value.lives <= 0) {
+    if (result.value.state.lives <= 0) {
       progress.gameOver = true;
       return;
     }

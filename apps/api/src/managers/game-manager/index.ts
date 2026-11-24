@@ -1,6 +1,12 @@
 export { buyItem } from './buy-item.ts';
+export { buyPlayerItem } from './buy-player-item.ts';
+export { recordGameOver } from './record-game-over.ts';
 export { findAds } from './find-ads.ts';
+export { findPlayableRun, findRun } from './find-run.ts';
 export { findShopItems } from './find-shop-items.ts';
 export { finishRun } from './finish-run.ts';
+export { keepPlayingOnPersistenceFailure } from './keep-playing.ts';
 export { solveAd } from './solve-ad.ts';
+export { solvePlayerAd } from './solve-player-ad.ts';
 export { startGame } from './start-game.ts';
+export { stateFromRun } from './state-patch.ts';

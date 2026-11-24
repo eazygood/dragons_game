@@ -44,8 +44,8 @@ Routes → Mediators → Managers → Repositories → Adapters
 ```
 
 Dependencies move **downward only**. Never skip a layer, never call upward.
-`eslint.config.mjs` enforces this with `no-restricted-imports` for `bot/`,
-`managers/`, `repositories/` and `domain/`, so a shortcut fails `pnpm lint`.
+`eslint.config.mjs` enforces this with `no-restricted-imports` for `routes/`,
+`mediators/`, `bot/`, `managers/`, `repositories/` and `domain/`, so a shortcut fails `pnpm lint`.
 
 | Layer            | May call                             | Must not                                               |
 | ---------------- | ------------------------------------ | ------------------------------------------------------ |
@@ -59,7 +59,9 @@ Dependencies move **downward only**. Never skip a layer, never call upward.
 ¹ The one exception is `withTransaction` from `mysql-adapter`: a manager owns
 the transaction boundary, so it opens the transaction and hands it to repositories.
 
-Until routes exist, `bot/` stands at the mediator level: it calls managers only.
+`bot/` stands at the mediator level: it calls managers only. Routes reach
+managers through `mediators/game-mediator/`, which turns manager results into
+the `packages/contracts` response shapes (`GameView`, `TurnView`, `MoveResult`).
 Shared types that cross layers live in `entities/` (`UpstreamResult`, the solve
 and buy outcomes) rather than in the adapter that first produces them.
 
@@ -262,6 +264,15 @@ decide({ state, board, shop, calibration, config }): Decision
 a **structured `reasoning` value, not a string**: the estimated success
 probability, the expected value, and which rule fired. The bot logs it; the UI
 renders it. That is what makes "watch the bot" explicable instead of a spinner.
+
+### Advisor
+
+`adviseBoard` wraps `decide` for the human player. It returns the same
+`Decision` as the recommendation, plus a verdict for every ad on the board:
+`recommended`, `viable`, `long_shot` or `unattemptable`. The advisor calls
+`decide` rather than re-implementing it, so the bot and the advice cannot
+disagree. When the player picks a different ad, `playerChoiceReasoning` records
+the engine's estimate for that ad, with rule `player_choice`.
 
 ### Calibration
 

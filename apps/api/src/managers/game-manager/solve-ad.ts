@@ -2,6 +2,7 @@ import type { Ad, GameState, ScoredReasoning } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
 import type { GameRun } from '../../entities/game-run.ts';
+import type { TurnResult } from '../../entities/turn-result.ts';
 import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { adAttemptRepository } from '../../repositories/index.ts';
 import { saveStateWithRecord } from './save-state-with-record.ts';
@@ -18,7 +19,7 @@ export const solveAd = async ({
   state: GameState;
   ad: Ad;
   reasoning: ScoredReasoning;
-}): Promise<UpstreamResult<GameState>> => {
+}): Promise<UpstreamResult<TurnResult>> => {
   const result = await adAttemptRepository.mugloar.createOne({ gameId: run.gameId, adId: ad.adId });
 
   if (result.status === 'game_over') {
@@ -35,10 +36,12 @@ export const solveAd = async ({
     turn: outcome.turn,
   };
 
+  const turn: TurnResult = { state: next, success: outcome.success, message: outcome.message };
+
   await saveStateWithRecord({
     db,
     run,
-    state: next,
+    result: turn,
     writeRecord: (trx) =>
       adAttemptRepository.db.createOne({
         db: trx,
@@ -57,5 +60,5 @@ export const solveAd = async ({
       }),
   });
 
-  return { status: 'ok', value: next };
+  return { status: 'ok', value: turn };
 };

@@ -2,10 +2,9 @@ import type { Ad, Decision, GameState, ShopItem } from '@bigbank-dragon/contract
 import type { Knex } from 'knex';
 
 import type { GameRun } from '../entities/game-run.ts';
+import type { TurnResult } from '../entities/turn-result.ts';
 import type { UpstreamResult } from '../entities/upstream-result.ts';
-import { PersistenceFailedError } from '../errors/errors.ts';
 import { buyItem, solveAd } from '../managers/game-manager/index.ts';
-import type { BotLogger } from './types.ts';
 
 type TurnContext = { db: Knex; run: GameRun; state: GameState };
 
@@ -19,7 +18,7 @@ export const execute = ({
   decision: Exclude<Decision, { kind: 'stop' }>;
   board: Ad[];
   shop: ShopItem[];
-}): Promise<UpstreamResult<GameState>> => {
+}): Promise<UpstreamResult<TurnResult>> => {
   if (decision.kind === 'solve') {
     const ad = board.find((candidate) => candidate.adId === decision.adId);
 
@@ -37,25 +36,4 @@ export const execute = ({
   }
 
   return buyItem({ ...context, item });
-};
-
-// The one error a game outlives (spec §6): the upstream turn already happened,
-// so losing its local record must not end the real game.
-export const keepPlayingOnPersistenceFailure = async ({
-  action,
-  logger,
-}: {
-  action: Promise<UpstreamResult<GameState>>;
-  logger: BotLogger;
-}): Promise<UpstreamResult<GameState>> => {
-  try {
-    return await action;
-  } catch (error) {
-    if (!(error instanceof PersistenceFailedError)) {
-      throw error;
-    }
-
-    logger.warn({ err: error, turn: error.state.turn }, 'turn not persisted; playing on');
-    return { status: 'ok', value: error.state };
-  }
 };

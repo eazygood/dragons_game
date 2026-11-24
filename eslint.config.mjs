@@ -1,11 +1,19 @@
+import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '.worktrees/**', '*.mjs'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+      '.worktrees/**',
+      '*.mjs',
+      '**/routeTree.gen.ts',
+    ],
   },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     extends: [tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
@@ -19,6 +27,10 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['apps/web/**/*.{ts,tsx}'],
+    extends: [reactHooks.configs.flat.recommended],
+  },
   // Layer rules from docs/agent_docs/architecture.md §Layers: dependencies move downward only.
   {
     files: ['apps/api/src/bot/**/*.ts'],
@@ -30,6 +42,44 @@ export default tseslint.config(
             {
               group: ['**/repositories/**', '**/adapters/**'],
               message: 'The bot calls managers only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/routes/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/repositories/**', '**/adapters/**', '**/domain/**', '**/bot/**'],
+              message: 'Routes call mediators only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/mediators/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/repositories/**',
+                '**/adapters/**',
+                '**/domain/**',
+                '**/bot/**',
+                '**/routes/**',
+              ],
+              message: 'Mediators compose managers; they never reach lower or call upward.',
             },
           ],
         },

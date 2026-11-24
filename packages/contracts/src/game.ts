@@ -6,6 +6,12 @@ export const StrategyNameSchema = z.enum(STRATEGY_NAMES);
 
 export type StrategyName = (typeof STRATEGY_NAMES)[number];
 
+export const RUN_STATUSES = ['active', 'game_over', 'abandoned'] as const;
+
+export const RunStatusSchema = z.enum(RUN_STATUSES);
+
+export type RunStatus = (typeof RUN_STATUSES)[number];
+
 export const GameStateSchema = z.object({
   gameId: z.string().min(1),
   lives: z.number().int(),

@@ -14,6 +14,14 @@ describe('loadConfig', () => {
     });
   });
 
+  it('defaults the API to 127.0.0.1:3000', () => {
+    expect(loadConfig({ env: {} })).toMatchObject({ apiHost: '127.0.0.1', apiPort: 3000 });
+  });
+
+  it('rejects a non-numeric port', () => {
+    expect(() => loadConfig({ env: { API_PORT: 'abc' } })).toThrow();
+  });
+
   it('reads overrides from the environment', () => {
     const config = loadConfig({ env: { MUGLOAR_TIMEOUT_MS: '750', LOG_LEVEL: 'debug' } });
 
