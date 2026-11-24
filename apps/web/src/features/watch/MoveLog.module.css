@@ -1,0 +1,24 @@
+.log {
+  display: grid;
+  gap: var(--space-1);
+  max-width: 40rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow-wrap: anywhere;
+}
+
+.succeeded {
+  color: var(--color-success);
+}
+
+.failed {
+  color: var(--color-danger);
+}

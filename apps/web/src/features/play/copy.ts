@@ -5,6 +5,8 @@ export const copy = {
     title: 'Start playing',
     newGame: 'New game',
     starting: 'Starting…',
+    botPlay: 'Let the bot play',
+    botStarting: 'Starting the bot…',
     resumeLabel: 'Resume a game by id',
     resume: 'Resume',
     invalidGameId: 'A game id is 1–64 letters, digits, "-" or "_".',
@@ -71,6 +73,7 @@ export const copy = {
       title: "The bot's game",
       body: 'The bot is playing this one, so it cannot be played by hand.',
     },
+    watchBot: 'Watch the bot',
     back: 'Back to start',
   },
   errors: {

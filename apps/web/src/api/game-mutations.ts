@@ -11,6 +11,12 @@ export const useStartGame = () =>
       apiRequest({ path: gamePaths.games(), method: 'POST', schema: GameViewSchema }),
   });
 
+export const useStartBotGame = () =>
+  useMutation({
+    mutationFn: () =>
+      apiRequest({ path: gamePaths.botGames(), method: 'POST', schema: GameViewSchema }),
+  });
+
 // Settled, not success: a failed move can still have burnt a turn and aged every ad.
 const useMove = <T>({
   gameId,

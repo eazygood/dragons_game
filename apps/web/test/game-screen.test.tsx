@@ -65,6 +65,10 @@ describe('GameScreen', () => {
     expect(
       await screen.findByRole('heading', { name: copy.unavailableGame.bot_game.title }),
     ).toBeVisible();
+    expect(screen.getByRole('link', { name: copy.unavailableGame.watchBot })).toHaveAttribute(
+      'href',
+      '/watch/g1',
+    );
     expect(screen.queryByRole('button', { name: copy.errors.retry })).toBeNull();
   });
 });
