@@ -85,6 +85,17 @@ describe('game manager', () => {
     });
   });
 
+  it('returns the solve outcome with the new state', async () => {
+    expect(await solveAd({ db, run, state, ad: AD, reasoning: REASONING })).toEqual({
+      status: 'ok',
+      value: {
+        state: expect.objectContaining({ gold: 20, score: 20, turn: 1 }) as GameState,
+        success: true,
+        message: 'ok',
+      },
+    });
+  });
+
   it('writes an ad attempt carrying the prediction it acted on', async () => {
     await solveAd({ db, run, state, ad: AD, reasoning: REASONING });
 
@@ -118,7 +129,9 @@ describe('game manager', () => {
     const attempt = buyItem({ db, run, state, item: CLAW_HONING });
 
     await expect(attempt).rejects.toBeInstanceOf(PersistenceFailedError);
-    await expect(attempt).rejects.toMatchObject({ state: { dragonLevel: 2, turn: 5 } });
+    await expect(attempt).rejects.toMatchObject({
+      result: { state: { dragonLevel: 2, turn: 5 }, success: true, message: null },
+    });
     expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
       dragonLevel: 0,
     });
@@ -134,7 +147,10 @@ describe('game manager', () => {
 
     const result = await buyItem({ db, run, state, item: CLAW_HONING });
 
-    expect(result).toMatchObject({ status: 'ok', value: { turn: 6, dragonLevel: 0 } });
+    expect(result).toMatchObject({
+      status: 'ok',
+      value: { success: false, message: null, state: { turn: 6, dragonLevel: 0 } },
+    });
     expect(await db(DbTables.Purchases).first()).toMatchObject({
       item_id: 'ch',
       success: 0,

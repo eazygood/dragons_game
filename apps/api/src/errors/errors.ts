@@ -1,5 +1,4 @@
-import type { GameState } from '@bigbank-dragon/contracts';
-
+import type { TurnResult } from '../entities/turn-result.ts';
 import { AppError } from './app-error.ts';
 
 type ErrorDetail = { message: string; cause?: unknown };
@@ -22,13 +21,13 @@ export class AdExpiredError extends AppError {
   }
 }
 
-// Carries the state the upstream already moved to, so a caller can keep playing
+// Carries the turn the upstream already played, so a caller can keep playing
 // the real game even though the local record of that turn was lost.
 export class PersistenceFailedError extends AppError {
-  readonly state: GameState;
+  readonly result: TurnResult;
 
-  constructor({ message, cause, state }: ErrorDetail & { state: GameState }) {
+  constructor({ message, cause, result }: ErrorDetail & { result: TurnResult }) {
     super({ code: 'internal', message, statusCode: 500, cause });
-    this.state = state;
+    this.result = result;
   }
 }

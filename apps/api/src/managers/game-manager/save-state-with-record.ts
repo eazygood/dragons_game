@@ -1,8 +1,8 @@
-import type { GameState } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
 import { withTransaction } from '../../adapters/mysql-adapter.ts';
 import type { GameRun } from '../../entities/game-run.ts';
+import type { TurnResult } from '../../entities/turn-result.ts';
 import { PersistenceFailedError } from '../../errors/errors.ts';
 import { gameRunRepository } from '../../repositories/index.ts';
 import { statePatch } from './state-patch.ts';
@@ -12,12 +12,12 @@ import { statePatch } from './state-patch.ts';
 export const saveStateWithRecord = async ({
   db,
   run,
-  state,
+  result,
   writeRecord,
 }: {
   db: Knex;
   run: GameRun;
-  state: GameState;
+  result: TurnResult;
   writeRecord: (trx: Knex.Transaction) => Promise<unknown>;
 }): Promise<void> => {
   try {
@@ -27,16 +27,16 @@ export const saveStateWithRecord = async ({
         await gameRunRepository.db.updateOne({
           db: trx,
           id: run.id,
-          patch: statePatch({ state }),
+          patch: statePatch({ state: result.state }),
         });
         await writeRecord(trx);
       },
     });
   } catch (cause) {
     throw new PersistenceFailedError({
-      message: `Could not record turn ${state.turn} of game ${run.gameId}`,
+      message: `Could not record turn ${result.state.turn} of game ${run.gameId}`,
       cause,
-      state,
+      result,
     });
   }
 };

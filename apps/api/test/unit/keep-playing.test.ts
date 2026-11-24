@@ -1,0 +1,28 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import { AdExpiredError, PersistenceFailedError } from '../../src/errors/errors.ts';
+import { keepPlayingOnPersistenceFailure } from '../../src/managers/game-manager/keep-playing.ts';
+
+const STATE = { gameId: 'g1', lives: 3, gold: 30, dragonLevel: 0, turn: 1, score: 30 };
+const SILENT = { info: vi.fn(), warn: vi.fn() };
+
+describe('keepPlayingOnPersistenceFailure', () => {
+  it('plays on with the upstream result when persistence fails', async () => {
+    const result = { state: STATE, success: true, message: 'ok' };
+    const warn = vi.fn();
+    const action = Promise.reject(new PersistenceFailedError({ message: 'db down', result }));
+
+    await expect(
+      keepPlayingOnPersistenceFailure({ action, logger: { info: vi.fn(), warn } }),
+    ).resolves.toEqual({ status: 'ok', value: result });
+    expect(warn).toHaveBeenCalledOnce();
+  });
+
+  it('rethrows anything else', async () => {
+    const action = Promise.reject(new AdExpiredError({ message: 'x' }));
+
+    await expect(
+      keepPlayingOnPersistenceFailure({ action, logger: SILENT }),
+    ).rejects.toBeInstanceOf(AdExpiredError);
+  });
+});

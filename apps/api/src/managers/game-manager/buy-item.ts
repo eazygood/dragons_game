@@ -2,6 +2,7 @@ import type { GameState, ShopItem } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
 import type { GameRun } from '../../entities/game-run.ts';
+import type { TurnResult } from '../../entities/turn-result.ts';
 import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { purchaseRepository } from '../../repositories/index.ts';
 import { saveStateWithRecord } from './save-state-with-record.ts';
@@ -16,7 +17,7 @@ export const buyItem = async ({
   run: GameRun;
   state: GameState;
   item: ShopItem;
-}): Promise<UpstreamResult<GameState>> => {
+}): Promise<UpstreamResult<TurnResult>> => {
   const result = await purchaseRepository.mugloar.createOne({
     gameId: run.gameId,
     itemId: item.id,
@@ -36,10 +37,12 @@ export const buyItem = async ({
     dragonLevel: outcome.success ? outcome.level : state.dragonLevel,
   };
 
+  const turn: TurnResult = { state: next, success: outcome.success, message: null };
+
   await saveStateWithRecord({
     db,
     run,
-    state: next,
+    result: turn,
     writeRecord: (trx) =>
       purchaseRepository.db.createOne({
         db: trx,
@@ -54,5 +57,5 @@ export const buyItem = async ({
       }),
   });
 
-  return { status: 'ok', value: next };
+  return { status: 'ok', value: turn };
 };
