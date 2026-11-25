@@ -15,7 +15,7 @@ import {
   stateFromRun,
 } from '../game-manager/index.ts';
 
-export type PlayerTurn = {
+type PlayerTurn = {
   run: GameRun;
   board: AdvisedAd[];
   shop: ShopItem[];

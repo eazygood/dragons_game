@@ -17,7 +17,7 @@ import {
 import { executeDecision } from './execute-decision.ts';
 
 // Far beyond any observed game; only a misbehaving upstream ever reaches it.
-export const DEFAULT_MAX_TURNS = 1000;
+const DEFAULT_MAX_TURNS = 1000;
 
 export const SILENT_LOGGER: Logger = { info: () => undefined, warn: () => undefined };
 

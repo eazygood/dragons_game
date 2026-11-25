@@ -5,7 +5,7 @@ import { SILENT_LOGGER, playGame } from '../managers/bot-manager/index.ts';
 import { startGame } from '../managers/game-manager/index.ts';
 import type { BotLogger, BotRunResult, BotStrategy } from './types.ts';
 
-export { DEFAULT_MAX_TURNS, SILENT_LOGGER } from '../managers/bot-manager/index.ts';
+export { SILENT_LOGGER } from '../managers/bot-manager/index.ts';
 
 export const runBot = async ({
   db,

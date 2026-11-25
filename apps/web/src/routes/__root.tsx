@@ -2,7 +2,7 @@ import { Outlet, createRootRoute } from '@tanstack/react-router';
 
 import styles from './root.module.css';
 
-export const APP_TITLE = 'Dragons of Mugloar';
+const APP_TITLE = 'Dragons of Mugloar';
 
 const RootLayout = () => (
   <div className={styles.layout}>
