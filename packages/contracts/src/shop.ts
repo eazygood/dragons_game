@@ -10,7 +10,7 @@ export type ShopItem = z.infer<typeof ShopItemSchema>;
 
 export const HEALING_POTION_ID = 'hpot';
 
-// Fallback only (spec §3.5): the live listing is not static across games.
+// Fallback only: the live listing is not static across games.
 export const SHOP_ITEM_PRIOR: readonly ShopItem[] = [
   { id: HEALING_POTION_ID, name: 'Healing potion', cost: 50 },
   { id: 'cs', name: 'Claw Sharpening', cost: 100 },

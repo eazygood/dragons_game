@@ -31,7 +31,7 @@ Success rate by label and reward, `calibrated` cold, all 20 runs:
 across rewards. Fix: calibration keyed on a reward band (edges 100, 160) and
 reloaded every turn.
 
-## 3. Must-verify list (spec §10)
+## 3. Must-verify list
 
 | Question                                 | Result                                                                                     |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------ |

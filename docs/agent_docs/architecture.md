@@ -421,7 +421,7 @@ defaults): **95% (19/20)** at 1000 or more. Score min 955, median 2723.5, max
 Two things from the earlier runs on 2026-11-23, both in
 [`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md):
 
-- In the acceptance run, 16 of the 20 games stopped on an exhausted board (§7).
+- In the acceptance run, 16 of the 20 games stopped on an exhausted board (findings §7).
 - A separate experiment, an exhausted-board level-up rule, was benchmarked and
   reverted. The rule never acted in its one miss: that game lost its 3 lives in 5
   turns on ads estimated at 0.73 to 0.88, with too little gold for a potion, and

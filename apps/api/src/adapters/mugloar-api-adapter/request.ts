@@ -34,7 +34,7 @@ const isRetryable = (attempt: Attempt) =>
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-// Error bodies are HTML (spec §3.6), so a non-2xx body is read as text and only quoted.
+// Error bodies are HTML, not JSON, so a non-2xx body is read as text and only quoted.
 const failureFor = async ({ response, label }: { response: Response; label: string }) => {
   const body = await response.text().catch(() => '');
   const message = `${label} → ${response.status}: ${body.slice(0, 120)}`;

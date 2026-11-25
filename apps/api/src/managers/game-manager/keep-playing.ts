@@ -3,7 +3,7 @@ import type { TurnResult } from '../../entities/turn-result.ts';
 import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { PersistenceFailedError } from '../../errors/errors.ts';
 
-// The one error a game outlives (spec §6): the upstream turn already happened,
+// The one error a game outlives: the upstream turn already happened,
 // so losing its local record must not end the real game.
 export const keepPlayingOnPersistenceFailure = async ({
   action,
