@@ -138,7 +138,8 @@ export const playGame = async ({
   } catch (error) {
     // The upstream game outlives the error; without this the row stays 'active' forever.
     await finishRun({ db, run, state: progress.state, status: 'abandoned' }).catch(
-      (finishError: unknown) => logger.warn({ err: finishError }, 'errored run not finalised'),
+      (finishError: unknown) =>
+        logger.warn({ err: finishError, gameId: run.gameId }, 'errored run not finalised'),
     );
     throw error;
   }
@@ -146,7 +147,11 @@ export const playGame = async ({
   // Stopping early leaves the upstream game alive, so it is abandoned, not over.
   const status = progress.isGameOver ? 'game_over' : 'abandoned';
 
-  await finishRun({ db, run, state: progress.state, status });
+  // The game itself finished; a failed bookkeeping write leaves the row 'active' (a known
+  // limit) but must not turn a finished game into an error or stop a benchmark.
+  await finishRun({ db, run, state: progress.state, status }).catch((finishError: unknown) =>
+    logger.warn({ err: finishError, gameId: run.gameId }, 'finished run not finalised'),
+  );
   logger.info(
     { gameId: run.gameId, score: progress.state.score, turns: progress.turns },
     'run finished',

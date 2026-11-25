@@ -388,6 +388,7 @@ history (`calibrationBenchmarkId: null`, as `pnpm bot` does).
   number of concurrent bot games; they simply slow each other down.
 - **Restart.** The loop lives in the process. An API restart (or `docker compose
 down`) stops it mid-game and leaves the run `active`; it is not resumed. A
+  failed final `finishRun` write is logged and also leaves it `active`. A
   human's game is unaffected, because its state is persisted per move.
 
 A separate worker would need a queue, a second deployable and a cross-process
