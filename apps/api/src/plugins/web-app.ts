@@ -1,9 +1,17 @@
 import { resolve } from 'node:path';
 
+import type { ApiErrorBody } from '@bigbank-dragon/contracts';
 import fastifyStatic from '@fastify/static';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 
 import type { AppConfig } from '../config/index.ts';
+import { API_PREFIX } from '../routes/api-prefix.ts';
+
+const HTTP_NOT_FOUND = 404;
+const WEB_APP_ENTRY = 'index.html';
+const API_PATH_PATTERN = new RegExp(`^${API_PREFIX}(?:[/?]|$)`);
+const ROUTE_NOT_FOUND: ApiErrorBody = { error: { code: 'not_found', message: 'Route not found' } };
 
 // fastify-plugin lifts sendFile onto the root instance, where the not-found handler uses it.
 export const webAppPlugin = fp<{ config: AppConfig }>(async (app, { config }) => {
@@ -13,3 +21,17 @@ export const webAppPlugin = fp<{ config: AppConfig }>(async (app, { config }) =>
 
   await app.register(fastifyStatic, { root: resolve(config.webDistDir) });
 });
+
+// reply.sendFile exists only once @fastify/static is registered, so it tells us a web app is served.
+const isWebAppRoute = ({ request }: { request: FastifyRequest }) =>
+  request.method === 'GET' &&
+  !API_PATH_PATTERN.test(request.url) &&
+  request.server.hasReplyDecorator('sendFile');
+
+export const notFoundHandler = (request: FastifyRequest, reply: FastifyReply) => {
+  if (isWebAppRoute({ request })) {
+    return reply.sendFile(WEB_APP_ENTRY);
+  }
+
+  return reply.status(HTTP_NOT_FOUND).send(ROUTE_NOT_FOUND);
+};

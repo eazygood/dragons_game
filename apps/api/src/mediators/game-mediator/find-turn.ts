@@ -1,8 +1,8 @@
 import type { TurnView } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { Logger } from '../../config/logger.ts';
-import type { UpstreamResult } from '../../entities/upstream-result.ts';
+import type { Logger } from '../../entities/logger.ts';
+import type { OrGameOver } from '../../entities/or-game-over.ts';
 import { adviseTurn } from '../../managers/advisor-manager/index.ts';
 import { toGameView } from './game-view.ts';
 
@@ -14,7 +14,7 @@ export const findTurn = async ({
   db: Knex;
   gameId: string;
   logger: Logger;
-}): Promise<UpstreamResult<TurnView>> => {
+}): Promise<OrGameOver<TurnView>> => {
   const playerTurnResult = await adviseTurn({ db, gameId, logger });
 
   if (playerTurnResult.status === 'game_over') {

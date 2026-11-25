@@ -2,8 +2,8 @@ import { GameIdSchema } from '@bigbank-dragon/contracts';
 import { useId, useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { copy } from '../copy.ts';
-import styles from './StartGamePanel.module.css';
+import { playCopy } from '../play-copy.ts';
+import styles from './ResumeGameForm.module.css';
 
 // UX only: the API re-validates the id, this just keeps a typo out of the URL.
 export const ResumeGameForm = ({ onResume }: { onResume: (gameId: string) => void }) => {
@@ -23,9 +23,9 @@ export const ResumeGameForm = ({ onResume }: { onResume: (gameId: string) => voi
   };
 
   return (
-    <form className={styles.resumeForm} onSubmit={resumeGame}>
-      <label htmlFor={inputId}>{copy.start.resumeLabel}</label>
-      <div className={styles.resumeRow}>
+    <form className={styles.form} onSubmit={resumeGame}>
+      <label htmlFor={inputId}>{playCopy.start.resumeLabel}</label>
+      <div className={styles.row}>
         <input
           id={inputId}
           value={typedGameId}
@@ -35,12 +35,12 @@ export const ResumeGameForm = ({ onResume }: { onResume: (gameId: string) => voi
           autoComplete="off"
         />
         <button type="submit" disabled={!isValid}>
-          {copy.start.resume}
+          {playCopy.start.resume}
         </button>
       </div>
       {shouldShowError && (
         <p id={errorId} className={styles.error}>
-          {copy.start.invalidGameId}
+          {playCopy.start.invalidGameId}
         </p>
       )}
     </form>

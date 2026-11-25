@@ -8,7 +8,8 @@ export const gamePaths = {
   botGames: () => BOT_GAMES_ROOT,
   game: ({ gameId }: { gameId: string }) => `${GAMES_ROOT}/${encodePathSegment(gameId)}`,
   turn: ({ gameId }: { gameId: string }) => `${GAMES_ROOT}/${encodePathSegment(gameId)}/turn`,
-  moves: ({ gameId }: { gameId: string }) => `${GAMES_ROOT}/${encodePathSegment(gameId)}/moves`,
+  moveHistory: ({ gameId }: { gameId: string }) =>
+    `${GAMES_ROOT}/${encodePathSegment(gameId)}/moves`,
   solve: ({ gameId, adId }: { gameId: string; adId: string }) =>
     `${GAMES_ROOT}/${encodePathSegment(gameId)}/ads/${encodePathSegment(adId)}/solve`,
   buy: ({ gameId, itemId }: { gameId: string; itemId: string }) =>

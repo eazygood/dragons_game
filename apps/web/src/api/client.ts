@@ -5,6 +5,9 @@ import { ApiError, UNREACHABLE_STATUS } from './api-error.ts';
 
 const UPSTREAM_DOWN_STATUSES = new Set([502, 503, 504]);
 
+// Covers a solve or buy that hangs: without it the buttons would stay disabled forever.
+export const REQUEST_TIMEOUT_MS = 20_000;
+
 const readJson = async ({ response }: { response: Response }): Promise<unknown> => {
   try {
     return (await response.json()) as unknown;
@@ -26,10 +29,29 @@ const toApiError = async ({ response }: { response: Response }) => {
   return new ApiError({ status: response.status, code, message: response.statusText });
 };
 
-const sendRequest = async ({ path, method }: { path: string; method: string }) => {
+const sendRequest = async ({
+  path,
+  method,
+  signal,
+}: {
+  path: string;
+  method: string;
+  signal: AbortSignal | undefined;
+}) => {
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+
   try {
-    return await fetch(path, { method, headers: { accept: 'application/json' } });
+    return await fetch(path, {
+      method,
+      headers: { accept: 'application/json' },
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    });
   } catch (cause) {
+    // A cancelled query is not a failure, so Query must see the abort itself.
+    if (signal?.aborted) {
+      throw cause;
+    }
+
     const message = cause instanceof Error ? cause.message : 'Network error';
 
     throw new ApiError({ status: UNREACHABLE_STATUS, code: 'unreachable', message });
@@ -41,12 +63,14 @@ export const apiRequest = async <T>({
   path,
   method = 'GET',
   schema,
+  signal,
 }: {
   path: string;
   method?: 'GET' | 'POST';
   schema: z.ZodType<T>;
+  signal?: AbortSignal;
 }): Promise<T> => {
-  const response = await sendRequest({ path, method });
+  const response = await sendRequest({ path, method, signal });
 
   if (!response.ok) {
     throw await toApiError({ response });

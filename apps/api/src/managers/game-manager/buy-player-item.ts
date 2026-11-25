@@ -1,18 +1,18 @@
 import type { Reasoning } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { Logger } from '../../config/logger.ts';
+import type { Logger } from '../../entities/logger.ts';
+import type { OrGameOver } from '../../entities/or-game-over.ts';
 import type { PlayerMove } from '../../entities/turn-result.ts';
-import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { InsufficientGoldError, ShopItemNotFoundError } from '../../errors/errors.ts';
-import { buyItem } from './buy-item.ts';
-import { recordGameOver } from './record-game-over.ts';
+import { applyMoveOutcome } from './apply-move-outcome.ts';
 import { findPlayableRun } from './find-run.ts';
 import { findShopItems } from './find-shop-items.ts';
 import { withGameLock } from './game-lock.ts';
-import { keepPlayingOnPersistenceFailure } from './keep-playing.ts';
-import { applyMoveOutcome } from './apply-move-outcome.ts';
-import { stateFromRun } from './state-patch.ts';
+import { saveStateOnPersistenceFailure } from './keep-playing.ts';
+import { playBuyTurn } from './play-buy-turn.ts';
+import { recordGameOver } from './record-game-over.ts';
+import { stateFromRun } from './run-state.ts';
 
 export const buyPlayerItem = ({
   db,
@@ -24,7 +24,7 @@ export const buyPlayerItem = ({
   gameId: string;
   itemId: string;
   logger: Logger;
-}): Promise<UpstreamResult<PlayerMove>> =>
+}): Promise<OrGameOver<PlayerMove>> =>
   withGameLock({
     gameId,
     task: async () => {
@@ -63,8 +63,8 @@ export const buyPlayerItem = ({
         expectedValue: null,
         consideredCount: shopResult.value.length,
       };
-      const pendingTurn = buyItem({ db, run, state, item, reasoning });
-      const playedTurn = await keepPlayingOnPersistenceFailure({ pendingTurn, logger });
+      const pendingTurn = playBuyTurn({ db, run, state, item, reasoning });
+      const playedTurn = await saveStateOnPersistenceFailure({ db, run, pendingTurn, logger });
 
       return applyMoveOutcome({ db, run, playedTurn, logger });
     },

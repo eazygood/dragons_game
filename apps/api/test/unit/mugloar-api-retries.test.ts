@@ -88,6 +88,22 @@ describe('mugloar api: retries and transport failures', () => {
     );
   });
 
+  it('fails a request starved of throttle tokens instead of queueing it forever', async () => {
+    pointAdapterAt({
+      baseUrl: stub.baseUrl,
+      overrides: { mugloarBurst: 1, mugloarRatePerSecond: 0.01, mugloarTimeoutMs: 50 },
+    });
+    stub.post('/:gameId/shop/buy/:itemId', () => [500, '<html>boom</html>']);
+
+    await expect(
+      purchaseRepository.mugloar.createOne({ gameId: 'g1', itemId: 'hpot' }),
+    ).rejects.toBeInstanceOf(UpstreamUnavailableError);
+    await expect(
+      purchaseRepository.mugloar.createOne({ gameId: 'g1', itemId: 'hpot' }),
+    ).rejects.toBeInstanceOf(UpstreamUnavailableError);
+    expect(stub.callCount('/:gameId/shop/buy/:itemId')).toBe(1);
+  });
+
   it('takes a throttle token before every outbound call', async () => {
     const acquire = vi.spyOn(mugloarThrottle, 'acquire');
 

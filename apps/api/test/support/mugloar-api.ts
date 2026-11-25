@@ -1,4 +1,6 @@
-import { vi } from 'vitest';
+import { configureMugloarApi } from '../../src/adapters/mugloar-api-adapter/index.ts';
+import type { MugloarApiConfig } from '../../src/adapters/mugloar-api-adapter/adapter-config.ts';
+import { loadConfig } from '../../src/config/index.ts';
 
 export const LIVE_AD = {
   adId: 'BR0b2WyN',
@@ -9,7 +11,16 @@ export const LIVE_AD = {
   probability: 'Piece of cake',
 };
 
-// The adapter reads its config on every request, so this redirects it immediately.
-export const pointAdapterAt = ({ baseUrl }: { baseUrl: string }) => {
-  vi.stubEnv('MUGLOAR_BASE_URL', baseUrl);
+// The fast test settings from vitest.config.ts, aimed at a test's own stub. Configuring
+// also builds a fresh token bucket, so no test inherits another's spent tokens.
+export const pointAdapterAt = ({
+  baseUrl,
+  overrides = {},
+}: {
+  baseUrl: string;
+  overrides?: Partial<MugloarApiConfig>;
+}) => {
+  configureMugloarApi({
+    config: { ...loadConfig({ env: process.env }), mugloarBaseUrl: baseUrl, ...overrides },
+  });
 };

@@ -16,8 +16,7 @@ import { expectNoHorizontalOverflow } from './layout.ts';
 const NEW_GAME_BUTTON = 'New game';
 const ADVICE_REGION = 'Engine advice';
 const ADVICE_TEXT = `Solve “${RECOMMENDED_AD_MESSAGE}”.`;
-const RECOMMENDED_CARD = `Recommended: ${RECOMMENDED_AD_MESSAGE}`;
-const SOLVE_BUTTON = 'Solve';
+const SOLVE_BUTTON = `Solve: ${RECOMMENDED_AD_MESSAGE}`;
 const STATUS_BAR = 'Game status';
 const MOVE_FEEDBACK = 'Success. You successfully defended the village';
 
@@ -51,10 +50,7 @@ test('starts a game, follows the advice and sees the score move', async ({ page 
   await expect(page.getByRole('region', { name: ADVICE_REGION })).toContainText(ADVICE_TEXT);
   await expect(statusBar).toContainText(`Score${STARTING_PROGRESS.score}`);
 
-  await page
-    .getByRole('article', { name: RECOMMENDED_CARD })
-    .getByRole('button', { name: SOLVE_BUTTON })
-    .click();
+  await page.getByRole('button', { name: SOLVE_BUTTON }).click();
 
   await expect(statusBar).toContainText(`Score${SOLVED_PROGRESS.score}`);
   await expect(page.getByRole('status')).toHaveText(MOVE_FEEDBACK);

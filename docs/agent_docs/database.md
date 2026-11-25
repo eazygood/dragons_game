@@ -11,7 +11,7 @@ erDiagram
 
     game_runs {
         bigint id PK
-        varchar game_id "upstream gameId"
+        varchar game_id UK "upstream gameId, unique"
         enum strategy "manual | baseline | calibrated"
         varchar benchmark_id "nullable — groups one bench invocation"
         int lives
@@ -50,10 +50,17 @@ erDiagram
     }
 ```
 
-Two migrations build this schema: `20261124000001_create_core_tables.ts` creates
-the three tables, and `20261124000002_add_move_rule.ts` adds the three nullable
-columns that the move log reads (`ad_attempts.rule`, `purchases.rule`,
-`purchases.item_name`). See _The move log columns_ below.
+Three migrations in `apps/api/migrations/` build this schema:
+
+1. `20261124000001_create_core_tables.ts` creates the three tables.
+2. `20261124000002_add_move_rule.ts` adds the three nullable columns the move log
+   reads (`ad_attempts.rule`, `purchases.rule`, `purchases.item_name`). See _The
+   move log columns_ below.
+3. `20261125000001_unique_game_id.ts` replaces the plain index on
+   `game_runs.game_id` with a unique one. One upstream game is one run: the plain
+   index let a duplicate in silently, and a read had to guess which row was
+   current. `gameRunRepository.db.findOne` is now a plain
+   `where({ game_id }).first()`, with no ordering.
 
 ## Every column has to earn its place
 
@@ -138,12 +145,30 @@ that plots **predicted against actual** is not built; the data for it is there.
 
 ## Writes must never break a game
 
-Gameplay does not depend on persistence succeeding. A database failure is logged
-and the engine falls back to the prior ranking; the run continues. A reviewer
-whose MySQL container is slow still gets a playable game.
+Gameplay does not depend on persistence succeeding where the upstream turn has
+already happened. Every place that catches an error and carries on, and nowhere
+else:
 
-This is the one place where swallowing an error is correct. It is deliberate, and
-it is the only such place.
+| Where                                                       | Swallows                                        | Then                                                                        |
+| ----------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------- |
+| `calibration-manager` `loadCalibration`                     | a failed counts read                            | logs `warn`, uses the prior                                                 |
+| `game-manager` `keepPlayingOnPersistenceFailure` (bot)      | `PersistenceFailedError` from a turn's write    | logs `warn`, plays on with the state in memory                              |
+| `game-manager` `saveStateOnPersistenceFailure` (player)     | `PersistenceFailedError` from a turn's write    | logs `warn`, writes the state alone; if that fails too, throws (500)        |
+| `game-manager` `recordGameOver`                             | a failed `finishRun` on game over               | logs `warn`; game over is still reported                                    |
+| `bot-manager` `playGame`, per turn                          | `UpstreamUnavailableError`, `AdExpiredError`    | logs `warn`, plays the next turn; the third in a row rethrows               |
+| `bot-manager` `playGame`, on finish                         | a failed final `finishRun`                      | logs `warn`; the row stays `active`                                         |
+| `bot-mediator` `startBotGame`                               | the detached game's rejection                   | logs `error`; the run was already ended `abandoned` where the write allowed |
+| `health-manager` `checkDatabase`                            | a failed `select 1`                             | logs `warn`, answers `503 { status: 'unavailable' }`                        |
+| `cli/bounded-pool.ts` `runBounded`                          | one benchmark run's error                       | counts it in `failedRuns`; the other runs go on                             |
+| `wire-schemas.ts` `AdListWireSchema`, `domain/decode-ad.ts` | one ad that does not parse or decode to a label | drops that ad, keeps the board                                              |
+
+**The player fallback.** A human's next move rebuilds its state from the
+`game_runs` row, so a lost write would carry a stale dragon level forward for
+good. When a solve or buy's transaction fails after the upstream move, the
+attempt or purchase row is given up, but the state (`lives`, `gold`,
+`dragon_level`, `turn`, `score`) is written on its own; if that fails as well,
+the request answers `500` rather than letting the row drift. The bot keeps its
+state in memory, so it needs no such fallback.
 
 ## Patterns
 
@@ -170,6 +195,9 @@ pnpm db:migrate                      # apply
 - `pnpm test:integration` rolls back every migration and re-applies them on
   `dragon_test`, so a broken migration fails that command rather than a
   reviewer's first `docker compose up`.
+- `pnpm db:migrate` runs `apps/api/src/migrate.ts` (knex `migrate.latest()`).
+  The Docker image runs the same file with plain `node` before the server
+  starts.
 
 ## Local
 

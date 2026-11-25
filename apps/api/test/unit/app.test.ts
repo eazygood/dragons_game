@@ -4,11 +4,12 @@ import { join } from 'node:path';
 
 import { GameParamsSchema } from '@bigbank-dragon/contracts';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import { AdExpiredError } from '../../src/errors/errors.ts';
+import { databaseRepository } from '../../src/repositories/index.ts';
 
 // Knex pools lazily, so building the app needs no MySQL.
 const buildTestApp = async () => {
@@ -35,7 +36,13 @@ describe('app', () => {
 
   afterAll(() => app.close());
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('reports liveness', async () => {
+    vi.spyOn(databaseRepository.db, 'ping').mockResolvedValue(undefined);
+
     expect((await app.inject({ url: '/api/health' })).json()).toEqual({ status: 'ok' });
   });
 
@@ -110,6 +117,10 @@ describe('app serving the web app', () => {
     await rm(webDistDir, { recursive: true });
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('serves the web app at the root and its assets', async () => {
     const page = await app.inject({ url: '/' });
     const asset = await app.inject({ url: '/assets/app.js' });
@@ -137,6 +148,8 @@ describe('app serving the web app', () => {
   });
 
   it('keeps the API health route ahead of the web app', async () => {
+    vi.spyOn(databaseRepository.db, 'ping').mockResolvedValue(undefined);
+
     expect((await app.inject({ url: '/api/health' })).json()).toEqual({ status: 'ok' });
   });
 

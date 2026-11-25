@@ -1,14 +1,15 @@
-import type { ApiErrorBody } from '@bigbank-dragon/contracts';
+import type { ApiErrorBody, ApiErrorCode } from '@bigbank-dragon/contracts';
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
 import { AppError } from '../../errors/app-error.ts';
-import { API_PREFIX } from '../api-prefix.ts';
 
 const HTTP_BAD_REQUEST = 400;
-const HTTP_NOT_FOUND = 404;
 const HTTP_INTERNAL_SERVER_ERROR = 500;
-const WEB_APP_ENTRY = 'index.html';
-const API_PATH_PATTERN = new RegExp(`^${API_PREFIX}(?:[/?]|$)`);
+const INTERNAL_ERROR_MESSAGE = 'Internal server error';
+// A 5xx answers with fixed text per code; what went wrong is in the error's cause, logged.
+const SERVER_ERROR_MESSAGES: Partial<Record<ApiErrorCode, string>> = {
+  upstream_unavailable: 'The Mugloar server is unavailable',
+};
 
 const isClientError = (statusCode: number | undefined): statusCode is number =>
   statusCode !== undefined &&
@@ -24,8 +25,16 @@ export const errorHandler = (
   request: FastifyRequest,
   reply: FastifyReply,
 ) => {
-  if (error instanceof AppError) {
+  if (error instanceof AppError && error.statusCode < HTTP_INTERNAL_SERVER_ERROR) {
     return reply.status(error.statusCode).send(errorBody(error));
+  }
+
+  if (error instanceof AppError) {
+    request.log.warn({ err: error }, 'request failed');
+
+    const message = SERVER_ERROR_MESSAGES[error.code] ?? INTERNAL_ERROR_MESSAGE;
+
+    return reply.status(error.statusCode).send(errorBody({ code: error.code, message }));
   }
 
   if (error.validation) {
@@ -46,21 +55,5 @@ export const errorHandler = (
 
   return reply
     .status(HTTP_INTERNAL_SERVER_ERROR)
-    .send(errorBody({ code: 'internal', message: 'Internal server error' }));
-};
-
-// reply.sendFile exists only once @fastify/static is registered, so it tells us a web app is served.
-const isWebAppRoute = ({ request }: { request: FastifyRequest }) =>
-  request.method === 'GET' &&
-  !API_PATH_PATTERN.test(request.url) &&
-  request.server.hasReplyDecorator('sendFile');
-
-export const notFoundHandler = (request: FastifyRequest, reply: FastifyReply) => {
-  if (isWebAppRoute({ request })) {
-    return reply.sendFile(WEB_APP_ENTRY);
-  }
-
-  return reply
-    .status(HTTP_NOT_FOUND)
-    .send(errorBody({ code: 'not_found', message: 'Route not found' }));
+    .send(errorBody({ code: 'internal', message: INTERNAL_ERROR_MESSAGE }));
 };

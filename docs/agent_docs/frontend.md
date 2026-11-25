@@ -5,8 +5,10 @@ React 19 + TypeScript + TanStack Router + TanStack Query + Vite.
 ## State management
 
 TanStack Query owns **all** server state — game state, ad board, shop, the move
-log. A bot game's progress is server state too: the page polls it. Local
-`useState` covers only ephemeral UI: form drafts and the _Show moves_ checkbox.
+log. A bot game's progress is server state too: the page polls it. The route
+holds the game id; local `useState` covers only ephemeral UI (the resume-form
+draft, the _Show moves_ checkbox, the last move's feedback line). Nothing is
+updated optimistically: every value on screen is a server answer.
 
 There is no Redux or Zustand store, and that is a decision rather than an
 omission: no state exists in this app that isn't derived from the server. Adding
@@ -19,27 +21,38 @@ board and the game state together. **Turn-advancing mutations invalidate the
 board**, because every turn decrements `expiresIn` on every ad — stale ads are
 not a cosmetic problem, they produce `400`s.
 
-| Key (`api/game-queries.ts`) | Value                       | Fetches                        |
-| --------------------------- | --------------------------- | ------------------------------ |
-| `gameKeys.all(gameId)`      | `['game', gameId]`          | (prefix, for invalidation)     |
-| `gameKeys.game(gameId)`     | `['game', gameId, 'view']`  | `GET /api/games/:gameId`       |
-| `gameKeys.turn(gameId)`     | `['game', gameId, 'turn']`  | `GET /api/games/:gameId/turn`  |
-| `gameKeys.moves(gameId)`    | `['game', gameId, 'moves']` | `GET /api/games/:gameId/moves` |
+| Key (`api/game-queries.ts`)    | Value                       | Fetches                        |
+| ------------------------------ | --------------------------- | ------------------------------ |
+| `gameKeys.all(gameId)`         | `['game', gameId]`          | (prefix, for invalidation)     |
+| `gameKeys.game(gameId)`        | `['game', gameId, 'view']`  | `GET /api/games/:gameId`       |
+| `gameKeys.turn(gameId)`        | `['game', gameId, 'turn']`  | `GET /api/games/:gameId/turn`  |
+| `gameKeys.moveHistory(gameId)` | `['game', gameId, 'moves']` | `GET /api/games/:gameId/moves` |
 
+Hooks: `useGame`, `useWatchedGame`, `useTurnView`, `useMoveHistory` (queries,
+`api/game-queries.ts`); `useStartGame`, `useStartBotGame`, `useSubmitMove`
+(mutations, `api/game-mutations.ts`).
+
+- **Cache seeding.** `useStartGame` and `useStartBotGame` write the returned
+  `GameView` into `gameKeys.game` before navigating, so the next screen renders
+  without a second request. `useSubmitMove` writes `MoveResult.game` into the
+  same key in `onSuccess`.
 - Moves invalidate `gameKeys.all` in `onSettled`, not `onSuccess`: a failed
-  move can still have burnt a turn.
+  move can still have burnt a turn, and the board must be refetched either way.
 - `createQueryClient()` (`src/query-client.ts`) owns the retry policy. Reads
   retry at most twice, and only on `unreachable` or a 5xx. Mutations never
   retry, because `solve` and `buy` are not idempotent.
-- **Game over from the board.** The `QueryCache` `onError` watches turn queries.
-  On a `410 game_over` it invalidates `gameKeys.game(gameId)`. `GET /api/games/:gameId`
-  never answers 410, so the refetch returns the finished game and the screen
-  switches to the end screen.
-- **One last moves fetch.** The `QueryCache` `onSuccess` watches game-view
-  queries. When one comes back with a status other than `active` it invalidates
-  `gameKeys.moves(gameId)`. The game and moves polls run on independent timers, so
-  without this the moves made since the previous tick would never be shown once
-  polling stops. It costs one extra request.
+- Every request has a `REQUEST_TIMEOUT_MS` (20 s) `AbortSignal.timeout` in
+  `api/client.ts`, so a hung solve or buy cannot leave the buttons disabled.
+  A timeout surfaces as `unreachable`.
+- **Game over from the board.** `useTurnView`'s query function catches a
+  `410 game_over`, invalidates `gameKeys.game(gameId)` and rethrows.
+  `GET /api/games/:gameId` never answers 410, so the refetch returns the
+  finished game and the screen switches to the end screen.
+- **One last moves fetch.** The query function behind `useGame` and
+  `useWatchedGame` invalidates `gameKeys.moveHistory(gameId)` whenever the game
+  comes back with a status other than `active`. The game and moves polls run on
+  independent timers, so without this the moves made since the previous tick
+  would never be shown once polling stops. It costs one extra request.
 
 ### Polling
 
@@ -50,7 +63,7 @@ not a cosmetic problem, they produce `400`s.
   function of the last response: 1000 ms while `status === 'active'`, `false`
   otherwise. Polling stops by itself on `game_over` or `abandoned`, and nothing
   has to be unsubscribed.
-- `useMoves` is `enabled` only while _Show moves_ is checked, and polls on the
+- `useMoveHistory` is `enabled` only while _Show moves_ is checked, and polls on the
   same rule, driven by the game's status. A viewer who never opens the log never
   sends a moves request.
 - The rule reads only `status`, so a manual game opened at `/watch` is polled and
@@ -63,19 +76,25 @@ not a cosmetic problem, they produce `400`s.
 ```
 apps/web/
 ├── src/
-│   ├── api/                 - api-error, client (apiRequest), game-paths, queries, mutations
+│   ├── api/                 - api-error, client (apiRequest), game-paths, game-queries, game-mutations
 │   ├── features/play/
-│   │   ├── copy.ts          - every user-facing string
-│   │   ├── start/           - new game, let the bot play, resume-by-id form
-│   │   ├── game/            - GameScreen, ActiveGame, status bar, game over, unavailable game
+│   │   ├── play-copy.ts     - every user-facing string on /play
+│   │   ├── start/           - StartGamePanel (new game, let the bot play), ResumeGameForm
+│   │   ├── game/            - GameScreen, ActiveGame, GameOverScreen
 │   │   ├── board/           - AdBoard, AdCard, AdviceBadge
 │   │   ├── advice/          - RecommendationBanner
-│   │   ├── shop/            - ShopPanel
-│   │   └── moves/           - usePlayerMoves, MoveFeedback, ErrorNotice
+│   │   ├── shop/            - ShopPanel, ShopItemRow
+│   │   └── move-actions/    - useMoveActions, move-actions, MoveFeedback
 │   ├── features/watch/      - WatchScreen, WatchOutcome, RunBotAgainButton, MoveLog, MoveLine, watch-copy
+│   ├── shared/              - used by both features: GameIdGate, GameStatusBar, GameUnavailable,
+│   │                          ErrorNotice, error-copy, RouteFallbacks, Panel, launch-lock,
+│   │                          focus-on-mount, format, shared-copy
 │   ├── routes/              - file routes: / → /play, /play, /play/$gameId, /watch/$gameId
+│   ├── router.tsx           - router with the not-found and error fallbacks
+│   ├── main.tsx             - zod jitless config, providers
 │   ├── query-client.ts
-│   └── styles/tokens.css    - palette and spacing variables
+│   └── styles/tokens.css    - palette, spacing, the `:focus-visible` ring
+├── public/favicon.svg
 ├── e2e/                     - Playwright specs and their intercepted-API helpers
 └── test/                    - all web tests, plus stubApi, fixtures and render helpers
 ```
@@ -101,7 +120,7 @@ bot play_ button calls `POST /api/bot-games` and navigates there.
   no strategy and is unchanged.
 - **Show moves.** A checkbox, unchecked by default, held in `useState` and
   therefore reset on reload. There is no URL parameter and no store. Checking it
-  enables `useMoves`.
+  enables `useMoveHistory`.
 - **Move log.** Newest first, in the order the API returns them, one line per
   move, for example:
   - `Turn 14 · Solved a “Quite likely” ad for 45 gold · best value, est. 78%, EV +31 gold · ✓`
@@ -117,8 +136,9 @@ bot play_ button calls `POST /api/bot-games` and navigates there.
   the request is pending or has succeeded, and navigates to the new game's
   `/watch/$gameId`. The route keys `WatchScreen` on the game id, so _Show moves_
   starts unchecked on the new game.
-- **Unusable ids.** The route checks the id with `GameIdSchema` before any request
-  (`invalid_id`), and an unknown game is `not_found`; both reuse `GameUnavailable`.
+- **Unusable ids.** The route wraps the screen in `GameIdGate`, which checks the
+  id with `GameIdSchema` before any request (`invalid_id`). An unknown game is
+  `not_found`. Both reuse `GameUnavailable`.
 
 A bot's game opened at `/play/$gameId` answers `409` on its turn query. That
 renders "The bot's game" with a link to `/watch/$gameId` next to the way back.
@@ -139,10 +159,10 @@ The app has few real inputs — most interactions are clicks on server-supplied
 ids, which need no validation because the user never typed them. Validate the
 ones that are genuinely free-form:
 
-| Input                    | Where                             | Rule                                                                                                                                           |
-| ------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gameId` to resume a run | `/play`                           | **The important one.** Free text that ends up in an outbound URL path. Validate shape and length, reject anything else, never interpolate raw. |
-| `gameId` in the URL      | `/play/$gameId`, `/watch/$gameId` | Hand-editable, so it gets the same `GameIdSchema` check before any request. A bad id renders `GameUnavailable`, not a failed request.          |
+| Input                    | Where                             | Rule                                                                                                                                                                                                                                                                             |
+| ------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gameId` to resume a run | `/play` (`ResumeGameForm`)        | **The important one.** Free text that ends up in an outbound URL path. `GameIdSchema` checks shape and length; the message quotes `IDENTIFIER_MAX_LENGTH` (64) from contracts, so the copy cannot drift from the rule. Invalid input sets `aria-invalid` and `aria-describedby`. |
+| `gameId` in the URL      | `/play/$gameId`, `/watch/$gameId` | Hand-editable, so `GameIdGate` applies the same `GameIdSchema` check before any request. A bad id renders `GameUnavailable`, not a failed request.                                                                                                                               |
 
 Nothing else is typed: the start buttons and the _Show moves_ checkbox carry no
 data.
@@ -174,20 +194,30 @@ any other — not a silent fallback to empty state.
 ## Error states
 
 Every domain error in [`routes.md`](routes.md) has a designed treatment. These
-are UI work, not `catch` blocks:
+are UI work, not `catch` blocks. `ERROR_COPY` (`shared/error-copy.ts`) maps every
+`ClientErrorCode` to a message with `satisfies Record<ClientErrorCode, string>`,
+so a new code fails typecheck until it has copy.
 
-| State                         | Treatment                                                               |
-| ----------------------------- | ----------------------------------------------------------------------- |
-| `GameOver` (`410`)            | A screen with the final score and a "new game" action. Not a toast.     |
-| `GameNotFound` (`404`)        | "No such game" with a way back to the start. No retry.                  |
-| `GameNotPlayable` (`409`)     | "The bot's game" with a link to watch it, and a way back. No retry.     |
-| `AdExpired` (`409`)           | Refresh the board and say why the ad vanished.                          |
-| `InsufficientGold` (`409`)    | The buy control is disabled with the reason visible _before_ the click. |
-| `UpstreamUnavailable` (`502`) | Retry affordance; make clear the game is intact and the remote is down. |
-| Response parse failure        | Generic error with a retry; log the detail.                             |
+| State                                       | Treatment                                                                                                                     |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `GameOver` (`410`)                          | `GameOverScreen` with the final score and a "new game" action; focus moves to its heading. Not a toast.                       |
+| `GameNotFound` (`404`)                      | `GameUnavailable` "No such game" with a way back to the start. No retry.                                                      |
+| `GameNotPlayable` (`409` on the turn query) | `GameUnavailable` "The bot's game" with a link to watch it, and a way back. No retry.                                         |
+| `AdExpired` (`409` on a solve)              | The board is refetched and `MoveFeedback` says the ad expired before you got to it.                                           |
+| `409` on a buy                              | `MoveFeedback` says the purchase was refused; the board and gold are refetched.                                               |
+| `InsufficientGold`                          | `ShopItemRow` is disabled with the reason linked by `aria-describedby`, visible _before_ the click.                           |
+| `too_many_requests` (`429`)                 | "Too many requests in a short time. Wait a moment, then try again."                                                           |
+| `upstream_unavailable` (`502`)              | "The game is safe, but the Mugloar server is not answering." with a retry. A non-JSON 502/503/504 from a proxy maps here too. |
+| `unreachable` (status 0)                    | The API itself did not answer: network failure or the 20 s timeout. "Cannot reach the game server…" with a retry.             |
+| Response parse failure                      | `invalid_response`: generic error with a retry; the zod issues are logged to the console.                                     |
+| Failed background refresh                   | The last good state stays on screen with "Could not refresh the game. Showing the last known state." (`role="status"`).       |
+| Unknown route                               | Router `defaultNotFoundComponent`: `NotFoundScreen` with a link to `/play`.                                                   |
+| Error thrown while rendering a route        | Router `defaultErrorComponent`: `RouteErrorScreen` renders `ErrorNotice` with the router's `reset` as retry.                  |
 
-A game in progress must survive a transient failure. Losing a run to a dropped
-request is the worst outcome in this app.
+Only a first load fails hard (`isLoadingError` → `ErrorNotice` with Retry). A
+refetch error (`isRefetchError`) keeps the last good data; on `/watch` the next
+poll replaces it. A game in progress must survive a transient failure. Losing a
+run to a dropped request is the worst outcome in this app.
 
 ---
 
@@ -215,6 +245,27 @@ does not scroll horizontally at the width it ran in. See [`testing.md`](testing.
 
 ## Accessibility
 
-Not in the brief, cheap here, and reviewers notice: keyboard-operable ad
-selection, labelled controls, visible focus, and status changes announced rather
-than only shown by colour.
+Not in the brief, cheap here. What the code does:
+
+- Native controls only: ads and shop items are `<button>`s, so selection is
+  keyboard-operable with no key handlers. An ad that cannot be attempted and an
+  unaffordable item are `disabled`, with the reason linked by `aria-describedby`.
+- Announcements: loading text, the move feedback, the watch outcome and the
+  stale-refresh hint are `role="status"`; `ErrorNotice` and the start and
+  run-again errors are `role="alert"`.
+- Focus: after a move, focus moves to the `MoveFeedback` region (`tabIndex={-1}`);
+  `GameOverScreen` focuses its heading via the `focusOnMount` callback ref.
+  `:focus-visible` rings are defined in `styles/tokens.css`.
+- Landmarks and labels: the board, shop, recommendation and `Panel` sections are
+  `aria-labelledby` their headings; `GameStatusBar` is a labelled `role="group"`;
+  the move log is a labelled `<ol>`, and a move's ✓/✗ mark is `role="img"` with
+  an `aria-label`, so the result is not carried by colour or glyph alone.
+- Not automated: `eslint-plugin-jsx-a11y` does not support ESLint 10 yet, so
+  there is no a11y lint rule.
+
+## Content Security Policy
+
+The API serves the app with a helmet CSP that forbids `eval`. zod 4 probes for
+eval support with `new Function` on first parse, which would log a CSP violation
+on every page load, so `main.tsx` calls `z.config({ jitless: true })` before
+rendering.

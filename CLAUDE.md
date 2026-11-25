@@ -13,18 +13,18 @@ changing code.
 docker compose up --build   # whole stack on http://localhost:3000
 pnpm dev                # api + web, watch mode
 pnpm lint               # eslint, zero warnings tolerated
-pnpm format             # prettier
+pnpm format             # prettier (format:check is read-only)
 pnpm typecheck          # tsc --noEmit, all workspaces
-pnpm test               # unit + component
+pnpm test               # contracts, api unit + contract, web component
 pnpm test:integration   # needs MySQL (docker compose up -d mysql)
 pnpm test:e2e           # Playwright, 3 browsers x 2 widths, /api intercepted
 pnpm build
 
-pnpm db:migrate         # knex latest
-pnpm db:make <name>     # new migration
+pnpm db:migrate         # apps/api/src/migrate.ts: knex latest
+pnpm db:make <name>     # new migration in apps/api/migrations
 
-pnpm bot                # one headless run
-pnpm bench              # 20 cold runs, reports pass rate vs 1000
+pnpm bot                # apps/api/src/cli/bot.ts: one headless run
+pnpm bench              # apps/api/src/cli/bench.ts: 20 cold runs, pass rate vs 1000
 pnpm bench --warm       # same, reading all history instead of this run's
 ```
 
@@ -34,6 +34,9 @@ Docker runtime is Colima. If containers fail, check `colima status`.
 
 **Data flow:** Routes → Mediators → Managers → Repositories → Adapters.
 Dependencies move downward only. Never skip a layer, never call upward.
+Entry points are `routes/` (HTTP) and `cli/` (bot, bench); both call mediators
+or managers only, and `app.ts` and `cli/live-runtime.ts` are the composition
+roots. `eslint.config.mjs` enforces the boundaries.
 
 The **decision engine** (`apps/api/src/domain/engine/`) is **pure** — no I/O, no
 clock, no randomness. This is load-bearing, not stylistic: it is why the headless
@@ -111,4 +114,5 @@ definition. A rule that drifts is worse than no rule. Detail in
 | [`frontend.md`](docs/agent_docs/frontend.md)         | State management, validation boundaries, error states, component rules |
 | [`testing.md`](docs/agent_docs/testing.md)           | Test levels, recorded fixtures, benchmark                              |
 
-Working design notes live in `docs/superpowers/` and are gitignored.
+Benchmark history: [`findings/phase-1-benchmark.md`](docs/agent_docs/findings/phase-1-benchmark.md).
+Local design notes in `docs/superpowers/` are gitignored and not part of the repo.

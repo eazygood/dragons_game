@@ -35,7 +35,9 @@ export default tseslint.config(
   },
   // Layer rules from docs/agent_docs/architecture.md §Layers: dependencies move downward only.
   {
-    files: ['apps/api/src/bot/**/*.ts'],
+    files: ['apps/api/src/cli/**/*.ts'],
+    // The composition root wires the database and the upstream, as app.ts does for the server.
+    ignores: ['apps/api/src/cli/live-runtime.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -43,7 +45,7 @@ export default tseslint.config(
           patterns: [
             {
               group: ['**/repositories/**', '**/adapters/**'],
-              message: 'The bot calls managers only.',
+              message: 'The CLIs call managers only.',
             },
           ],
         },
@@ -58,8 +60,31 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['**/repositories/**', '**/adapters/**', '**/domain/**', '**/bot/**'],
+              group: [
+                '**/managers/**',
+                '**/repositories/**',
+                '**/adapters/**',
+                '**/domain/**',
+                '**/cli/**',
+              ],
               message: 'Routes call mediators only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/plugins/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/managers/**', '**/repositories/**', '**/domain/**', '**/cli/**'],
+              message:
+                'Plugins wire infrastructure; they never reach managers, repositories or the engine.',
             },
           ],
         },
@@ -78,7 +103,7 @@ export default tseslint.config(
                 '**/repositories/**',
                 '**/adapters/**',
                 '**/domain/**',
-                '**/bot/**',
+                '**/cli/**',
                 '**/routes/**',
               ],
               message: 'Mediators compose managers; they never reach lower or call upward.',
@@ -96,7 +121,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['**/adapters/**', '!**/adapters/mysql-adapter.ts', '**/bot/**'],
+              group: ['**/adapters/**', '!**/adapters/mysql-adapter.ts', '**/cli/**'],
               message: 'Managers call repositories; only withTransaction comes from an adapter.',
             },
           ],
@@ -111,7 +136,7 @@ export default tseslint.config(
         'error',
         {
           patterns: [
-            { group: ['**/managers/**', '**/bot/**'], message: 'Repositories never call upward.' },
+            { group: ['**/managers/**', '**/cli/**'], message: 'Repositories never call upward.' },
           ],
         },
       ],
@@ -128,12 +153,11 @@ export default tseslint.config(
               group: [
                 'node:*',
                 '**/adapters/**',
-                '**/bot/**',
+                '**/cli/**',
                 '**/config/**',
                 '**/entities/**',
                 '**/managers/**',
                 '**/repositories/**',
-                '**/tools/**',
               ],
               message: 'The engine is pure: no I/O and no imports from outside domain/.',
             },

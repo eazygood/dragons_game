@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import { copy } from '../src/features/play/copy.ts';
+import { sharedCopy } from '../src/shared/shared-copy.ts';
 import { watchCopy } from '../src/features/watch/watch-copy.ts';
 import { WatchScreen } from '../src/features/watch/WatchScreen.tsx';
 import { jsonResponse, respondNever, respondOk, stubApi } from './fetch-stub.ts';
@@ -11,6 +11,7 @@ import { ABOVE_TARGET, GAME_ID, GAME_ROUTE, GAME_VIEW, buildGameView } from './f
 import { renderInRouter } from './render.tsx';
 
 const BOT_GAMES_ROUTE = 'POST /api/bot-games';
+const NEXT_BOT_GAME = { ...GAME_VIEW, state: { ...GAME_VIEW.state, gameId: 'g2' } };
 
 const renderFinishedGame = ({ botGames }: { botGames: StubbedRoutes[string] }) => {
   const api = stubApi({
@@ -38,7 +39,7 @@ describe('Run the bot again', () => {
   // Navigation commits after the mutation settles; the button must not re-enable in that gap.
   it('stays disabled once the new bot game has started', async () => {
     const api = renderFinishedGame({
-      botGames: () => jsonResponse({ status: 201, body: GAME_VIEW }),
+      botGames: () => jsonResponse({ status: 201, body: NEXT_BOT_GAME }),
     });
 
     await userEvent.click(await findRunAgainButton());
@@ -60,7 +61,9 @@ describe('Run the bot again', () => {
 
     await userEvent.click(await findRunAgainButton());
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(copy.errors.upstreamUnavailable);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      sharedCopy.errors.upstreamUnavailable,
+    );
     expect(screen.getByRole('button', { name: watchCopy.runAgain })).toBeEnabled();
   });
 });

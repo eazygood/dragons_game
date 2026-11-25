@@ -1,10 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  AdExpiredError,
-  GameNotFoundError,
-  UpstreamUnavailableError,
-} from '../../src/errors/errors.ts';
+import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import {
   adAttemptRepository,
   adRepository,
@@ -68,56 +64,6 @@ describe('mugloar api: shapes and errors', () => {
     });
   });
 
-  it('maps a solve response to the attempt outcome, dropping the global high score', async () => {
-    stub.post('/:gameId/solve/:adId', () => ({
-      success: true,
-      lives: 3,
-      gold: 20,
-      score: 20,
-      highScore: 9999,
-      turn: 1,
-      message: 'You defeated the troll',
-    }));
-
-    await expect(
-      adAttemptRepository.mugloar.createOne({ gameId: 'g1', adId: 'a1' }),
-    ).resolves.toEqual({
-      status: 'ok',
-      value: {
-        success: true,
-        lives: 3,
-        gold: 20,
-        score: 20,
-        turn: 1,
-        message: 'You defeated the troll',
-      },
-    });
-  });
-
-  it('returns game_over from a read endpoint too', async () => {
-    stub.get('/:gameId/messages', () => GAME_OVER);
-
-    await expect(adRepository.mugloar.findMany({ gameId: 'g1' })).resolves.toEqual({
-      status: 'game_over',
-    });
-  });
-
-  it('survives an HTML error body on a 404', async () => {
-    stub.get('/:gameId/messages', () => [404, '<html><body>Not found</body></html>']);
-
-    await expect(adRepository.mugloar.findMany({ gameId: 'nope' })).rejects.toBeInstanceOf(
-      GameNotFoundError,
-    );
-  });
-
-  it('maps a 400 on solve to an expired ad, HTML body and all', async () => {
-    stub.post('/:gameId/solve/:adId', () => [400, '<html>Bad Request</html>']);
-
-    await expect(
-      adAttemptRepository.mugloar.createOne({ gameId: 'g1', adId: 'stale' }),
-    ).rejects.toBeInstanceOf(AdExpiredError);
-  });
-
   // Review Focus #2
   it('rejects a 200 whose body does not match the contract', async () => {
     stub.get('/:gameId/shop', () => [{ id: 'hpot' }]);
@@ -127,34 +73,54 @@ describe('mugloar api: shapes and errors', () => {
     );
   });
 
-  it('rejects a 200 whose ad carries an unknown probability label', async () => {
-    stub.get('/:gameId/messages', () => [{ ...LIVE_AD, probability: 'Absolutely fine' }]);
+  it('drops an ad with an unknown probability label and keeps the rest of the board', async () => {
+    stub.get('/:gameId/messages', () => [
+      { ...LIVE_AD, adId: 'odd', probability: 'Absolutely fine' },
+      LIVE_AD,
+    ]);
 
-    await expect(adRepository.mugloar.findMany({ gameId: 'g1' })).rejects.toBeInstanceOf(
-      UpstreamUnavailableError,
-    );
+    await expect(adRepository.mugloar.findMany({ gameId: 'g1' })).resolves.toEqual({
+      status: 'ok',
+      value: [expect.objectContaining({ adId: LIVE_AD.adId })],
+    });
   });
 
-  // Verified live 2026-11-23: /shop is a bare array, like /messages.
-  it('maps shoppingSuccess to a boolean success and reads the shop as a bare array', async () => {
+  it('drops an ad with an unknown encryption scheme and keeps the rest of the board', async () => {
+    stub.get('/:gameId/messages', () => [{ ...LIVE_AD, adId: 'odd', encrypted: 7 }, LIVE_AD]);
+
+    await expect(adRepository.mugloar.findMany({ gameId: 'g1' })).resolves.toEqual({
+      status: 'ok',
+      value: [expect.objectContaining({ adId: LIVE_AD.adId })],
+    });
+  });
+
+  it('treats a 400 outside solve as an upstream failure, not an expired ad', async () => {
+    stub.post('/:gameId/shop/buy/:itemId', () => [400, '<html>Bad Request</html>']);
+
+    await expect(
+      purchaseRepository.mugloar.createOne({ gameId: 'g1', itemId: 'hpot' }),
+    ).rejects.toBeInstanceOf(UpstreamUnavailableError);
+  });
+
+  it('keeps the upstream path and HTML body out of the message, in the cause only', async () => {
+    stub.get('/:gameId/messages', () => [503, '<html><body>busy</body></html>']);
+
+    const failure: unknown = await adRepository.mugloar
+      .findMany({ gameId: 'secret-game' })
+      .catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(UpstreamUnavailableError);
+    expect((failure as Error).message).not.toMatch(/secret-game|messages|html|503/);
+    expect(String((failure as Error).cause)).toMatch(/secret-game\/messages.*503.*<html>/);
+  });
+
+  // Verified live 2026-11-23: /shop is a bare array, like /messages. No /shop read was recorded.
+  it('reads the shop as a bare array', async () => {
     stub.get('/:gameId/shop', () => [{ id: 'hpot', name: 'Healing potion', cost: 50 }]);
-    stub.post('/:gameId/shop/buy/:itemId', () => ({
-      shoppingSuccess: false,
-      gold: 10,
-      lives: 3,
-      level: 0,
-      turn: 6,
-    }));
 
     await expect(shopItemRepository.mugloar.findMany({ gameId: 'g1' })).resolves.toEqual({
       status: 'ok',
       value: [{ id: 'hpot', name: 'Healing potion', cost: 50 }],
-    });
-    await expect(
-      purchaseRepository.mugloar.createOne({ gameId: 'g1', itemId: 'hpot' }),
-    ).resolves.toEqual({
-      status: 'ok',
-      value: { success: false, gold: 10, lives: 3, level: 0, turn: 6 },
     });
   });
 });

@@ -1,8 +1,14 @@
 # Phase 1 benchmark — raw numbers
 
-Every number here came from `pnpm bench` against the live API on 2026-11-23.
-Cold runs truncate `ad_attempts` first, so `calibrated` starts from priors and
-learns within the invocation (3 games in parallel share the evidence).
+Every number here came from `pnpm bench` against the live API, on 2026-11-23
+(§1–§7) and 2026-11-24 (§8). A cold run makes `calibrated` start from priors and
+learn within the invocation (3 games in parallel share the evidence).
+
+How "cold" was achieved changed during the day. §1–§6 ran with an earlier
+benchmark that truncated `ad_attempts` before a cold run. Since commit 31e03a6,
+a cold run instead scopes calibration to its own games (`calibrationBenchmarkId`)
+and deletes nothing; §7 and §8 were measured that way. Both start the engine
+from the same priors.
 
 ## 1. Baseline vs calibrated (before reward bands)
 
@@ -144,3 +150,29 @@ those games simply died first.
 
 The proactive level-up verdict (§4) rests on 95% vs 100%, which is one run in
 twenty. Treat it as weak evidence.
+
+## 8. Re-measure, 2026-11-24
+
+The same shipped `STRATEGY_CONFIG` as §6, unchanged, cold, 20 runs:
+
+| Run        | Pass ≥ 1000      | Min  | Median | Max  | Mean turns |
+| ---------- | ---------------- | ---- | ------ | ---- | ---------- |
+| §6 (11-23) | **100%** (20/20) | 1566 | 2687   | 3576 | 101.2      |
+| 11-24      | **95%** (19/20)  | 955  | 2723.5 | 3993 | 107.6      |
+
+One game finished at 955, 45 short of the target. That still meets the brief's
+bar of ≥ 19/20, but with no margin. Together the two runs are 39 of 40 games.
+Twenty runs cannot tell 95% from 100% apart, so read both as samples of the same
+strategy, not as a regression.
+
+## 9. Re-measure after the review fixes, 2026-11-25
+
+The same `STRATEGY_CONFIG`, cold, 20 runs, after DRGN-10 (bot resilience,
+hardening, renames; no strategy change):
+
+| Run   | Pass ≥ 1000      | Min  | Median | Max  | Mean turns |
+| ----- | ---------------- | ---- | ------ | ---- | ---------- |
+| 11-25 | **100%** (20/20) | 1794 | 2503.5 | 3361 | 108.5      |
+
+No run failed, so the new consecutive-failure cap never fired. Across the three
+measurements the strategy has passed 59 of 60 games.

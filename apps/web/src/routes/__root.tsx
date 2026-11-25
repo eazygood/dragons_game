@@ -1,18 +1,21 @@
-import { Outlet, createRootRoute } from '@tanstack/react-router';
+import { Link, Outlet, createRootRoute } from '@tanstack/react-router';
 
+import { sharedCopy } from '../shared/shared-copy.ts';
 import styles from './root.module.css';
 
-const APP_TITLE = 'Dragons of Mugloar';
-
 const RootLayout = () => (
-  <div className={styles.layout}>
+  <>
     <header className={styles.header}>
-      <h1 className={styles.title}>{APP_TITLE}</h1>
+      <h1 className={styles.title}>
+        <Link to="/" className={styles.titleLink}>
+          {sharedCopy.appTitle}
+        </Link>
+      </h1>
     </header>
     <main className={styles.main}>
       <Outlet />
     </main>
-  </div>
+  </>
 );
 
 export const Route = createRootRoute({ component: RootLayout });

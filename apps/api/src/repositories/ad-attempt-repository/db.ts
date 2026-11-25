@@ -4,8 +4,8 @@ import { DecisionRuleSchema, ProbabilityLabelSchema } from '@bigbank-dragon/cont
 import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
 import type { CalibrationCount } from '../../domain/engine/calibration.ts';
 import type { AdAttempt } from '../../entities/ad-attempt.ts';
-import { DbTables } from '../../entities/db-tables.ts';
 import type { GameRunId } from '../../entities/game-run.ts';
+import { DbTables } from '../db-tables.ts';
 
 interface AdAttemptRow {
   game_run_id: number;

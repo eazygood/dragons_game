@@ -109,7 +109,7 @@ describe('the bot move log while the game runs', () => {
     await screen.findByRole('list');
     await vi.advanceTimersByTimeAsync(WATCH_POLL_INTERVAL_MS);
     await waitFor(() =>
-      expect(queryClient.getQueryState(gameKeys.moves(GAME_ID))?.status).toBe('error'),
+      expect(queryClient.getQueryState(gameKeys.moveHistory(GAME_ID))?.status).toBe('error'),
     );
 
     expect(screen.getByRole('list')).toBeVisible();

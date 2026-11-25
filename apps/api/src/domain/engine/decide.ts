@@ -1,5 +1,12 @@
 import { HEALING_POTION_ID } from '@bigbank-dragon/contracts';
-import type { Ad, Decision, DecisionRule, GameState, ShopItem } from '@bigbank-dragon/contracts';
+import type {
+  Ad,
+  Decision,
+  DecisionRule,
+  GameState,
+  Reasoning,
+  ShopItem,
+} from '@bigbank-dragon/contracts';
 
 import type { Calibration } from './calibration.ts';
 import { scoreAds } from './score-ads.ts';
@@ -14,18 +21,17 @@ type DecideInput = {
   config: StrategyConfig;
 };
 
-const reasoningFor = ({
+// A buy or a stop acts on no single ad, so it carries no estimate.
+const unscoredReasoning = ({
   rule,
   scored,
-  pick,
 }: {
   rule: DecisionRule;
   scored: ScoredAd[];
-  pick?: ScoredAd;
-}) => ({
+}): Reasoning => ({
   rule,
-  estimatedProbability: pick?.estimatedProbability ?? null,
-  expectedValue: pick?.expectedValue ?? null,
+  estimatedProbability: null,
+  expectedValue: null,
   consideredCount: scored.length,
 });
 
@@ -59,7 +65,7 @@ const buy = ({
 }): Decision => ({
   kind: 'buy',
   itemId: item.id,
-  reasoning: reasoningFor({ rule, scored }),
+  reasoning: unscoredReasoning({ rule, scored }),
 });
 
 // Lowest id among equal costs keeps benchmark runs reproducible.
@@ -71,6 +77,8 @@ const cheapestLevelUp = ({ shop }: { shop: ShopItem[] }) =>
 const safest = ({ scored }: { scored: ScoredAd[] }) =>
   scored.toSorted((left, right) => right.estimatedProbability - left.estimatedProbability)[0];
 
+// Experiment code, off by default (levelUpEnabled: false): kept so a bench run can sweep
+// level buying against the plain expected-value rule with `pnpm bench --override`.
 const shouldLevelUp = ({
   state,
   item,
@@ -122,5 +130,5 @@ export const decide = ({ state, board, shop, calibration, config }: DecideInput)
     return solve({ rule: 'safest_available', scored, pick: fallback });
   }
 
-  return { kind: 'stop', reasoning: reasoningFor({ rule: 'no_viable_option', scored }) };
+  return { kind: 'stop', reasoning: unscoredReasoning({ rule: 'no_viable_option', scored }) };
 };

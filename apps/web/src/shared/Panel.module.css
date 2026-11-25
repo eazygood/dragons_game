@@ -1,0 +1,14 @@
+.panel {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 28rem;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.panel h2,
+.panel p {
+  margin: 0;
+}

@@ -1,24 +1,34 @@
 import type { AdvisedAd } from '@bigbank-dragon/contracts';
 import { useId } from 'react';
 
-import { copy } from '../copy.ts';
-import type { MoveControls } from '../moves/move-controls.ts';
+import type { MoveActions } from '../move-actions/move-actions.ts';
+import { playCopy } from '../play-copy.ts';
 import { AdCard } from './AdCard.tsx';
 import styles from './AdBoard.module.css';
 
-export const AdBoard = ({ board, moves }: { board: AdvisedAd[]; moves: MoveControls }) => {
+export const AdBoard = ({
+  board,
+  moveActions,
+}: {
+  board: AdvisedAd[];
+  moveActions: MoveActions;
+}) => {
   const titleId = useId();
 
   return (
     <section aria-labelledby={titleId}>
-      <h2 id={titleId}>{copy.board.title}</h2>
-      <ul className={styles.list}>
-        {board.map((ad) => (
-          <li key={ad.adId}>
-            <AdCard ad={ad} moves={moves} />
-          </li>
-        ))}
-      </ul>
+      <h2 id={titleId}>{playCopy.board.title}</h2>
+      {board.length === 0 ? (
+        <p>{playCopy.board.empty}</p>
+      ) : (
+        <ul className={styles.list}>
+          {board.map((ad) => (
+            <li key={ad.adId}>
+              <AdCard ad={ad} moveActions={moveActions} />
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 };

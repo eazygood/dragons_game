@@ -64,16 +64,19 @@ what the advice banner and the move log show.
 
 All thresholds live in one typed `StrategyConfig`.
 
-**Reliability, measured 2026-11-24** with `pnpm bench`: 20 cold runs of the
-calibrated strategy against the live game (calibration reads only that
-benchmark's own games, which is what a first-time reviewer gets).
+**Reliability** with `pnpm bench`: 20 cold runs of the calibrated strategy
+against the live game (calibration reads only that benchmark's own games, which
+is what a first-time reviewer gets). The same tuned `StrategyConfig`, measured
+three times:
 
-| Pass rate at ≥ 1000 | Score min · median · max | Mean turns |
-| ------------------- | ------------------------ | ---------- |
-| **95% (19 of 20)**  | 955 · 2723.5 · 3993      | 107.6      |
+| Date       | Pass rate at ≥ 1000 | Score min · median · max | Mean turns |
+| ---------- | ------------------- | ------------------------ | ---------- |
+| 2026-11-23 | **100% (20 of 20)** | 1566 · 2687 · 3576       | 101.2      |
+| 2026-11-24 | **95% (19 of 20)**  | 955 · 2723.5 · 3993      | 107.6      |
+| 2026-11-25 | **100% (20 of 20)** | 1794 · 2503.5 · 3361     | 108.5      |
 
-One game fell short, at 955. This is one measurement, not a guarantee. The
-tuning history and the threshold sweep are in
+In the second run one game fell short, at 955: 59 of 60 games in all. Three
+measurements, not a guarantee. The tuning history and the threshold sweep are in
 [`phase-1-benchmark.md`](docs/agent_docs/findings/phase-1-benchmark.md).
 
 ## Architecture
@@ -81,7 +84,7 @@ tuning history and the threshold sweep are in
 ```
 Browser (React 19, TanStack Router + Query) ──/api──► Fastify
 
-  Routes         HTTP in, HTTP out; no logic
+  Routes · cli/  HTTP in, HTTP out (or the bot and bench CLIs); no logic
     ▼
   Mediators      compose a response from managers
     ▼
@@ -92,13 +95,13 @@ Browser (React 19, TanStack Router + Query) ──/api──► Fastify
   Adapters       MySQL (knex) · dragonsofmugloar.com (fetch, throttled)
 ```
 
-Dependencies move downward only; `eslint.config.mjs` fails the build on a
-shortcut. Everything goes through Fastify so the retry, decode and `410` logic is
+Dependencies move downward only; `no-restricted-imports` rules in
+`eslint.config.mjs` make `pnpm lint` fail on a shortcut. Everything goes through Fastify so the retry, decode and `410` logic is
 written once, and the advisor can learn from the history of every game.
 
 ```
-apps/api/            Fastify API: routes, mediators, managers, repositories, adapters,
-                     domain/engine, bot CLIs, migrations, tests
+apps/api/            Fastify API: plugins, routes, mediators, managers, repositories,
+                     adapters, domain/engine, cli/ (bot, bench), migrations, tests
 apps/web/            React app: api/ (query + mutation functions), features/, routes/,
                      Vitest tests, Playwright specs
 packages/contracts/  zod schemas for every request, response and error, used by both apps
@@ -107,12 +110,21 @@ docs/agent_docs/     the detail: architecture, database, routes, frontend, testi
 
 ## State management
 
-Server state lives in TanStack Query. There is no Redux or Zustand store, on
-purpose: everything the screen shows is derived from the server, and a client
-store would be a second copy that can disagree with the first. A solve or buy
-invalidates the game's queries even when it fails, because a failed move can
-still burn a turn; `/watch` polls only while the game is `active`. Query keys,
-the retry policy and polling: [`frontend.md`](docs/agent_docs/frontend.md#state-management).
+There are four kinds of state, each in one place. **Server state** (the game,
+the advised board, the shop, the move log) lives in the TanStack Query cache.
+**The game id** lives in the URL (`/play/$gameId`, `/watch/$gameId`), so a
+reload or a shared link resumes the game. **Ephemeral UI** (the resume form's
+draft, the _Show moves_ checkbox) is local `useState`. Everything else, such as
+whether a buy is affordable or whether a game has reached 1000, is **derived**
+during render. There is no Redux or Zustand store, on purpose: no state exists
+that the server does not own, and a client store would be a second copy that can
+disagree with the first. There are no optimistic updates either: a solve's
+outcome is random and only the server knows it, so the screen waits for the
+answer. A successful move seeds the cache with the `MoveResult`'s new game
+state, so the status bar updates without a refetch, and the game's queries are
+invalidated even when the move fails, because a failed move can still burn a
+turn. `/watch` polls only while the game is `active`. Query keys, the retry
+policy and polling: [`frontend.md`](docs/agent_docs/frontend.md#state-management).
 
 ## Error handling and validation
 
@@ -128,7 +140,9 @@ Three boundaries, one set of zod schemas shared by both sides:
 
 Errors bubble to one handler and always use one envelope,
 `{"error": {"code": "...", "message": "..."}}`. The game server's own errors are
-HTML, and game over (`410`) is a domain state, not an exception.
+HTML, and game over (`410`) is a domain state, not an exception. Upstream detail
+never reaches a client: a `5xx` carries a fixed message, and the cause (status,
+the start of the HTML body) goes to the log.
 
 | Status | `code`                 | When                                                                                             |
 | ------ | ---------------------- | ------------------------------------------------------------------------------------------------ |
@@ -136,8 +150,18 @@ HTML, and game over (`410`) is a domain state, not an exception.
 | 404    | `not_found`            | Unknown game, item not in the shop, or unknown `/api` route                                      |
 | 409    | `conflict`             | The ad is no longer on the board, not enough gold, or the game belongs to the bot                |
 | 410    | `game_over`            | A turn, solve or buy on a finished game (the losing solve itself answers 200)                    |
+| 415    | `invalid_request`      | A `POST` with a body that is not JSON (`text/plain` included); no route takes a body             |
+| 429    | `too_many_requests`    | A rate limit, or a fourth concurrent bot game. Carries `Retry-After`                             |
 | 502    | `upstream_unavailable` | The game server did not answer after retries (reads retry; `solve` and `buy` never do)           |
 | 500    | `internal`             | Anything unmapped. The message is generic; the detail goes to the log                            |
+
+Rate limits are per client IP and per route, in memory: 10 a minute each for
+`POST /games` and `POST /bot-games`, 120 a minute for solve and buy. Reads,
+which `/watch` polls, are unlimited. At most 3 bot games play at once. Every response carries
+security headers (`@fastify/helmet`): a CSP that allows only the app's own
+origin, `X-Frame-Options: DENY`, and no HSTS, because the app is served over
+plain http. `GET /api/health` answers `200 {"status":"ok"}`, or `503` when
+MySQL does not answer.
 
 ```bash
 API=http://localhost:3000/api
@@ -166,18 +190,28 @@ BOT=$(curl -s -X POST $API/bot-games | jq -r .state.gameId)
 curl -s $API/games/$BOT/moves        # grows while the bot plays  → 200
 curl -s $API/games/$BOT/turn         # not playable by hand       → 409
 
+# Readiness: checks MySQL                                         → 200, or 503
+curl -s $API/health
+
 # Errors
 curl -s $API/games/not%20an%20id     # invalid id                 → 400
 curl -s $API/games/doesnotexist      # unknown game               → 404
+curl -s -X POST -H 'content-type: text/plain' -d x $API/games  # → 415
 ```
 
-Add `-i` to see the status line. To reach a `410`, play until the lives run out:
+Add `-i` to see the status line and the headers. A start counts against the
+10-a-minute limit, so a burst of the commands above can answer `429`. To reach a `410`, play until the lives run out:
 the move that takes the last life answers `200` with `status: game_over`, and the
 next turn, solve or buy answers `410`.
 
 In Postman, leave the body type on _none_. A `POST` sent with
 `Content-Type: application/json` and an empty body is answered with
 `400 invalid_request`, and none of the `POST` routes takes a body.
+
+## Setup for tests and local development
+
+Needs Node 26 (`.nvmrc`) and pnpm 12.4.2 (`npm install --global pnpm@12.4.2`),
+then `pnpm install` once.
 
 ## Tests
 
@@ -197,10 +231,7 @@ run's own. Test levels, recorded fixtures and the E2E setup:
 
 ## Local development without Docker for the app
 
-Needs Node 26 (`.nvmrc`) and pnpm 12.4.2 (`npm install --global pnpm@12.4.2`).
-
 ```bash
-pnpm install
 docker compose up -d mysql    # only the database runs in Docker
 pnpm db:migrate
 pnpm dev                      # API on :3000, web on :5173 (proxies /api)
@@ -212,13 +243,28 @@ in `apps/api/src/config/index.ts`.
 
 ## Known limits
 
-- An API restart leaves an in-progress bot game `active` forever; the loop is
-  not resumed. So does a failed final database write when a bot game ends: the
-  failure is logged, but nothing retries it. Human games resume, because their
-  state is persisted.
-- There is no cap on concurrent bot games. Each one shares the single 8 requests
-  per second outbound limit, so many at once all slow down.
-- `docker compose down` stops a running bot game abruptly, with no clean finish.
+- A bot game is not resumed after a restart. A clean stop (`SIGTERM`, as
+  `docker compose down` sends) lets the turn in flight finish and ends the run
+  `abandoned`; a crash leaves it `active` forever. So does a failed final
+  database write when a bot game ends: it is logged, but nothing retries it.
+  Human games resume, because their state is persisted.
+- The bot plays on through up to two failed turns in a row (upstream down, or
+  the ad gone); the third consecutive failure (`MAX_CONSECUTIVE_FAILED_TURNS`, 3) ends the run `abandoned`. A failed solve or buy is never retried.
+- A buy that times out but that the upstream did process is lost locally. The
+  dragon level is derived from recorded purchases, because `solve` never
+  returns it, so that game's level, and the calibration rows keyed on it, stay
+  one purchase short.
+- Calibration runs a `GROUP BY` over the whole `ad_attempts` history on every
+  turn, for the bot and for every `/turn` the player loads. It is fast at this
+  size; at scale the counts would need to be cached or maintained.
+- Bot games share the single 8 requests per second outbound limit, so the 3
+  allowed at once slow each other down. Rate-limit counters live in memory, which
+  holds for one process only.
+- The compose credentials (`dragon`/`dragon`, the root password) are for local
+  use only. Both ports are published on `127.0.0.1`, and the API has no
+  authentication, so it is not meant to face a network.
+- `eslint-plugin-jsx-a11y` is not installed: it does not support ESLint 10.
+  Accessibility rests on the component tests' role queries and manual checks.
 - A missing static asset path is answered with the app's `index.html` (SPA
   fallback), not a 404. `/api` paths still get a JSON 404.
 - The published Mugloar API docs are wrong in several ways (bare arrays, numeric

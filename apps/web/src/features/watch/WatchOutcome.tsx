@@ -1,8 +1,9 @@
 import type { GameView } from '@bigbank-dragon/contracts';
 import { Link } from '@tanstack/react-router';
 
+import { Panel } from '../../shared/Panel.tsx';
 import { RunBotAgainButton } from './RunBotAgainButton.tsx';
-import styles from './WatchScreen.module.css';
+import styles from './WatchOutcome.module.css';
 import { watchCopy } from './watch-copy.ts';
 import { watchOutcome } from './watch-outcome.ts';
 import type { WatchOutcomeKind } from './watch-outcome.ts';
@@ -21,7 +22,7 @@ export const WatchOutcome = ({ game }: { game: GameView }) => {
   const outcome = watchOutcome({ game });
 
   return (
-    <section className={styles.outcome}>
+    <Panel>
       <p role="status" className={outcome === 'reached_target' ? styles.reached : undefined}>
         {statusText({ outcome, score: game.state.score })}
       </p>
@@ -32,6 +33,6 @@ export const WatchOutcome = ({ game }: { game: GameView }) => {
           <RunBotAgainButton />
         </div>
       )}
-    </section>
+    </Panel>
   );
 };

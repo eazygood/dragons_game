@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MoveListSchema, MoveSchema, TARGET_SCORE } from '../src/index.ts';
+import { MoveListSchema, MoveSchema } from '../src/index.ts';
 
 const SOLVE = {
   kind: 'solve',
@@ -21,12 +21,6 @@ const BUY = {
   cost: 50,
   rule: 'survival_floor',
 };
-
-describe('TARGET_SCORE', () => {
-  it('is the 1000-point bar the brief sets', () => {
-    expect(TARGET_SCORE).toBe(1000);
-  });
-});
 
 describe('MoveSchema', () => {
   it.each([SOLVE, BUY])('round-trips a $kind move', (move) => {

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
 import { isApiError } from '../../api/api-error.ts';
-import { useMoves, useWatchedGame } from '../../api/game-queries.ts';
-import { copy } from '../play/copy.ts';
-import { GameStatusBar } from '../play/game/GameStatusBar.tsx';
-import { GameUnavailable } from '../play/game/GameUnavailable.tsx';
-import { ErrorNotice } from '../play/moves/ErrorNotice.tsx';
+import { useMoveHistory, useWatchedGame } from '../../api/game-queries.ts';
+import { ErrorNotice } from '../../shared/ErrorNotice.tsx';
+import { GameStatusBar } from '../../shared/GameStatusBar.tsx';
+import { GameUnavailable } from '../../shared/GameUnavailable.tsx';
+import { sharedCopy } from '../../shared/shared-copy.ts';
 import { MoveLog } from './MoveLog.tsx';
 import { WatchOutcome } from './WatchOutcome.tsx';
 import styles from './WatchScreen.module.css';
@@ -14,14 +14,14 @@ import { watchCopy } from './watch-copy.ts';
 export const WatchScreen = ({ gameId }: { gameId: string }) => {
   const gameQuery = useWatchedGame({ gameId });
   const [isShowingMoves, setIsShowingMoves] = useState(false);
-  const movesQuery = useMoves({
+  const moveHistoryQuery = useMoveHistory({
     gameId,
     enabled: isShowingMoves,
     isGameActive: gameQuery.data?.status === 'active',
   });
 
   if (gameQuery.isPending) {
-    return <p role="status">{copy.game.loading}</p>;
+    return <p role="status">{sharedCopy.game.loading}</p>;
   }
 
   if (isApiError({ error: gameQuery.error, code: 'not_found' })) {
@@ -29,7 +29,7 @@ export const WatchScreen = ({ gameId }: { gameId: string }) => {
   }
 
   // A failed refresh keeps the last good view; the next poll replaces it.
-  if (gameQuery.isError && gameQuery.data === undefined) {
+  if (gameQuery.isLoadingError) {
     return <ErrorNotice error={gameQuery.error} onRetry={() => void gameQuery.refetch()} />;
   }
 
@@ -46,7 +46,7 @@ export const WatchScreen = ({ gameId }: { gameId: string }) => {
         />
         {watchCopy.showMoves}
       </label>
-      {isShowingMoves && <MoveLog movesQuery={movesQuery} />}
+      {isShowingMoves && <MoveLog moveHistoryQuery={moveHistoryQuery} />}
     </div>
   );
 };

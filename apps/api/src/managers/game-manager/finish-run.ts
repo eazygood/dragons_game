@@ -3,18 +3,18 @@ import type { Knex } from 'knex';
 
 import type { GameRun, RunStatus } from '../../entities/game-run.ts';
 import { gameRunRepository } from '../../repositories/index.ts';
-import { statePatch } from './state-patch.ts';
+import { statePatch } from './run-state.ts';
 
 export const finishRun = async ({
   db,
   run,
   state,
-  status = 'game_over',
+  status,
 }: {
   db: Knex;
   run: GameRun;
   state: GameState;
-  status?: Exclude<RunStatus, 'active'>;
+  status: Exclude<RunStatus, 'active'>;
 }): Promise<void> => {
   await gameRunRepository.db.updateOne({
     db,

@@ -1,5 +1,16 @@
 import { AdSchema } from '@bigbank-dragon/contracts';
-import type { Ad, RawAd } from '@bigbank-dragon/contracts';
+import type { Ad } from '@bigbank-dragon/contracts';
+
+// The ad as the upstream sends it. Declared here because the domain may not import the
+// adapter; the adapter's RawAdSchema produces this shape.
+export type RawAd = {
+  adId: string;
+  message: string;
+  reward: number;
+  expiresIn: number;
+  encrypted: 1 | 2 | null;
+  probability: string;
+};
 
 const ALPHABET_LENGTH = 26;
 const ROT13_SHIFT = 13;
@@ -26,18 +37,26 @@ const decoderFor = (encrypted: RawAd['encrypted']): ((value: string) => string) 
   return (value) => value;
 };
 
-export const decodeAd = ({ raw }: { raw: RawAd }): Ad => {
+const decodedFields = ({ raw }: { raw: RawAd }) => {
   const decode = decoderFor(raw.encrypted);
 
-  return AdSchema.parse({
+  return {
     adId: decode(raw.adId),
     message: decode(raw.message),
     probability: decode(raw.probability),
     reward: raw.reward,
     expiresIn: raw.expiresIn,
     wasEncrypted: raw.encrypted !== null,
-  });
+  };
 };
 
+export const decodeAd = ({ raw }: { raw: RawAd }): Ad => AdSchema.parse(decodedFields({ raw }));
+
+// An ad whose decoded label is unknown is dropped: the engine cannot price it, and the
+// rest of the board is still playable.
 export const decodeAds = ({ raws }: { raws: RawAd[] }): Ad[] =>
-  raws.map((raw) => decodeAd({ raw }));
+  raws.flatMap((raw) => {
+    const parsedAd = AdSchema.safeParse(decodedFields({ raw }));
+
+    return parsedAd.success ? [parsedAd.data] : [];
+  });

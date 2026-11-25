@@ -9,7 +9,7 @@ export const GameViewSchema = z.object({ state: GameStateSchema, status: RunStat
 
 export type GameView = z.infer<typeof GameViewSchema>;
 
-export const AD_VERDICTS = ['recommended', 'viable', 'long_shot', 'unattemptable'] as const;
+const AD_VERDICTS = ['recommended', 'viable', 'long_shot', 'unattemptable'] as const;
 
 export const AdVerdictSchema = z.enum(AD_VERDICTS);
 

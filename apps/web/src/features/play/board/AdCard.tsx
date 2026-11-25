@@ -1,38 +1,42 @@
 import type { AdvisedAd } from '@bigbank-dragon/contracts';
+import { useId } from 'react';
 
-import { copy } from '../copy.ts';
-import type { MoveControls } from '../moves/move-controls.ts';
+import type { MoveActions } from '../move-actions/move-actions.ts';
+import { playCopy } from '../play-copy.ts';
 import { AdviceBadge } from './AdviceBadge.tsx';
 import styles from './AdCard.module.css';
 
-export const AdCard = ({ ad, moves }: { ad: AdvisedAd; moves: MoveControls }) => {
-  const { verdict } = ad.advice;
-  const isUnattemptable = verdict === 'unattemptable';
+export const AdCard = ({ ad, moveActions }: { ad: AdvisedAd; moveActions: MoveActions }) => {
+  const reasonId = useId();
+  const isUnattemptable = ad.advice.verdict === 'unattemptable';
 
   return (
-    <article
-      className={styles.card}
-      data-verdict={verdict}
-      aria-label={`${copy.board.verdict[verdict]}: ${ad.message}`}
-    >
+    <article className={styles.card} data-verdict={ad.advice.verdict}>
       <p className={styles.message}>{ad.message}</p>
       <p className={styles.meta}>
         <span>
-          {copy.board.reward}: {ad.reward}
+          {playCopy.board.reward}: {ad.reward}
         </span>
-        <span>{ad.probability}</span>
-        <span>{copy.board.expiresIn(ad.expiresIn)}</span>
-        {ad.wasEncrypted && <span className={styles.tag}>{copy.board.decodedTag}</span>}
+        <span>
+          {playCopy.board.probabilityLabel}: {ad.probability}
+        </span>
+        <span>{playCopy.board.expiresIn(ad.expiresIn)}</span>
+        {ad.wasEncrypted && <span className={styles.tag}>{playCopy.board.decodedTag}</span>}
       </p>
       <AdviceBadge advice={ad.advice} />
-      {isUnattemptable && <p className={styles.reason}>{copy.board.unattemptableReason}</p>}
+      {isUnattemptable && (
+        <p id={reasonId} className={styles.reason}>
+          {playCopy.board.unattemptableReason}
+        </p>
+      )}
       <button
         type="button"
-        aria-label={copy.board.solveLabel(ad.message)}
-        disabled={isUnattemptable || moves.isPending}
-        onClick={() => moves.solve(ad.adId)}
+        aria-label={playCopy.board.solveLabel(ad.message)}
+        aria-describedby={isUnattemptable ? reasonId : undefined}
+        disabled={isUnattemptable || moveActions.isPending}
+        onClick={() => moveActions.solve(ad.adId)}
       >
-        {copy.board.solve}
+        {playCopy.board.solve}
       </button>
     </article>
   );

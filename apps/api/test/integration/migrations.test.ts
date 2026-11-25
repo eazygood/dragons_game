@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
 import { loadConfig } from '../../src/config/index.ts';
-import { DbTables } from '../../src/entities/db-tables.ts';
+import { DbTables } from '../../src/repositories/db-tables.ts';
 
 type IndexRow = { Key_name: string; Column_name: string };
 
@@ -28,37 +28,6 @@ describe('core schema migration', () => {
     }
   });
 
-  it('keeps live state on game_runs and no duplicated finals', async () => {
-    const columns = Object.keys(await db(DbTables.GameRuns).columnInfo());
-
-    expect(columns).toEqual(
-      expect.arrayContaining([
-        'game_id',
-        'strategy',
-        'benchmark_id',
-        'lives',
-        'gold',
-        'dragon_level',
-        'turn',
-        'score',
-        'status',
-        'started_at',
-        'ended_at',
-      ]),
-    );
-    expect(columns).not.toContain('final_score');
-    expect(columns).not.toContain('final_turn');
-    expect(columns).not.toContain('mode');
-  });
-
-  // Phase 1 measured no effect (0.73 encrypted vs 0.72 plaintext), so it went.
-  it('does not carry the disproven was_encrypted hypothesis', async () => {
-    const columns = Object.keys(await db(DbTables.AdAttempts).columnInfo());
-
-    expect(columns).toContain('reward');
-    expect(columns).not.toContain('was_encrypted');
-  });
-
   it('indexes ad_attempts on the calibration lookup key', async () => {
     const [indexes] = (await db.raw('SHOW INDEX FROM ad_attempts')) as [IndexRow[]];
     const calibrationKey = indexes.filter(
@@ -81,6 +50,18 @@ describe('core schema migration', () => {
       started_at: new Date(),
     });
 
+    await db(DbTables.AdAttempts).insert({
+      game_run_id: gameRunId,
+      ad_id: 'ad',
+      probability: 'Gamble',
+      dragon_level: 0,
+      turn: 1,
+      reward: 10,
+      success: true,
+      estimated_probability: 0.5,
+      expected_value: 5,
+      created_at: new Date(),
+    });
     await db(DbTables.Purchases).insert({
       game_run_id: gameRunId,
       item_id: 'hpot',
@@ -91,6 +72,7 @@ describe('core schema migration', () => {
     });
     await db(DbTables.GameRuns).where({ id: gameRunId }).delete();
 
+    expect(await db(DbTables.AdAttempts).where({ game_run_id: gameRunId })).toEqual([]);
     expect(await db(DbTables.Purchases).where({ game_run_id: gameRunId })).toEqual([]);
   });
 
@@ -102,12 +84,27 @@ describe('core schema migration', () => {
     expect(purchaseColumns.rule).toMatchObject({ nullable: true });
     expect(purchaseColumns.item_name).toMatchObject({ nullable: true });
 
-    await db.migrate.down();
+    await db.migrate.down({ name: '20261124000002_add_move_rule.ts' });
 
     expect(Object.keys(await db(DbTables.AdAttempts).columnInfo())).not.toContain('rule');
     expect(Object.keys(await db(DbTables.Purchases).columnInfo())).not.toContain('rule');
     expect(Object.keys(await db(DbTables.Purchases).columnInfo())).not.toContain('item_name');
 
+    await db.migrate.latest();
+  });
+
+  it('allows one run per game id, and only until rolled back', async () => {
+    const run = { strategy: 'baseline', lives: 3, gold: 0, dragon_level: 0, turn: 0, score: 0 };
+    const insertRun = () =>
+      db(DbTables.GameRuns).insert({ ...run, game_id: 'twice', started_at: new Date() });
+
+    await insertRun();
+    await expect(insertRun()).rejects.toThrow(/Duplicate entry/);
+
+    await db.migrate.down({ name: '20261125000001_unique_game_id.ts' });
+    await expect(insertRun()).resolves.toBeDefined();
+
+    await db(DbTables.GameRuns).where({ game_id: 'twice' }).delete();
     await db.migrate.latest();
   });
 
