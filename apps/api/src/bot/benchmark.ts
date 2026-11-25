@@ -17,7 +17,7 @@ export const runBenchmark = async ({
   db,
   strategy,
   runs,
-  warm = false,
+  readsAllHistory = false,
   concurrency = DEFAULT_CONCURRENCY,
   config = STRATEGY_CONFIG,
   logger = SILENT_LOGGER,
@@ -25,7 +25,7 @@ export const runBenchmark = async ({
   db: Knex;
   strategy: BotStrategy;
   runs: number;
-  warm?: boolean;
+  readsAllHistory?: boolean;
   concurrency?: number;
   config?: StrategyConfig;
   logger?: BotLogger;
@@ -38,7 +38,7 @@ export const runBenchmark = async ({
   };
 
   // Cold reads only this benchmark's own games, so other history is never deleted.
-  const calibrationBenchmarkId = warm ? null : benchmarkId;
+  const calibrationBenchmarkId = readsAllHistory ? null : benchmarkId;
 
   const results = await runBounded({
     count: runs,

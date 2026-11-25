@@ -6,20 +6,23 @@ import { PersistenceFailedError } from '../../errors/errors.ts';
 // The one error a game outlives: the upstream turn already happened,
 // so losing its local record must not end the real game.
 export const keepPlayingOnPersistenceFailure = async ({
-  action,
+  pendingTurn,
   logger,
 }: {
-  action: Promise<UpstreamResult<TurnResult>>;
+  pendingTurn: Promise<UpstreamResult<TurnResult>>;
   logger: Logger;
 }): Promise<UpstreamResult<TurnResult>> => {
   try {
-    return await action;
+    return await pendingTurn;
   } catch (error) {
     if (!(error instanceof PersistenceFailedError)) {
       throw error;
     }
 
-    logger.warn({ err: error, turn: error.result.state.turn }, 'turn not persisted; playing on');
-    return { status: 'ok', value: error.result };
+    logger.warn(
+      { err: error, turn: error.turnResult.state.turn },
+      'turn not persisted; playing on',
+    );
+    return { status: 'ok', value: error.turnResult };
   }
 };

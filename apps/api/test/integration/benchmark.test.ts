@@ -86,7 +86,7 @@ describe('runBenchmark', () => {
       db,
       strategy: 'calibrated',
       runs: 1,
-      warm: false,
+      readsAllHistory: false,
       concurrency: SEQUENTIAL,
       config,
     });
@@ -97,14 +97,14 @@ describe('runBenchmark', () => {
     expect(await countOfAttemptsSeededBefore()).toBe(1);
   });
 
-  it('reads all accumulated calibration when warm', async () => {
+  it('reads all accumulated calibration when readsAllHistory is set', async () => {
     const counts = vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts');
 
     await runBenchmark({
       db,
       strategy: 'calibrated',
       runs: 1,
-      warm: true,
+      readsAllHistory: true,
       concurrency: SEQUENTIAL,
       config,
     });
@@ -117,7 +117,7 @@ describe('runBenchmark', () => {
       db,
       strategy: 'baseline',
       runs: 3,
-      warm: false,
+      readsAllHistory: false,
       concurrency: SEQUENTIAL,
       config,
     });

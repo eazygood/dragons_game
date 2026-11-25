@@ -11,19 +11,19 @@ export const runBounded = async <T>({
   task: (index: number) => Promise<T>;
 }): Promise<T[]> => {
   const results: T[] = [];
-  let next = 0;
-  let failed = false;
+  let nextIndex = 0;
+  let hasFailed = false;
 
   const worker = async () => {
-    while (next < count && !failed) {
-      const index = next;
+    while (nextIndex < count && !hasFailed) {
+      const index = nextIndex;
 
-      next += 1;
+      nextIndex += 1;
 
       try {
         results[index] = await task(index);
       } catch (error) {
-        failed = true;
+        hasFailed = true;
         throw error;
       }
     }

@@ -74,19 +74,19 @@ const safest = ({ scored }: { scored: ScoredAd[] }) =>
 const shouldLevelUp = ({
   state,
   item,
-  hasGoodAd,
+  hasViableAd,
   config,
 }: {
   state: GameState;
   item: ShopItem;
-  hasGoodAd: boolean;
+  hasViableAd: boolean;
   config: StrategyConfig;
 }) => {
   if (!config.levelUpEnabled || state.gold < item.cost) {
     return false;
   }
 
-  return !hasGoodAd || state.gold - item.cost >= config.levelUpGoldReserve;
+  return !hasViableAd || state.gold - item.cost >= config.levelUpGoldReserve;
 };
 
 export const decide = ({ state, board, shop, calibration, config }: DecideInput): Decision => {
@@ -98,14 +98,19 @@ export const decide = ({ state, board, shop, calibration, config }: DecideInput)
     return buy({ rule: 'survival_floor', scored, item: potion });
   }
 
-  const good = scored.filter((entry) => entry.estimatedProbability >= config.minimumProbability);
+  const viableAds = scored.filter(
+    (entry) => entry.estimatedProbability >= config.minimumProbability,
+  );
   const levelUp = cheapestLevelUp({ shop });
 
-  if (levelUp && shouldLevelUp({ state, item: levelUp, hasGoodAd: good.length > 0, config })) {
+  if (
+    levelUp &&
+    shouldLevelUp({ state, item: levelUp, hasViableAd: viableAds.length > 0, config })
+  ) {
     return buy({ rule: 'level_up', scored, item: levelUp });
   }
 
-  const best = good[0];
+  const best = viableAds[0];
 
   if (best) {
     return solve({ rule: 'best_expected_value', scored, pick: best });

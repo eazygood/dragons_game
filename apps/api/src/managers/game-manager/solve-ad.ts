@@ -20,15 +20,18 @@ export const solveAd = async ({
   ad: Ad;
   reasoning: ScoredReasoning;
 }): Promise<UpstreamResult<TurnResult>> => {
-  const result = await adAttemptRepository.mugloar.createOne({ gameId: run.gameId, adId: ad.adId });
+  const solveResult = await adAttemptRepository.mugloar.createOne({
+    gameId: run.gameId,
+    adId: ad.adId,
+  });
 
-  if (result.status === 'game_over') {
-    return result;
+  if (solveResult.status === 'game_over') {
+    return solveResult;
   }
 
-  const outcome = result.value;
+  const outcome = solveResult.value;
   // solve never reports level; it only changes through a purchase.
-  const next: GameState = {
+  const nextState: GameState = {
     ...state,
     lives: outcome.lives,
     gold: outcome.gold,
@@ -36,12 +39,16 @@ export const solveAd = async ({
     turn: outcome.turn,
   };
 
-  const turn: TurnResult = { state: next, success: outcome.success, message: outcome.message };
+  const turnResult: TurnResult = {
+    state: nextState,
+    success: outcome.success,
+    message: outcome.message,
+  };
 
   await saveStateWithRecord({
     db,
     run,
-    result: turn,
+    turnResult,
     writeRecord: (trx) =>
       adAttemptRepository.db.createOne({
         db: trx,
@@ -61,5 +68,5 @@ export const solveAd = async ({
       }),
   });
 
-  return { status: 'ok', value: turn };
+  return { status: 'ok', value: turnResult };
 };

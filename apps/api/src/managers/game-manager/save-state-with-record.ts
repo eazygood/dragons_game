@@ -12,12 +12,12 @@ import { statePatch } from './state-patch.ts';
 export const saveStateWithRecord = async ({
   db,
   run,
-  result,
+  turnResult,
   writeRecord,
 }: {
   db: Knex;
   run: GameRun;
-  result: TurnResult;
+  turnResult: TurnResult;
   writeRecord: (trx: Knex.Transaction) => Promise<unknown>;
 }): Promise<void> => {
   try {
@@ -27,16 +27,16 @@ export const saveStateWithRecord = async ({
         await gameRunRepository.db.updateOne({
           db: trx,
           id: run.id,
-          patch: statePatch({ state: result.state }),
+          patch: statePatch({ state: turnResult.state }),
         });
         await writeRecord(trx);
       },
     });
   } catch (cause) {
     throw new PersistenceFailedError({
-      message: `Could not record turn ${result.state.turn} of game ${run.gameId}`,
+      message: `Could not record turn ${turnResult.state.turn} of game ${run.gameId}`,
       cause,
-      result,
+      turnResult,
     });
   }
 };

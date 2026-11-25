@@ -17,4 +17,4 @@ export const buyItem = async ({
   itemId: string;
   logger: Logger;
 }): Promise<UpstreamResult<MoveResult>> =>
-  toMoveResult({ move: await buyPlayerItem({ db, gameId, itemId, logger }) });
+  toMoveResult({ playerMoveResult: await buyPlayerItem({ db, gameId, itemId, logger }) });

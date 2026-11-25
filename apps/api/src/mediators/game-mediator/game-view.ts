@@ -11,15 +11,15 @@ export const toGameView = ({ run }: { run: GameRun }): GameView => ({
 });
 
 export const toMoveResult = ({
-  move,
+  playerMoveResult,
 }: {
-  move: UpstreamResult<PlayerMove>;
+  playerMoveResult: UpstreamResult<PlayerMove>;
 }): UpstreamResult<MoveResult> => {
-  if (move.status === 'game_over') {
-    return move;
+  if (playerMoveResult.status === 'game_over') {
+    return playerMoveResult;
   }
 
-  const { state, status, success, message } = move.value;
+  const { state, status, success, message } = playerMoveResult.value;
 
   return { status: 'ok', value: { game: { state, status }, success, message } };
 };

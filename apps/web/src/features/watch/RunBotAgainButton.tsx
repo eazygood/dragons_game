@@ -7,24 +7,24 @@ import { watchCopy } from './watch-copy.ts';
 
 export const RunBotAgainButton = () => {
   const navigate = useNavigate();
-  const startBotGame = useStartBotGame();
+  const botGameMutation = useStartBotGame();
   // isPending clears before the router navigation commits; a click in that gap would start a second game.
-  const isLocked = startBotGame.isPending || startBotGame.isSuccess;
+  const isLocked = botGameMutation.isPending || botGameMutation.isSuccess;
 
-  const handleRunAgain = () =>
-    startBotGame.mutate(undefined, {
+  const runBotAgain = () =>
+    botGameMutation.mutate(undefined, {
       onSuccess: (game) =>
         void navigate({ to: '/watch/$gameId', params: { gameId: game.state.gameId } }),
     });
 
   return (
     <>
-      <button type="button" onClick={handleRunAgain} disabled={isLocked}>
-        {startBotGame.isPending ? watchCopy.runAgainStarting : watchCopy.runAgain}
+      <button type="button" onClick={runBotAgain} disabled={isLocked}>
+        {botGameMutation.isPending ? watchCopy.runAgainStarting : watchCopy.runAgain}
       </button>
-      {startBotGame.error !== null && (
+      {botGameMutation.error !== null && (
         <p role="alert" className={styles.error}>
-          {errorCopy({ error: startBotGame.error })}
+          {errorCopy({ error: botGameMutation.error })}
         </p>
       )}
     </>

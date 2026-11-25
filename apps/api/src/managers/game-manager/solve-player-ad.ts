@@ -32,21 +32,21 @@ export const solvePlayerAd = ({
   withGameLock({
     gameId,
     task: async () => {
-      const runLookup = await findPlayableRun({ db, gameId });
+      const playableRunResult = await findPlayableRun({ db, gameId });
 
-      if (runLookup.status === 'game_over') {
-        return runLookup;
+      if (playableRunResult.status === 'game_over') {
+        return playableRunResult;
       }
 
-      const run = runLookup.value;
-      const board = await findAds({ gameId });
+      const run = playableRunResult.value;
+      const boardResult = await findAds({ gameId });
 
-      if (board.status === 'game_over') {
+      if (boardResult.status === 'game_over') {
         await recordGameOver({ db, run, logger });
-        return board;
+        return boardResult;
       }
 
-      const ad = board.value.find((candidate) => candidate.adId === adId);
+      const ad = boardResult.value.find((candidate) => candidate.adId === adId);
 
       if (!ad) {
         throw new AdExpiredError({ message: `Ad ${adId} is no longer on the board` });
@@ -63,14 +63,14 @@ export const solvePlayerAd = ({
       });
       const reasoning = playerChoiceReasoning({
         ad,
-        board: board.value,
+        board: boardResult.value,
         state,
         calibration,
         config,
       });
-      const action = solveAd({ db, run, state, ad, reasoning });
-      const result = await keepPlayingOnPersistenceFailure({ action, logger });
+      const pendingTurn = solveAd({ db, run, state, ad, reasoning });
+      const playedTurn = await keepPlayingOnPersistenceFailure({ pendingTurn, logger });
 
-      return applyMoveOutcome({ db, run, result, logger });
+      return applyMoveOutcome({ db, run, playedTurn, logger });
     },
   });

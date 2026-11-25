@@ -143,7 +143,7 @@ describe('game manager', () => {
 
     await expect(attempt).rejects.toBeInstanceOf(PersistenceFailedError);
     await expect(attempt).rejects.toMatchObject({
-      result: { state: { dragonLevel: 2, turn: 5 }, success: true, message: null },
+      turnResult: { state: { dragonLevel: 2, turn: 5 }, success: true, message: null },
     });
     expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
       dragonLevel: 0,

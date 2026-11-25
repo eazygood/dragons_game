@@ -24,11 +24,11 @@ export class AdExpiredError extends AppError {
 // Carries the turn the upstream already played, so a caller can keep playing
 // the real game even though the local record of that turn was lost.
 export class PersistenceFailedError extends AppError {
-  readonly result: TurnResult;
+  readonly turnResult: TurnResult;
 
-  constructor({ message, cause, result }: ErrorDetail & { result: TurnResult }) {
+  constructor({ message, cause, turnResult }: ErrorDetail & { turnResult: TurnResult }) {
     super({ code: 'internal', message, statusCode: 500, cause });
-    this.result = result;
+    this.turnResult = turnResult;
   }
 }
 
