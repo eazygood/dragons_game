@@ -1,7 +1,7 @@
 import { GameViewSchema } from '@bigbank-dragon/contracts';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { apiRequest } from '../src/api/client.ts';
+import { REQUEST_TIMEOUT_MS, apiRequest } from '../src/api/client.ts';
 import { gamePaths } from '../src/api/game-paths.ts';
 import { jsonResponse, stubApi } from './fetch-stub.ts';
 import { GAME_VIEW } from './fixtures.ts';
@@ -62,6 +62,68 @@ describe('apiRequest', () => {
     await apiRequest({ path: '/api/games', method: 'POST', schema: GameViewSchema });
 
     expect(new Headers(fetchStub.mock.calls[0]?.[1]?.headers).has('content-type')).toBe(false);
+  });
+
+  describe('cancellation and timeout', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    // Like real fetch: an already-aborted signal rejects at once, a live one rejects on abort.
+    const rejectWhenAborted = (_path: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        const signal = init?.signal;
+        // Always a DOMException here, which fetch rejects with as-is.
+        const abortReason = () => signal?.reason as Error;
+
+        if (signal?.aborted) {
+          reject(abortReason());
+        }
+
+        signal?.addEventListener('abort', () => reject(abortReason()));
+      });
+
+    it('hands fetch an abort signal so a request cannot hang forever', async () => {
+      const fetchStub = stubApi({
+        'GET /api/games/g1': () => jsonResponse({ status: 200, body: GAME_VIEW }),
+      });
+
+      await apiRequest({ path: '/api/games/g1', schema: GameViewSchema });
+
+      expect(fetchStub.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('rethrows the abort itself when the caller cancels, so Query does not see a failure', async () => {
+      vi.stubGlobal('fetch', rejectWhenAborted);
+      const controller = new AbortController();
+
+      const request = apiRequest({
+        path: '/api/games/g1',
+        schema: GameViewSchema,
+        signal: controller.signal,
+      });
+
+      controller.abort();
+
+      await expect(request).rejects.toBe(controller.signal.reason);
+    });
+
+    it('reports a request that timed out as unreachable', async () => {
+      const timeoutSpy = vi
+        .spyOn(AbortSignal, 'timeout')
+        .mockReturnValue(AbortSignal.abort(new DOMException('timed out', 'TimeoutError')));
+
+      vi.stubGlobal('fetch', rejectWhenAborted);
+
+      await expect(
+        apiRequest({
+          path: '/api/games/g1',
+          schema: GameViewSchema,
+          signal: new AbortController().signal,
+        }),
+      ).rejects.toMatchObject({ status: 0, code: 'unreachable' });
+      expect(timeoutSpy).toHaveBeenCalledWith(REQUEST_TIMEOUT_MS);
+    });
   });
 });
 

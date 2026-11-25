@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const DEFAULT_MUGLOAR_BASE_URL = 'https://dragonsofmugloar.com/api/v2';
-const DEFAULT_MUGLOAR_TIMEOUT_MS = 5000;
+const DEFAULT_MUGLOAR_TIMEOUT_MS = 10_000;
 const DEFAULT_MUGLOAR_READ_RETRIES = 2;
 const DEFAULT_MUGLOAR_RETRY_BASE_DELAY_MS = 200;
 const DEFAULT_MUGLOAR_RATE_PER_SECOND = 8;

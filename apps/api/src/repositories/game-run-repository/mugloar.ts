@@ -1,7 +1,6 @@
-import type { GameSnapshot } from '@bigbank-dragon/contracts';
-
 import { mugloarApiAdapter } from '../../adapters/mugloar-api-adapter/index.ts';
 import { GameStartWireSchema } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
+import type { GameSnapshot } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
 import { UpstreamUnavailableError } from '../../errors/errors.ts';
 
 // No game exists yet, so Game Over on a start is an upstream fault, not an ending.

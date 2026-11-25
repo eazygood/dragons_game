@@ -5,9 +5,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import type { AdAttempt } from '../../src/entities/ad-attempt.ts';
-import { DbTables } from '../../src/entities/db-tables.ts';
 import type { GameRunId } from '../../src/entities/game-run.ts';
-import { startGame } from '../../src/managers/game-manager/index.ts';
+import { startGameRun } from '../../src/managers/game-manager/index.ts';
+import { DbTables } from '../../src/repositories/db-tables.ts';
 import {
   adAttemptRepository,
   adRepository,
@@ -56,7 +56,7 @@ describe('game moves route', () => {
     stubPlayerUpstream();
     ({
       run: { id: runId },
-    } = await startGame({ db: app.db, strategy: 'manual' }));
+    } = await startGameRun({ db: app.db, strategy: 'manual' }));
   });
 
   afterEach(() => {
@@ -151,7 +151,7 @@ describe('game moves route', () => {
     vi.mocked(gameRunRepository.mugloar.createOne).mockResolvedValueOnce(
       newGameSnapshot('bot-moves'),
     );
-    const { run } = await startGame({ db: app.db, strategy: 'calibrated' });
+    const { run } = await startGameRun({ db: app.db, strategy: 'calibrated' });
 
     await adAttemptRepository.db.createOne({
       db: app.db,
@@ -175,13 +175,6 @@ describe('game moves route', () => {
     expect(response.json()).toEqual({
       error: { code: 'not_found', message: 'Game nope not found' },
     });
-  });
-
-  it('answers 400 for an invalid id', async () => {
-    const response = await app.inject({ url: '/api/games/bad!id/moves' });
-
-    expect(response.statusCode).toBe(400);
-    expect(response.json()).toMatchObject({ error: { code: 'invalid_request' } });
   });
 
   it('answers from the database alone', async () => {

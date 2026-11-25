@@ -2,9 +2,9 @@ import type { ShopItem } from '@bigbank-dragon/contracts';
 
 import { mugloarApiAdapter } from '../../adapters/mugloar-api-adapter/index.ts';
 import { ShopWireSchema } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
-import type { UpstreamResult } from '../../entities/upstream-result.ts';
+import type { OrGameOver } from '../../entities/or-game-over.ts';
 
-const findMany = ({ gameId }: { gameId: string }): Promise<UpstreamResult<ShopItem[]>> =>
+const findMany = ({ gameId }: { gameId: string }): Promise<OrGameOver<ShopItem[]>> =>
   mugloarApiAdapter.request({
     operation: 'list_shop_items',
     method: 'GET',

@@ -33,11 +33,15 @@ services:
       API_PORT: '3000'
       DATABASE_URL: mysql://dragon:dragon@mysql:3306/dragon
       WEB_DIST_DIR: /app/apps/web/dist
+    # Loopback only: the API has no authentication, so it is not offered to the network.
     ports:
-      - '${APP_PORT:-3000}:3000'
-    # The corepack shim ignores SIGTERM as PID 1, so `down` would wait out the kill timeout.
+      - '127.0.0.1:${APP_PORT:-3000}:3000'
+    # A bot turn in flight finishes after SIGTERM: a read with its retries, then one
+    # 10s solve or buy. 30s covers the usual case, not every retry exhausted.
+    stop_grace_period: 30s
     init: true
-    command: sh -c 'pnpm db:migrate && pnpm --filter @bigbank-dragon/api start'
+    # `exec` makes node, not the shell, receive the stop signal.
+    command: sh -c 'node apps/api/src/migrate.ts && exec node apps/api/src/server.ts'
 
 volumes:
   mysql-data:

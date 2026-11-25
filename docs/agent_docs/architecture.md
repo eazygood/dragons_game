@@ -13,23 +13,33 @@ flowchart TB
     end
 
     subgraph api["Fastify API — apps/api"]
+        WEB["plugins/web-app.ts — serves the built SPA"]
         R["Routes — HTTP only"]
+        CLI["cli/ — pnpm bot, pnpm bench"]
         MED["Mediators — compose responses"]
         MAN["Managers — game rules, transactions, the bot loop"]
         ENG["Decision engine — PURE"]
         REPO["Repositories — one entity each"]
-        ADP["Mugloar adapter — only outbound caller"]
+        MYA["mysql-adapter — knex pool, withTransaction"]
+        ADP["mugloar-api-adapter — only outbound caller"]
     end
 
     DB[("MySQL 8")]
     EXT["dragonsofmugloar.com/api/v2"]
 
-    UI -->|"REST, polled while a bot plays"| R
+    UI -->|"GET /, assets, index.html"| WEB
+    UI -->|"REST /api, polled while a bot plays"| R
     R --> MED --> MAN
+    CLI --> MAN
     MAN --> ENG
-    MAN --> REPO --> DB
+    MAN --> REPO
+    REPO --> MYA --> DB
     REPO --> ADP --> EXT
 ```
+
+`app.ts` and `cli/live-runtime.ts` are the composition roots: each loads the
+config, opens the pool and calls `configureMugloarApi` once. Managers'
+`withTransaction` edge to `mysql-adapter` is omitted (footnote under _Layers_).
 
 Why everything goes through Fastify: one source of truth for game state; the
 decode / retry / `410` logic is written once instead of twice in two languages;
@@ -45,37 +55,44 @@ Routes → Mediators → Managers → Repositories → Adapters
 ```
 
 Dependencies move **downward only**. Never skip a layer, never call upward.
-`eslint.config.mjs` enforces this with `no-restricted-imports` for `routes/`,
-`mediators/`, `bot/`, `managers/`, `repositories/` and `domain/`, so a shortcut fails `pnpm lint`.
-No rule is relaxed for the bot: the loop that calls `decide()` is a manager precisely
-so that routes and mediators never import the engine.
+`eslint.config.mjs` enforces this with `no-restricted-imports` for `cli/`,
+`routes/`, `plugins/`, `mediators/`, `managers/`, `repositories/` and `domain/`, so
+a shortcut fails `pnpm lint`. No rule is relaxed for the bot: the loop that calls `decide()`
+is a manager precisely so that routes and mediators never import the engine.
 
-| Layer            | May call                             | Must not                                               |
-| ---------------- | ------------------------------------ | ------------------------------------------------------ |
-| **Routes**       | Mediators, Managers                  | contain business logic; touch repositories or adapters |
-| **Mediators**    | Managers                             | contain game rules; touch repositories                 |
-| **Managers**     | Repositories, Engine, other Managers | be called by anything below them; touch adapters ¹     |
-| **Repositories** | one data-source Adapter              | span entities; call managers or other repositories     |
-| **Adapters**     | one external system                  | contain business logic                                 |
-| **Engine**       | nothing                              | perform I/O of any kind                                |
+| Layer            | May call                                 | Must not                                               |
+| ---------------- | ---------------------------------------- | ------------------------------------------------------ |
+| **Routes**       | Mediators                                | contain business logic; touch repositories or adapters |
+| **CLI**          | Managers                                 | touch repositories or adapters ²                       |
+| **Mediators**    | Managers                                 | contain game rules; touch repositories or the engine   |
+| **Managers**     | Repositories, Engine, other Managers     | be called by anything below them; touch adapters ¹     |
+| **Repositories** | one data-source Adapter                  | span entities; call managers or other repositories     |
+| **Adapters**     | one external system                      | contain business logic                                 |
+| **Engine**       | `@bigbank-dragon/contracts` schemas only | perform I/O of any kind                                |
 
 ¹ The one exception is `withTransaction` from `mysql-adapter`: a manager owns
 the transaction boundary, so it opens the transaction and hands it to repositories.
+² Except `cli/live-runtime.ts`, the CLIs' composition root, which opens the pool
+and configures the Mugloar adapter.
 
-`bot/` holds what only the CLIs use (the `runBot` wrapper, the benchmark, its
-pool and report) and stands at the mediator level: it calls managers only. Routes
-reach managers through `mediators/game-mediator/` and `mediators/bot-mediator/`,
-which turn manager results into the `packages/contracts` response shapes
-(`GameView`, `TurnView`, `MoveResult`, `Move`).
-Shared types that cross layers live in `entities/` (`UpstreamResult`, the solve
-and buy outcomes) rather than in the adapter that first produces them.
+`plugins/` is infrastructure wired in `app.ts`: it may use adapters and mediators
+(`plugins/bot-games.ts` builds the registry from `bot-mediator`) but never managers,
+repositories or the engine.
+`cli/` (`bot.ts`, `bench.ts`, `runBot`, the benchmark, its pool and report)
+stands at the mediator level and calls `bot-manager` and `game-manager`.
+
+Contract shapes: mediators build `GameView` and `MoveResult`
+(`game-mediator/game-view.ts`) and `TurnView` (`game-mediator/find-turn.ts`); `game-manager`'s
+`findMoveHistory` builds `Move[]`, which the mediator passes through; the engine
+returns `Decision` and `AdvisedAd`. Types that cross layers live in `entities/`
+(`OrGameOver`, `TurnResult`, `SolveOutcome`, `BuyOutcome`, `Logger`, `GameRun`);
+the row types (`DbTables`) live in `repositories/db-tables.ts`.
 
 ### Routes
 
-Thin. Extract from the request, call a mediator (or a manager when there's
-nothing to compose), bind the response. No logic. Errors bubble to the single
-registered Fastify error handler — routes never catch. See
-[`routes.md`](routes.md).
+Thin. Extract from the request, call a mediator, bind the response. No logic.
+Errors bubble to the single registered Fastify error handler; routes never
+catch. See [`routes.md`](routes.md).
 
 ### Mediators
 
@@ -88,8 +105,12 @@ for the operation — `game-mediator/start-game.ts`, not one growing file.
 Own one entity's lifecycle, its rules and its transaction boundary. A manager
 may compose every repository its transaction writes: `game-manager/` owns the
 game state machine and writes a turn's run update together with its attempt or
-purchase row, atomically. It also fronts the turn's reads (`findAds`,
-`findShopItems`, `findMoves`) so that callers never reach a repository.
+purchase row, atomically. It also fronts the reads (`findAds`, `findShopItems`,
+`findRun`, `findPlayableRun`, `findMoveHistory`) so that callers never reach a
+repository. When the turn's transaction fails after the upstream move happened,
+`PersistenceFailedError` carries the `TurnResult`: the bot plays on
+(`keepPlayingOnPersistenceFailure`), the player path saves the state alone
+(`saveStateOnPersistenceFailure`); see [`database.md`](database.md).
 `calibration-manager/` turns stored attempts into a `Calibration`, falling back
 to the prior when the read fails. `bot-manager/` owns the bot's play loop
 (`playGame`) and `execute-decision.ts`, which turns a `Decision` into a call on
@@ -127,22 +148,37 @@ are frozen, and `vi.spyOn` needs something it can patch.
 
 ### Adapters
 
-Wrap exactly one external system. `mugloar-api-adapter` is the only code in the
-repo that knows the upstream exists, and the only place that knows it is
-unreliable — timeouts, bounded retry, HTML-body tolerance and the `410`
-translation all live there and nowhere else.
+Wrap exactly one external system. `mugloar-api-adapter` is the only code that
+knows the upstream exists and is unreliable. Repositories call its one function,
+`mugloarApiAdapter.request({ operation, method, path, schema, badRequestError })`.
+GET is retried with exponential backoff on a network failure or `5xx`; POST
+never is.
 
-It exposes one generic call, `mugloarApiAdapter.request({ operation, method,
-path, schema })`, which repositories use. GET is retried and POST never is,
-which puts the rule in one place rather than in every caller. It reads config
-from the environment on each call, uses the global `fetch`, and takes a token
-from the process-wide `mugloarThrottle` before every attempt.
+- **Config is injected once.** Each composition root calls
+  `configureMugloarApi({ config })` (`adapter-config.ts`), which also builds the
+  process-wide token bucket. An adapter that was never configured reads the
+  environment once. Tests call it through `pointAdapterAt`.
+- **One deadline per attempt.** A single `AbortSignal.timeout` covers both the
+  wait for a throttle token and the `fetch`, so a backed-up queue cannot stretch
+  a call past `MUGLOAR_TIMEOUT_MS`.
+- **Status mapping.** `410` → `{ status: 'game_over' }`; `404` →
+  `GameNotFoundError`; `400` → the caller's `badRequestError` (solve passes
+  `AdExpiredError`), otherwise `UpstreamUnavailableError`; anything else non-2xx,
+  a network failure or a body that fails the wire schema →
+  `UpstreamUnavailableError`. The error's `cause` carries the status and the
+  first 120 characters of the body for the log, never for the client.
+- **Bad ads are dropped, not fatal.** `wire-schemas.ts` drops an ad failing
+  `RawAdSchema`; `domain/decode-ad.ts` drops one whose decoded label is unknown.
 
 ### Engine
 
-**Pure.** No I/O, no clock, no randomness, no imports from outside `domain/`.
-The engine owns its input types: `CalibrationCount` is defined in
-`calibration.ts`, and the repository maps rows into it.
+**Pure.** No I/O, no clock, no randomness. Its only import from outside
+`domain/` is `@bigbank-dragon/contracts`, for the shared types and constants
+(`Ad`, `GameState`, `Decision`, `IMPOSSIBLE_LABEL`); lint forbids `node:*`,
+config, entities, adapters, repositories, managers and `cli/`. The engine owns
+its input types: `CalibrationCount` is defined in `calibration.ts`, and the
+repository maps rows into it. `StrategyConfig` and the per-label
+`PROBABILITY_PRIOR` live in `strategy-config.ts`.
 
 ---
 
@@ -292,17 +328,11 @@ p̂ = (successes + α·prior) / (attempts + α)      α = smoothingAlpha (tuned:
 ```
 
 With little data the prior dominates; as evidence accumulates, measurement takes
-over. Deliberately simple and explainable — a human must be able to justify it on
-a whiteboard.
-
-Level **buckets**, not raw levels: the observed degradation is gradual and raw
-cells would be too sparse.
-
-**Reward bands** (edges in `StrategyConfig.rewardBandEdges`) because the label
-alone lies on lucrative ads. Measured over 20 cold runs: `Sure thing` under 100
-gold went 47/47; at 160 and above it went 1/45. Pooling them taught the engine
-that a trap was safe. The repository returns raw rewards; the engine buckets
-them, so the edges are tunable without a query change.
+over. Deliberately simple enough to justify on a whiteboard. Level **buckets**,
+not raw levels, because raw cells would be too sparse. **Reward bands**
+(`rewardBandEdges`) because the label lies on lucrative ads (`Sure thing`: 47/47
+under 100 gold, 1/45 at 160+). The repository returns raw rewards and the engine
+buckets them, so the edges are tunable without a query change.
 
 Calibration is **reloaded before every decision**, not once per game: a run's own
 failures, and those of concurrent benchmark games, count from the next turn.
@@ -331,16 +361,9 @@ failures, and those of concurrent benchmark games, count from the next turn.
 All thresholds live in one typed `StrategyConfig`. No magic numbers in the
 engine.
 
-### Two strategies
-
-| Strategy     | Uses history     | Purpose                                                           |
-| ------------ | ---------------- | ----------------------------------------------------------------- |
-| `baseline`   | no — priors only | EV + survival floor. Tests whether the database is needed at all. |
-| `calibrated` | yes              | The designed engine.                                              |
-
-Both satisfy the same signature and differ only in the `Calibration` passed in.
-The comparison was run in Phase 1 and the result is recorded below, whichever way
-it fell.
+**Two strategies** share the signature and differ only in the `Calibration`
+passed in: `baseline` uses the priors alone (does the database earn its place?),
+`calibrated` uses history. The Phase 1 comparison is recorded below.
 
 ---
 
@@ -352,44 +375,53 @@ reload calibration, call `decide`, and execute the `Decision` through
 `game-manager`. The loop lives in a manager because it calls the engine, and
 `eslint.config.mjs` forbids routes and mediators from importing `domain/`.
 
-| Caller                         | How it uses the loop                                                      |
-| ------------------------------ | ------------------------------------------------------------------------- |
-| `pnpm bot` (`bot/run-bot.ts`)  | Starts a game, awaits `playGame`, prints the result.                      |
-| `pnpm bench` (`bot/benchmark`) | Runs `runBot` concurrently and reports the pass rate against 1000.        |
-| `POST /api/bot-games`          | `bot-mediator/start-bot-game.ts` starts a game and **detaches** the loop. |
+| Caller                            | How it uses the loop                                                       |
+| --------------------------------- | -------------------------------------------------------------------------- |
+| `pnpm bot` (`cli/run-bot.ts`)     | Starts a game, awaits `playGame`, prints the result.                       |
+| `pnpm bench` (`cli/benchmark.ts`) | Runs `runBot` through `runBounded` and reports the pass rate against 1000. |
+| `POST /api/bot-games`             | `bot-mediator/start-bot-game.ts` starts a game and **detaches** the loop.  |
 
-The `advisor-manager` and the bot go through the same `game-manager` and
-`calibration-manager`, so the human's advice and the bot's moves share one code
-path.
+`runBounded` (`cli/bounded-pool.ts`) settles every run: one that throws counts in
+`failedRuns` and the rest carry on. The advisor and the bot share `game-manager`
+and `calibration-manager`, so advice and bot moves take one code path.
+
+**Resilience.** A turn failing with `UpstreamUnavailableError` or
+`AdExpiredError` is logged at `warn` and the loop plays on: the next turn
+re-reads the board and its response re-syncs lives, gold, score and turn. The
+failed solve or buy is never retried. On the third consecutive failure
+(`MAX_CONSECUTIVE_FAILED_TURNS`), or any other error, `playGame` ends the run
+`abandoned` and rethrows. A lost purchase's dragon level is not recoverable.
 
 ### Detached bot games
 
 `POST /api/bot-games` answers `201` with the new `GameView` as soon as the
-upstream game exists. The mediator starts `playGame` with `void` and a `.catch`
-that logs; nothing awaits it. The game then plays inside the API process, after the
-request has returned, with strategy `calibrated` and calibration over **all**
-history (`calibrationBenchmarkId: null`, as `pnpm bot` does).
+upstream game exists. The mediator first reserves a slot in the bot-game
+registry (`bot-mediator/bot-game-registry.ts`, decorated as `app.botGames` by
+`plugins/bot-games.ts`); at the cap (`AppLimits.maxBotGames`, 3) it answers
+`429`. It then starts `playGame` with the slot's `AbortSignal` and strategy
+`calibrated` over **all** history (`calibrationBenchmarkId: null`), holds the
+slot until the game settles and attaches a `.catch` that logs at `error`. The
+request does not wait. A failed start releases the slot.
 
-- **No unhandled rejection.** `playGame` finalises the run as `abandoned` before it
-  rethrows, so the row never stays `active` after an error; the mediator's catch
-  only reports the failure through `app.log`.
+- **No unhandled rejection.** `playGame` tries to end the run `abandoned` before
+  it rethrows (a failure of that write is logged and leaves it `active`).
 - **How a game ends.** Lives reaching zero is `game_over`. The engine returning
-  `stop` is `abandoned`, because the upstream game is still alive. The usual real
-  ending is `abandoned` (the board has run dry, from turn ~95) with a score well
-  over 1000; both are finished.
-- **Viewing.** There is no registry, no SSE and no push. The loop writes the same
-  rows a human's moves do, and a viewer reads them: `GET /api/games/:gameId` and
-  `GET /api/games/:gameId/moves` are database reads, polled by the web app. Any
-  number of viewers can come and go without affecting the run. A bot game is
-  refused by the player routes with `409`.
-- **Concurrency.** Bot games, benchmark games and human moves share one
-  process-wide token bucket on the outbound side (`MUGLOAR_RATE_PER_SECOND`, 8 by
-  default), because what is protected is the remote host. There is no cap on the
-  number of concurrent bot games; they simply slow each other down.
-- **Restart.** The loop lives in the process. An API restart (or `docker compose
-down`) stops it mid-game and leaves the run `active`; it is not resumed. A
-  failed final `finishRun` write is logged and also leaves it `active`. A
-  human's game is unaffected, because its state is persisted per move.
+  `stop` is `abandoned`, because the upstream game is still alive. The usual
+  ending is `abandoned` (the board runs dry from turn ~95) with a score well over
+  1000; both are finished.
+- **Viewing.** No SSE and no push. The loop writes the same rows a human's moves
+  do; `GET /api/games/:gameId` and `/moves` read them from the database and the
+  web app polls. Viewers never affect the run. Player routes refuse a bot game
+  with `409`.
+- **Concurrency.** Bot, benchmark and human moves share one process-wide token
+  bucket (`MUGLOAR_RATE_PER_SECOND`, 8), because what is protected is the remote
+  host.
+- **Shutdown.** `server.ts` calls `app.close()` on `SIGINT`/`SIGTERM`. The
+  `bot-games` plugin's `onClose` runs before the pool closes: it refuses new
+  slots, aborts every signal and waits. Each game finishes the turn in flight,
+  ends its run `abandoned` and returns. `compose.yaml` allows 30s.
+- **Restart.** The loop is not resumed. A crash leaves the run `active`, as does
+  a failed final `finishRun` write. A human's game resumes from its row.
 
 A separate worker would need a queue, a second deployable and a cross-process
 event path to reach a viewer: real cost, no reviewer-visible benefit at this
@@ -414,30 +446,14 @@ Recorded as they are established. A documented negative result is a finding.
 | Does reputation affect anything?         | skip    | **each call burns a turn**; values move but nothing uses them                                                                   |
 | Is there upstream rate limiting?         | no      | no `429` across every benchmark at 8 req/s, 3 concurrent games                                                                  |
 
-Measured 2026-11-24 with `pnpm bench` (20 cold runs, `calibrated` strategy, tuned
-defaults): **95% (19/20)** at 1000 or more. Score min 955, median 2723.5, max
-3993; mean 107.6 turns. This is one measurement, not a guarantee. Cold means
-"this benchmark's own games only", so the 20 games share evidence as they go.
+Three measurements with `pnpm bench` (20 cold runs, `calibrated` strategy, the same
+tuned defaults): **100% (20/20)** on 2026-11-23 (min 1566, median 2687, max 3576,
+mean 101.2 turns), **95% (19/20)** on 2026-11-24 (min 955, median 2723.5, max
+3993, mean 107.6 turns) and **100% (20/20)** on 2026-11-25 (min 1794, median
+2503.5, max 3361, mean 108.5 turns). Three measurements, not a guarantee. Cold means "this
+benchmark's own games only", so the 20 games share evidence as they go.
 
-Two things from the earlier runs on 2026-11-23, both in
-[`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md):
-
-- In the acceptance run, 16 of the 20 games stopped on an exhausted board (findings §7).
-- A separate experiment, an exhausted-board level-up rule, was benchmarked and
-  reverted. The rule never acted in its one miss: that game lost its 3 lives in 5
-  turns on ads estimated at 0.73 to 0.88, with too little gold for a potion, and
-  scored 21. Nothing in the engine guards the opening turns.
-
-Tuned `StrategyConfig` (sweep in the findings file):
-
-```ts
-smoothingAlpha: 2,          // a fresh trap cell is unlearned in 3 failures, not 6
-levelBucketEdges: [2, 4, 6],
-rewardBandEdges: [100, 160],
-livesFloor: 3,              // = starting lives: buy back every lost life
-minimumProbability: 0.45,   // 0.3 cost 10 points of pass rate
-lifeCostInGold: 50,
-turnCostInGold: 20,
-levelUpEnabled: false,      // off 100% vs on 95% in one 20-run pair: weak evidence
-levelUpGoldReserve: 350,
-```
+The acceptance run's endings (16 of 20 stopped on an exhausted board), the
+reverted exhausted-board level-up rule and the full threshold sweep are in
+[`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md). The tuned
+values themselves live in `STRATEGY_CONFIG` (`domain/engine/strategy-config.ts`).

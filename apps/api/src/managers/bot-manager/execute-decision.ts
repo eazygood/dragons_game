@@ -2,9 +2,9 @@ import type { Ad, Decision, GameState, ShopItem } from '@bigbank-dragon/contract
 import type { Knex } from 'knex';
 
 import type { GameRun } from '../../entities/game-run.ts';
+import type { OrGameOver } from '../../entities/or-game-over.ts';
 import type { TurnResult } from '../../entities/turn-result.ts';
-import type { UpstreamResult } from '../../entities/upstream-result.ts';
-import { buyItem, solveAd } from '../game-manager/index.ts';
+import { playBuyTurn, playSolveTurn } from '../game-manager/index.ts';
 
 type TurnContext = { db: Knex; run: GameRun; state: GameState };
 
@@ -18,7 +18,7 @@ export const executeDecision = ({
   decision: Exclude<Decision, { kind: 'stop' }>;
   board: Ad[];
   shop: ShopItem[];
-}): Promise<UpstreamResult<TurnResult>> => {
+}): Promise<OrGameOver<TurnResult>> => {
   if (decision.kind === 'solve') {
     const ad = board.find((candidate) => candidate.adId === decision.adId);
 
@@ -26,7 +26,7 @@ export const executeDecision = ({
       throw new Error(`Decision names ad ${decision.adId}, which is not on the board`);
     }
 
-    return solveAd({ ...context, ad, reasoning: decision.reasoning });
+    return playSolveTurn({ ...context, ad, reasoning: decision.reasoning });
   }
 
   const item = shop.find((candidate) => candidate.id === decision.itemId);
@@ -35,5 +35,5 @@ export const executeDecision = ({
     throw new Error(`Decision names item ${decision.itemId}, which is not in the shop`);
   }
 
-  return buyItem({ ...context, item, reasoning: decision.reasoning });
+  return playBuyTurn({ ...context, item, reasoning: decision.reasoning });
 };

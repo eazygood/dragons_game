@@ -1,0 +1,14 @@
+.reached {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.target {
+  color: var(--color-muted);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

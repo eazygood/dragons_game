@@ -5,17 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "start": "tsx src/server.ts",
-    "bot": "tsx src/tools/bot.ts",
-    "bench": "tsx src/tools/bench.ts",
+    "start": "node src/server.ts",
+    "bot": "tsx src/cli/bot.ts",
+    "bench": "tsx src/cli/bench.ts",
     "test": "vitest run --project unit --project contract",
     "typecheck": "tsc --noEmit",
     "test:integration": "vitest run --project integration",
-    "db:migrate": "tsx node_modules/knex/bin/cli.js --knexfile knexfile.ts migrate:latest",
+    "db:migrate": "node src/migrate.ts",
     "db:make": "tsx node_modules/knex/bin/cli.js --knexfile knexfile.ts migrate:make -x ts"
   },
   "dependencies": {
     "@bigbank-dragon/contracts": "workspace:*",
+    "@fastify/helmet": "13.2.0",
+    "@fastify/rate-limit": "11.2.2",
     "@fastify/static": "10.1.11",
     "fastify": "5.12.8",
     "fastify-plugin": "^6.0.1",

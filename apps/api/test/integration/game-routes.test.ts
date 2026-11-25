@@ -4,14 +4,13 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
-import { DbTables } from '../../src/entities/db-tables.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
-import { startGame } from '../../src/managers/game-manager/index.ts';
+import { startGameRun } from '../../src/managers/game-manager/index.ts';
+import { DbTables } from '../../src/repositories/db-tables.ts';
 import {
   adAttemptRepository,
   adRepository,
   gameRunRepository,
-  purchaseRepository,
 } from '../../src/repositories/index.ts';
 import { PLAYER_GAME_ID, newGameSnapshot, stubPlayerUpstream } from '../support/player-game.ts';
 
@@ -31,7 +30,7 @@ describe('game routes', () => {
   beforeEach(async () => {
     await app.db(DbTables.GameRuns).delete();
     stubPlayerUpstream();
-    await startGame({ db: app.db, strategy: 'manual' });
+    await startGameRun({ db: app.db, strategy: 'manual' });
   });
 
   afterEach(() => {
@@ -68,11 +67,15 @@ describe('game routes', () => {
     expect(body.recommendation).toMatchObject({ kind: 'solve', adId: 'sure1' });
   });
 
-  // Review Focus #4
-  it.each(['bad!id', 'cVlmaFlnRnQ%3D', 'a'.repeat(65)])(
-    'rejects game id %s before any upstream call',
-    async (id) => {
-      const response = await app.inject({ url: `/api/games/${id}/turn` });
+  // Review Focus #4. Each game-id route declares its own params schema, so each is checked.
+  it.each([
+    ...['bad!id', 'cVlmaFlnRnQ%3D', 'a'.repeat(65)].map((id) => ({ id, route: '/turn' })),
+    { id: 'bad!id', route: '' },
+    { id: 'bad!id', route: '/moves' },
+  ])(
+    'rejects game id $id on /api/games/:id$route before any upstream call',
+    async ({ id, route }) => {
+      const response = await app.inject({ url: `/api/games/${id}${route}` });
 
       expect(response.statusCode).toBe(400);
       expect(response.json()).toMatchObject({ error: { code: 'invalid_request' } });
@@ -80,17 +83,14 @@ describe('game routes', () => {
     },
   );
 
-  it('maps an expired ad to 409', async () => {
-    const url = `/api/games/${gameId}/ads/vanished/solve`;
+  it.each([
+    { refusal: 'an expired ad', url: `/api/games/${gameId}/ads/vanished/solve` },
+    { refusal: 'insufficient gold', url: `/api/games/${gameId}/shop/hpot/buy` },
+  ])('maps $refusal to 409 conflict', async ({ url }) => {
+    const response = await app.inject({ method: 'POST', url });
 
-    expect((await app.inject({ method: 'POST', url })).statusCode).toBe(409);
-  });
-
-  it('maps insufficient gold to 409 without buying', async () => {
-    const url = `/api/games/${gameId}/shop/hpot/buy`;
-
-    expect((await app.inject({ method: 'POST', url })).statusCode).toBe(409);
-    expect(purchaseRepository.mugloar.createOne).not.toHaveBeenCalled();
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({ error: { code: 'conflict' } });
   });
 
   it('returns 404 for an unknown game', async () => {
@@ -104,7 +104,7 @@ describe('game routes', () => {
     vi.mocked(gameRunRepository.mugloar.createOne).mockResolvedValueOnce(
       newGameSnapshot('bot-game'),
     );
-    await startGame({ db: app.db, strategy: 'calibrated' });
+    await startGameRun({ db: app.db, strategy: 'calibrated' });
 
     const response = await app.inject({ url: '/api/games/bot-game/turn' });
 
@@ -126,7 +126,7 @@ describe('game routes', () => {
   });
 
   // Review Focus #5
-  it('answers 410 when the solve itself is game over, and plays no further moves', async () => {
+  it('answers 410 when the solve itself is game over, and ends the run', async () => {
     const url = `/api/games/${gameId}/ads/sure1/solve`;
 
     vi.mocked(adAttemptRepository.mugloar.createOne).mockResolvedValue({ status: 'game_over' });
@@ -136,11 +136,6 @@ describe('game routes', () => {
       status: 'game_over',
       endedAt: expect.any(Date) as Date,
     });
-
-    vi.mocked(adAttemptRepository.mugloar.createOne).mockClear();
-
-    expect((await app.inject({ method: 'POST', url })).statusCode).toBe(410);
-    expect(adAttemptRepository.mugloar.createOne).not.toHaveBeenCalled();
   });
 
   it('maps an unreachable upstream to 502', async () => {

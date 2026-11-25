@@ -4,10 +4,11 @@ import {
   ApiErrorBodySchema,
   DecisionSchema,
   GameIdSchema,
-  SHOP_ITEM_PRIOR,
+  IDENTIFIER_MAX_LENGTH,
   TurnViewSchema,
 } from '../src/index.ts';
 import type { TurnView } from '../src/index.ts';
+import { RECORDED_SHOP_ITEMS } from './support/shop-items.ts';
 
 const SAMPLE_TURN_VIEW: TurnView = {
   game: {
@@ -25,7 +26,7 @@ const SAMPLE_TURN_VIEW: TurnView = {
       advice: { verdict: 'recommended', estimatedProbability: 0.95, expectedValue: 25 },
     },
   ],
-  shop: [...SHOP_ITEM_PRIOR],
+  shop: [...RECORDED_SHOP_ITEMS],
   recommendation: {
     kind: 'solve',
     adId: 'qYfhYgFt',
@@ -39,13 +40,19 @@ const SAMPLE_TURN_VIEW: TurnView = {
 };
 
 describe('identifiers', () => {
-  it.each(['xuRILCk8', 'qYfhYgFt', 'wingpotmax', 'a'.repeat(64)])('accepts %s', (id) => {
-    expect(GameIdSchema.safeParse(id).success).toBe(true);
-  });
+  it.each(['xuRILCk8', 'qYfhYgFt', 'wingpotmax', 'a'.repeat(IDENTIFIER_MAX_LENGTH)])(
+    'accepts %s',
+    (id) => {
+      expect(GameIdSchema.safeParse(id).success).toBe(true);
+    },
+  );
 
-  it.each(['', 'a/b', '../x', 'cVlmaFlnRnQ=', ' xuRILCk8', 'a'.repeat(65)])('rejects %j', (id) => {
-    expect(GameIdSchema.safeParse(id).success).toBe(false);
-  });
+  it.each(['', 'a/b', '../x', 'cVlmaFlnRnQ=', ' xuRILCk8', 'a'.repeat(IDENTIFIER_MAX_LENGTH + 1)])(
+    'rejects %j',
+    (id) => {
+      expect(GameIdSchema.safeParse(id).success).toBe(false);
+    },
+  );
 });
 
 describe('DecisionSchema', () => {

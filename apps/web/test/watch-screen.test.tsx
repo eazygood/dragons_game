@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { WATCH_POLL_INTERVAL_MS, gameKeys } from '../src/api/game-queries.ts';
-import { copy } from '../src/features/play/copy.ts';
+import { sharedCopy } from '../src/shared/shared-copy.ts';
 import { watchCopy } from '../src/features/watch/watch-copy.ts';
 import { watchOutcome } from '../src/features/watch/watch-outcome.ts';
 import { WatchScreen } from '../src/features/watch/WatchScreen.tsx';
@@ -40,11 +40,11 @@ describe('WatchScreen', () => {
     renderInRouter(<WatchScreen gameId="g1" />);
 
     expect(await screen.findByText(watchCopy.inProgress)).toBeVisible();
-    expectStatusField({ label: copy.status.score, value: 340 });
-    expectStatusField({ label: copy.status.gold, value: 75 });
-    expectStatusField({ label: copy.status.lives, value: 2 });
-    expectStatusField({ label: copy.status.dragonLevel, value: 1 });
-    expectStatusField({ label: copy.status.turn, value: 18 });
+    expectStatusField({ label: sharedCopy.status.score, value: 340 });
+    expectStatusField({ label: sharedCopy.status.gold, value: 75 });
+    expectStatusField({ label: sharedCopy.status.lives, value: 2 });
+    expectStatusField({ label: sharedCopy.status.dragonLevel, value: 1 });
+    expectStatusField({ label: sharedCopy.status.turn, value: 18 });
     expect(screen.getByText(watchCopy.target)).toBeVisible();
     expect(screen.queryByRole('button', { name: watchCopy.runAgain })).toBeNull();
   });
@@ -128,7 +128,7 @@ describe('WatchScreen', () => {
       expect(queryClient.getQueryState(gameKeys.game(GAME_ID))?.status).toBe('error'),
     );
 
-    expectStatusField({ label: copy.status.score, value: 340 });
+    expectStatusField({ label: sharedCopy.status.score, value: 340 });
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -143,9 +143,9 @@ describe('WatchScreen', () => {
     renderInRouter(<WatchScreen gameId="g1" />);
 
     expect(
-      await screen.findByRole('heading', { name: copy.unavailableGame.not_found.title }),
+      await screen.findByRole('heading', { name: sharedCopy.unavailableGame.not_found.title }),
     ).toBeVisible();
-    expect(screen.queryByRole('button', { name: copy.errors.retry })).toBeNull();
+    expect(screen.queryByRole('button', { name: sharedCopy.errors.retry })).toBeNull();
   });
 
   it('offers a retry when the game cannot be loaded', async () => {
@@ -162,7 +162,7 @@ describe('WatchScreen', () => {
     });
 
     renderInRouter(<WatchScreen gameId="g1" />);
-    await userEvent.click(await screen.findByRole('button', { name: copy.errors.retry }));
+    await userEvent.click(await screen.findByRole('button', { name: sharedCopy.errors.retry }));
 
     expect(await screen.findByText(watchCopy.inProgress)).toBeVisible();
   });

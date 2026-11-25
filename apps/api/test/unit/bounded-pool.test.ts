@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { runBounded } from '../../src/bot/bounded-pool.ts';
+import { runBounded } from '../../src/cli/bounded-pool.ts';
 
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 
@@ -23,8 +23,8 @@ describe('runBounded', () => {
     expect(peak).toBe(3);
   });
 
-  it('returns every result in index order, whatever order they finish in', async () => {
-    const results = await runBounded({
+  it('returns every outcome in index order, whatever order they finish in', async () => {
+    const outcomes = await runBounded({
       count: 4,
       concurrency: 2,
       task: async (index) => {
@@ -36,39 +36,32 @@ describe('runBounded', () => {
       },
     });
 
-    expect(results).toEqual([0, 10, 20, 30]);
+    expect(outcomes.map((outcome) => outcome.status === 'fulfilled' && outcome.value)).toEqual([
+      0, 10, 20, 30,
+    ]);
   });
 
-  // A benchmark's db pool is destroyed once this settles; in-flight games must not outlive it.
-  it('waits for in-flight tasks before rejecting, and starts no new ones', async () => {
+  it('keeps starting tasks after one fails, and reports the failure in its slot', async () => {
+    const failure = new Error('run 1 failed');
     const started: number[] = [];
-    const finished: number[] = [];
 
-    const outcome = runBounded({
-      count: 6,
+    const outcomes = await runBounded({
+      count: 5,
       concurrency: 2,
       task: async (index) => {
         started.push(index);
+        await tick();
 
-        if (index === 0) {
-          throw new Error('run 0 failed');
+        if (index === 1) {
+          throw failure;
         }
 
-        for (let wait = 0; wait < 3; wait += 1) {
-          await tick();
-        }
-
-        finished.push(index);
+        return index;
       },
     });
 
-    await expect(outcome).rejects.toThrow('run 0 failed');
-    expect(finished).toEqual([1]);
-
-    for (let wait = 0; wait < 10; wait += 1) {
-      await tick();
-    }
-
-    expect(started).toEqual([0, 1]);
+    expect(started).toEqual([0, 1, 2, 3, 4]);
+    expect(outcomes[1]).toEqual({ status: 'rejected', reason: failure });
+    expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(4);
   });
 });

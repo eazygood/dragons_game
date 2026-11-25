@@ -1,20 +1,20 @@
 import type { Knex } from 'knex';
 
-import type { Logger } from '../../config/logger.ts';
 import { playerChoiceReasoning } from '../../domain/engine/advise.ts';
 import { STRATEGY_CONFIG } from '../../domain/engine/strategy-config.ts';
+import type { Logger } from '../../entities/logger.ts';
+import type { OrGameOver } from '../../entities/or-game-over.ts';
 import type { PlayerMove } from '../../entities/turn-result.ts';
-import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { AdExpiredError } from '../../errors/errors.ts';
 import { loadCalibration } from '../calibration-manager/index.ts';
-import { recordGameOver } from './record-game-over.ts';
+import { applyMoveOutcome } from './apply-move-outcome.ts';
 import { findAds } from './find-ads.ts';
 import { findPlayableRun } from './find-run.ts';
 import { withGameLock } from './game-lock.ts';
-import { keepPlayingOnPersistenceFailure } from './keep-playing.ts';
-import { applyMoveOutcome } from './apply-move-outcome.ts';
-import { solveAd } from './solve-ad.ts';
-import { stateFromRun } from './state-patch.ts';
+import { saveStateOnPersistenceFailure } from './keep-playing.ts';
+import { playSolveTurn } from './play-solve-turn.ts';
+import { recordGameOver } from './record-game-over.ts';
+import { stateFromRun } from './run-state.ts';
 
 // The board is re-read rather than trusted from the client: an ad the client saw
 // may have expired, and solving it upstream would be a 400.
@@ -28,7 +28,7 @@ export const solvePlayerAd = ({
   gameId: string;
   adId: string;
   logger: Logger;
-}): Promise<UpstreamResult<PlayerMove>> =>
+}): Promise<OrGameOver<PlayerMove>> =>
   withGameLock({
     gameId,
     task: async () => {
@@ -68,8 +68,8 @@ export const solvePlayerAd = ({
         calibration,
         config,
       });
-      const pendingTurn = solveAd({ db, run, state, ad, reasoning });
-      const playedTurn = await keepPlayingOnPersistenceFailure({ pendingTurn, logger });
+      const pendingTurn = playSolveTurn({ db, run, state, ad, reasoning });
+      const playedTurn = await saveStateOnPersistenceFailure({ db, run, pendingTurn, logger });
 
       return applyMoveOutcome({ db, run, playedTurn, logger });
     },

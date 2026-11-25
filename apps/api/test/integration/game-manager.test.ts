@@ -4,10 +4,15 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
 import { loadConfig } from '../../src/config/index.ts';
-import { DbTables } from '../../src/entities/db-tables.ts';
 import type { GameRun } from '../../src/entities/game-run.ts';
 import { PersistenceFailedError } from '../../src/errors/errors.ts';
-import { buyItem, finishRun, solveAd, startGame } from '../../src/managers/game-manager/index.ts';
+import {
+  finishRun,
+  playBuyTurn,
+  playSolveTurn,
+  startGameRun,
+} from '../../src/managers/game-manager/index.ts';
+import { DbTables } from '../../src/repositories/db-tables.ts';
 import {
   adAttemptRepository,
   gameRunRepository,
@@ -43,6 +48,9 @@ describe('game manager', () => {
   let db: Knex;
   let run: GameRun;
   let state: GameState;
+  const solveTheAd = () => playSolveTurn({ db, run, state, ad: AD, reasoning: REASONING });
+  const buyClawHoning = () =>
+    playBuyTurn({ db, run, state, item: CLAW_HONING, reasoning: PURCHASE_REASONING });
 
   beforeAll(async () => {
     db = createDatabase({ config: loadConfig({ env: process.env }) });
@@ -72,7 +80,7 @@ describe('game manager', () => {
       value: { success: true, gold: 0, lives: 3, level: 2, turn: 5 },
     });
 
-    ({ run, state } = await startGame({ db, strategy: 'calibrated' }));
+    ({ run, state } = await startGameRun({ db, strategy: 'calibrated' }));
     state = { ...state, gold: 300, turn: 4 };
   });
 
@@ -93,7 +101,7 @@ describe('game manager', () => {
   });
 
   it('returns the solve outcome with the new state', async () => {
-    expect(await solveAd({ db, run, state, ad: AD, reasoning: REASONING })).toEqual({
+    expect(await solveTheAd()).toEqual({
       status: 'ok',
       value: {
         state: expect.objectContaining({ gold: 20, score: 20, turn: 1 }) as GameState,
@@ -104,7 +112,7 @@ describe('game manager', () => {
   });
 
   it('writes an ad attempt carrying the prediction it acted on', async () => {
-    await solveAd({ db, run, state, ad: AD, reasoning: REASONING });
+    await solveTheAd();
 
     expect(await db(DbTables.AdAttempts).first()).toMatchObject({
       ad_id: 'a1',
@@ -123,7 +131,7 @@ describe('game manager', () => {
   });
 
   it('raises the dragon level and the purchase row in one transaction', async () => {
-    await buyItem({ db, run, state, item: CLAW_HONING, reasoning: PURCHASE_REASONING });
+    await buyClawHoning();
 
     expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
       dragonLevel: 2,
@@ -139,7 +147,7 @@ describe('game manager', () => {
   it('leaves no purchase row and no level change when the transaction fails', async () => {
     vi.spyOn(purchaseRepository.db, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
 
-    const attempt = buyItem({ db, run, state, item: CLAW_HONING, reasoning: PURCHASE_REASONING });
+    const attempt = buyClawHoning();
 
     await expect(attempt).rejects.toBeInstanceOf(PersistenceFailedError);
     await expect(attempt).rejects.toMatchObject({
@@ -158,13 +166,7 @@ describe('game manager', () => {
       value: { success: false, gold: 10, lives: 3, level: 0, turn: 6 },
     });
 
-    const result = await buyItem({
-      db,
-      run,
-      state,
-      item: CLAW_HONING,
-      reasoning: PURCHASE_REASONING,
-    });
+    const result = await buyClawHoning();
 
     expect(result).toMatchObject({
       status: 'ok',
@@ -180,14 +182,14 @@ describe('game manager', () => {
   it('reports game over from the manager rather than throwing', async () => {
     vi.mocked(adAttemptRepository.mugloar.createOne).mockResolvedValue({ status: 'game_over' });
 
-    await expect(solveAd({ db, run, state, ad: AD, reasoning: REASONING })).resolves.toEqual({
+    await expect(solveTheAd()).resolves.toEqual({
       status: 'game_over',
     });
     expect(await db(DbTables.AdAttempts).count({ count: '*' })).toEqual([{ count: 0 }]);
   });
 
   it('closes a run when it finishes', async () => {
-    await finishRun({ db, run, state: { ...state, score: 1234 } });
+    await finishRun({ db, run, state: { ...state, score: 1234 }, status: 'game_over' });
 
     const finished = await gameRunRepository.db.findOne({ db, gameId: run.gameId });
 

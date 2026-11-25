@@ -4,7 +4,7 @@ const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ?? 'mysql://dragon:dragon@127.0.0.1:3306/dragon_test';
 
 // Fast, local settings for the upstream adapter; a test points it at its own
-// stub with vi.stubEnv, so nothing reaches the live API by accident.
+// stub with pointAdapterAt, so nothing reaches the live API by accident.
 const MUGLOAR_TEST_ENV = {
   MUGLOAR_BASE_URL: 'http://127.0.0.1:1',
   MUGLOAR_TIMEOUT_MS: '200',

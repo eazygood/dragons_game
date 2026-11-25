@@ -18,8 +18,8 @@ test-results/
 docs/superpowers/
 
 # Environment
-.env
-.env.*.local
+.env*
+!.env.example
 
 # Editor / OS
 .DS_Store

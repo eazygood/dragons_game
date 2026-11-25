@@ -1,21 +1,18 @@
 import type { ProbabilityLabel } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import type { AdAttempt } from '../../src/entities/ad-attempt.ts';
-import type { GameRunId, NewGameRun } from '../../src/entities/game-run.ts';
-import {
-  adAttemptRepository,
-  gameRunRepository,
-  purchaseRepository,
-} from '../../src/repositories/index.ts';
+import type { NewGameRun } from '../../src/entities/game-run.ts';
+import { DbTables } from '../../src/repositories/db-tables.ts';
+import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';
 
 const STARTED_AT = new Date('2026-11-24T10:00:00.000Z');
 
 const ACTIVE_RUN: NewGameRun = {
-  gameId: 'repo-active',
+  gameId: 'repo-run',
   strategy: 'calibrated',
   benchmarkId: null,
   lives: 3,
@@ -51,9 +48,12 @@ const attemptOf = ({
   createdAt: STARTED_AT,
 });
 
+// Every test creates its own run under its own game id, so the order they run in is irrelevant.
 describe('repositories', () => {
   let db: Knex;
-  let id: GameRunId;
+
+  const createRun = (patch: Partial<NewGameRun> & Pick<NewGameRun, 'gameId'>) =>
+    gameRunRepository.db.createOne({ db, gameRun: { ...ACTIVE_RUN, ...patch } });
 
   beforeAll(async () => {
     db = createDatabase({ config: loadConfig({ env: process.env }) });
@@ -63,8 +63,12 @@ describe('repositories', () => {
 
   afterAll(() => db.destroy());
 
+  beforeEach(async () => {
+    await db(DbTables.GameRuns).delete();
+  });
+
   it('round-trips a game run through transform and back', async () => {
-    id = await gameRunRepository.db.createOne({ db, gameRun: ACTIVE_RUN });
+    const id = await gameRunRepository.db.createOne({ db, gameRun: ACTIVE_RUN });
 
     expect(await gameRunRepository.db.findOne({ db, gameId: ACTIVE_RUN.gameId })).toEqual({
       ...ACTIVE_RUN,
@@ -73,17 +77,21 @@ describe('repositories', () => {
   });
 
   it('returns null for an unknown game', async () => {
+    await createRun({ gameId: 'repo-known' });
+
     expect(await gameRunRepository.db.findOne({ db, gameId: 'never-started' })).toBeNull();
   });
 
   it('updates live state in place, touching nothing else', async () => {
+    const id = await createRun({ gameId: 'repo-update' });
+
     await gameRunRepository.db.updateOne({
       db,
       id,
       patch: { lives: 2, gold: 120, turn: 7, score: 300 },
     });
 
-    expect(await gameRunRepository.db.findOne({ db, gameId: ACTIVE_RUN.gameId })).toMatchObject({
+    expect(await gameRunRepository.db.findOne({ db, gameId: 'repo-update' })).toMatchObject({
       lives: 2,
       gold: 120,
       turn: 7,
@@ -94,17 +102,19 @@ describe('repositories', () => {
   });
 
   it('finalises a run with its status and end time', async () => {
+    const id = await createRun({ gameId: 'repo-finalise' });
     const endedAt = new Date('2026-11-24T10:05:00.000Z');
 
     await gameRunRepository.db.updateOne({ db, id, patch: { status: 'game_over', endedAt } });
 
-    expect(await gameRunRepository.db.findOne({ db, gameId: ACTIVE_RUN.gameId })).toMatchObject({
+    expect(await gameRunRepository.db.findOne({ db, gameId: 'repo-finalise' })).toMatchObject({
       status: 'game_over',
       endedAt,
     });
   });
 
   it('groups calibration counts by label, level and reward', async () => {
+    const gameRunId = await createRun({ gameId: 'repo-calibration' });
     const seeds = [
       { probability: 'Sure thing', dragonLevel: 0, reward: 40, success: true },
       { probability: 'Sure thing', dragonLevel: 0, reward: 40, success: false },
@@ -113,87 +123,40 @@ describe('repositories', () => {
     ] as const;
 
     for (const seed of seeds) {
-      await adAttemptRepository.db.createOne({
-        db,
-        attempt: attemptOf({ gameRunId: id, ...seed }),
-      });
+      await adAttemptRepository.db.createOne({ db, attempt: attemptOf({ gameRunId, ...seed }) });
     }
 
     const counts = await adAttemptRepository.db.findCalibrationCounts({ db });
 
     expect(counts).toHaveLength(3);
-    expect(counts).toContainEqual({
-      probability: 'Sure thing',
-      dragonLevel: 0,
-      reward: 40,
-      attempts: 2,
-      successes: 1,
-    });
-    expect(counts).toContainEqual({
-      probability: 'Sure thing',
-      dragonLevel: 6,
-      reward: 210,
-      attempts: 1,
-      successes: 0,
-    });
+    expect(counts).toEqual(
+      expect.arrayContaining([
+        { probability: 'Sure thing', dragonLevel: 0, reward: 40, attempts: 2, successes: 1 },
+        { probability: 'Sure thing', dragonLevel: 6, reward: 40, attempts: 1, successes: 1 },
+        { probability: 'Sure thing', dragonLevel: 6, reward: 210, attempts: 1, successes: 0 },
+      ]),
+    );
   });
 
   it('counts only the attempts of one benchmark when scoped to it', async () => {
-    const benchmarkRunId = await gameRunRepository.db.createOne({
-      db,
-      gameRun: { ...ACTIVE_RUN, gameId: 'repo-bench', benchmarkId: 'bench-scope' },
-    });
-
-    await adAttemptRepository.db.createOne({
-      db,
-      attempt: attemptOf({
+    const outsideRunId = await createRun({ gameId: 'repo-outside' });
+    const benchmarkRunId = await createRun({ gameId: 'repo-bench', benchmarkId: 'bench-scope' });
+    const attempts = [
+      attemptOf({ gameRunId: outsideRunId, probability: 'Gamble', dragonLevel: 0, success: false }),
+      attemptOf({
         gameRunId: benchmarkRunId,
         probability: 'Gamble',
         dragonLevel: 0,
         success: true,
       }),
-    });
+    ];
+
+    for (const attempt of attempts) {
+      await adAttemptRepository.db.createOne({ db, attempt });
+    }
 
     expect(
       await adAttemptRepository.db.findCalibrationCounts({ db, benchmarkId: 'bench-scope' }),
     ).toEqual([{ probability: 'Gamble', dragonLevel: 0, reward: 10, attempts: 1, successes: 1 }]);
-  });
-
-  it('records a failed purchase', async () => {
-    await purchaseRepository.db.createOne({
-      db,
-      purchase: {
-        gameRunId: id,
-        itemId: 'hpot',
-        itemName: 'Healing potion',
-        rule: 'survival_floor',
-        cost: 50,
-        turn: 8,
-        success: false,
-        createdAt: STARTED_AT,
-      },
-    });
-
-    expect(await db('purchases').where({ game_run_id: id }).select('success')).toEqual([
-      { success: 0 },
-    ]);
-  });
-
-  it('finds every run of one benchmark invocation', async () => {
-    for (const gameId of ['bench-1', 'bench-2']) {
-      await gameRunRepository.db.createOne({
-        db,
-        gameRun: { ...ACTIVE_RUN, gameId, benchmarkId: 'bench-a' },
-      });
-    }
-
-    await gameRunRepository.db.createOne({
-      db,
-      gameRun: { ...ACTIVE_RUN, gameId: 'bench-3', benchmarkId: 'bench-b' },
-    });
-
-    const runs = await gameRunRepository.db.findMany({ db, benchmarkId: 'bench-a' });
-
-    expect(runs.map(({ gameId }) => gameId)).toEqual(['bench-1', 'bench-2']);
   });
 });

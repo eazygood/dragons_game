@@ -1,6 +1,7 @@
-import { IMPOSSIBLE_LABEL, PROBABILITY_PRIOR } from '@bigbank-dragon/contracts';
+import { IMPOSSIBLE_LABEL } from '@bigbank-dragon/contracts';
 import type { ProbabilityLabel } from '@bigbank-dragon/contracts';
 
+import { PROBABILITY_PRIOR } from './strategy-config.ts';
 import type { StrategyConfig } from './strategy-config.ts';
 
 // The engine's input shape; the repository maps stored attempts into it.

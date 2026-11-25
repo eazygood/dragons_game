@@ -1,11 +1,11 @@
 import type { AdvisedAd, Decision, ShopItem } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { Logger } from '../../config/logger.ts';
 import { adviseBoard } from '../../domain/engine/advise.ts';
 import { STRATEGY_CONFIG } from '../../domain/engine/strategy-config.ts';
 import type { GameRun } from '../../entities/game-run.ts';
-import type { UpstreamResult } from '../../entities/upstream-result.ts';
+import type { Logger } from '../../entities/logger.ts';
+import type { OrGameOver } from '../../entities/or-game-over.ts';
 import { loadCalibration } from '../calibration-manager/index.ts';
 import {
   recordGameOver,
@@ -31,7 +31,7 @@ export const adviseTurn = async ({
   db: Knex;
   gameId: string;
   logger: Logger;
-}): Promise<UpstreamResult<PlayerTurn>> => {
+}): Promise<OrGameOver<PlayerTurn>> => {
   const playableRunResult = await findPlayableRun({ db, gameId });
 
   if (playableRunResult.status === 'game_over') {

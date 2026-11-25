@@ -8,13 +8,18 @@ import {
 } from '@bigbank-dragon/contracts';
 import type { FastifyInstance } from 'fastify';
 
+import type { AppLimits } from '../app-limits.ts';
 import { gameMediator } from '../mediators/index.ts';
 import { replyGameOver } from './game-over-reply.ts';
+import { rateLimitConfig } from './rate-limit-config.ts';
 
 const HTTP_CREATED = 201;
 
-export const registerGameRoutes = (app: FastifyInstance) => {
-  app.post('/games', async (_request, reply) =>
+export const registerGameRoutes = (app: FastifyInstance, { limits }: { limits: AppLimits }) => {
+  const startGameConfig = rateLimitConfig({ rate: limits.startGameRate });
+  const playMoveConfig = rateLimitConfig({ rate: limits.playMoveRate });
+
+  app.post('/games', { config: startGameConfig }, async (_request, reply) =>
     reply.status(HTTP_CREATED).send(await gameMediator.startGame({ db: app.db })),
   );
 
@@ -48,7 +53,7 @@ export const registerGameRoutes = (app: FastifyInstance) => {
 
   app.post<{ Params: SolveParams }>(
     '/games/:gameId/ads/:adId/solve',
-    { schema: { params: SolveParamsSchema } },
+    { schema: { params: SolveParamsSchema }, config: playMoveConfig },
     async ({ params, log }, reply) => {
       const moveResult = await gameMediator.solveAd({ db: app.db, ...params, logger: log });
 
@@ -58,7 +63,7 @@ export const registerGameRoutes = (app: FastifyInstance) => {
 
   app.post<{ Params: BuyParams }>(
     '/games/:gameId/shop/:itemId/buy',
-    { schema: { params: BuyParamsSchema } },
+    { schema: { params: BuyParamsSchema }, config: playMoveConfig },
     async ({ params, log }, reply) => {
       const moveResult = await gameMediator.buyItem({ db: app.db, ...params, logger: log });
 

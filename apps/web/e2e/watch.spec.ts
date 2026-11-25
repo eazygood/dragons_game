@@ -33,7 +33,7 @@ test('lets the bot play and watches it pass the target', async ({ page }) => {
         hasBotFinished
           ? buildGameViewResponse({ gameId, status: 'abandoned', progress: BOT_FINISHED_PROGRESS })
           : buildGameViewResponse({ gameId, status: 'active' }),
-      [`GET ${gamePaths.moves({ gameId })}`]: () => buildBotMoves(),
+      [`GET ${gamePaths.moveHistory({ gameId })}`]: () => buildBotMoves(),
     },
   });
 

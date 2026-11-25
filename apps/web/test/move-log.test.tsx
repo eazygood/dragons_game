@@ -3,7 +3,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import { copy } from '../src/features/play/copy.ts';
+import { sharedCopy } from '../src/shared/shared-copy.ts';
 import { WatchScreen } from '../src/features/watch/WatchScreen.tsx';
 import { respondInSequence, respondOk, respondWith, stubApi } from './fetch-stub.ts';
 import {
@@ -129,7 +129,7 @@ describe('the bot move log', () => {
 
     renderInRouter(<WatchScreen gameId="g1" />);
     await userEvent.click(await screen.findByRole('checkbox', { name: SHOW_MOVES }));
-    await userEvent.click(await screen.findByRole('button', { name: copy.errors.retry }));
+    await userEvent.click(await screen.findByRole('button', { name: sharedCopy.errors.retry }));
 
     expect(await listedMoves()).toHaveLength(1);
   });

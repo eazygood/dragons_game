@@ -2,9 +2,9 @@ import { StrategyNameSchema } from '@bigbank-dragon/contracts';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
-import { DbTables } from '../../entities/db-tables.ts';
 import { RUN_STATUSES } from '../../entities/game-run.ts';
 import type { GameRun, GameRunId, GameRunPatch, NewGameRun } from '../../entities/game-run.ts';
+import { DbTables } from '../db-tables.ts';
 
 interface GameRunRow {
   id: number;
@@ -92,10 +92,7 @@ const findOne = async ({
   db: DbExecutor;
   gameId: string;
 }): Promise<GameRun | null> => {
-  const row = await db<GameRunRow>(DbTables.GameRuns)
-    .where({ game_id: gameId })
-    .orderBy('id', 'desc')
-    .first();
+  const row = await db<GameRunRow>(DbTables.GameRuns).where({ game_id: gameId }).first();
 
   return row ? reverseTransform({ row }) : null;
 };
@@ -112,18 +109,4 @@ const updateOne = async ({
   await db(DbTables.GameRuns).where({ id }).update(transformPatch({ patch }));
 };
 
-const findMany = async ({
-  db,
-  benchmarkId,
-}: {
-  db: DbExecutor;
-  benchmarkId: string;
-}): Promise<GameRun[]> => {
-  const rows = await db<GameRunRow>(DbTables.GameRuns)
-    .where({ benchmark_id: benchmarkId })
-    .orderBy('id');
-
-  return rows.map((row) => reverseTransform({ row }));
-};
-
-export const dbRepository = { createOne, findOne, updateOne, findMany };
+export const dbRepository = { createOne, findOne, updateOne };

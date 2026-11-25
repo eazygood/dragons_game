@@ -1,18 +1,12 @@
-import { GameIdSchema } from '@bigbank-dragon/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 
 import { GameScreen } from '../../features/play/game/GameScreen.tsx';
-import { GameUnavailable } from '../../features/play/game/GameUnavailable.tsx';
+import { GameIdGate } from '../../shared/GameIdGate.tsx';
 
-// A hand-edited URL never reaches the API: the id is checked before any request.
-const GamePage = () => {
-  const parsedGameId = GameIdSchema.safeParse(Route.useParams().gameId);
-
-  if (!parsedGameId.success) {
-    return <GameUnavailable reason="invalid_id" />;
-  }
-
-  return <GameScreen key={parsedGameId.data} gameId={parsedGameId.data} />;
-};
+const GamePage = () => (
+  <GameIdGate rawGameId={Route.useParams().gameId}>
+    {(gameId) => <GameScreen key={gameId} gameId={gameId} />}
+  </GameIdGate>
+);
 
 export const Route = createFileRoute('/play/$gameId')({ component: GamePage });

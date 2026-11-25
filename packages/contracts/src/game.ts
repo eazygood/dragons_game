@@ -25,15 +25,3 @@ export const GameStateSchema = z.object({
 });
 
 export type GameState = z.infer<typeof GameStateSchema>;
-
-export const GameSnapshotSchema = z.object({
-  gameId: z.string().min(1),
-  lives: z.number().int(),
-  gold: z.number().int(),
-  level: z.number().int(),
-  score: z.number().int(),
-  highScore: z.number().int(),
-  turn: z.number().int(),
-});
-
-export type GameSnapshot = z.infer<typeof GameSnapshotSchema>;

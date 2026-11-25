@@ -1,7 +1,7 @@
 import type { Knex } from 'knex';
 
 import type { GameRun } from '../../entities/game-run.ts';
-import type { UpstreamResult } from '../../entities/upstream-result.ts';
+import type { OrGameOver } from '../../entities/or-game-over.ts';
 import { GameNotFoundError, GameNotPlayableError } from '../../errors/errors.ts';
 import { gameRunRepository } from '../../repositories/index.ts';
 
@@ -22,7 +22,7 @@ export const findPlayableRun = async ({
 }: {
   db: Knex;
   gameId: string;
-}): Promise<UpstreamResult<GameRun>> => {
+}): Promise<OrGameOver<GameRun>> => {
   const run = await findRun({ db, gameId });
 
   if (run.strategy !== 'manual') {

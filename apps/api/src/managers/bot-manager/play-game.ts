@@ -1,27 +1,27 @@
 import type { GameState } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import type { Logger } from '../../config/logger.ts';
-import { decide } from '../../domain/engine/decide.ts';
 import { STRATEGY_CONFIG } from '../../domain/engine/strategy-config.ts';
 import type { StrategyConfig } from '../../domain/engine/strategy-config.ts';
 import type { BotRunResult, BotStrategy } from '../../entities/bot-run.ts';
 import type { GameRun } from '../../entities/game-run.ts';
-import { loadCalibration } from '../calibration-manager/index.ts';
-import {
-  findAds,
-  findShopItems,
-  finishRun,
-  keepPlayingOnPersistenceFailure,
-} from '../game-manager/index.ts';
-import { executeDecision } from './execute-decision.ts';
+import type { Logger } from '../../entities/logger.ts';
+import { AdExpiredError, UpstreamUnavailableError } from '../../errors/errors.ts';
+import { findShopItems, finishRun } from '../game-manager/index.ts';
+import { playTurn } from './play-turn.ts';
+import type { PlayTurnInput, Progress } from './play-turn.ts';
 
 // Far beyond any observed game; only a misbehaving upstream ever reaches it.
 const DEFAULT_MAX_TURNS = 1000;
 
-export const SILENT_LOGGER: Logger = { info: () => undefined, warn: () => undefined };
+// A run of failures this long means the upstream is down, not hiccuping.
+export const MAX_CONSECUTIVE_FAILED_TURNS = 3;
 
-type Progress = { state: GameState; turns: number; isGameOver: boolean };
+export const SILENT_LOGGER: Logger = {
+  info: () => undefined,
+  warn: () => undefined,
+  error: () => undefined,
+};
 
 type PlayGameInput = {
   db: Knex;
@@ -33,21 +33,17 @@ type PlayGameInput = {
   config?: StrategyConfig;
   logger: Logger;
   maxTurns?: number;
+  /** Stops before the next turn; the turn in flight completes and the run ends abandoned. */
+  signal?: AbortSignal;
 };
 
-type PlayTurnsInput = Required<Omit<PlayGameInput, 'state'>> & { progress: Progress };
+type PlayTurnsInput = Omit<PlayTurnInput, 'shop'> & { maxTurns: number; signal?: AbortSignal };
 
-// Writes into `progress` as it goes, so a thrown error still leaves the last known state.
-const playTurns = async ({
-  db,
-  run,
-  progress,
-  strategy,
-  calibrationBenchmarkId,
-  config,
-  logger,
-  maxTurns,
-}: PlayTurnsInput) => {
+const isTurnFailureSurvivable = (error: unknown) =>
+  error instanceof UpstreamUnavailableError || error instanceof AdExpiredError;
+
+const playTurns = async ({ maxTurns, signal, ...turnInput }: PlayTurnsInput) => {
+  const { run, progress, logger } = turnInput;
   // Fetched once: the listing can differ between games, not within one.
   const shopResult = await findShopItems({ gameId: run.gameId });
 
@@ -56,58 +52,39 @@ const playTurns = async ({
     return;
   }
 
-  while (progress.turns < maxTurns) {
-    const boardResult = await findAds({ gameId: run.gameId });
+  let consecutiveFailedTurns = 0;
 
-    if (boardResult.status === 'game_over') {
-      progress.isGameOver = true;
-      return;
-    }
+  while (progress.turns < maxTurns && !signal?.aborted) {
+    try {
+      const outcome = await playTurn({ ...turnInput, shop: shopResult.value });
 
-    // Per turn, not per game: concurrent games' evidence counts as soon as it lands.
-    const calibration = await loadCalibration({
-      db,
-      strategy,
-      config,
-      logger,
-      benchmarkId: calibrationBenchmarkId,
-    });
-    const { state } = progress;
-    const decision = decide({
-      state,
-      board: boardResult.value,
-      shop: shopResult.value,
-      calibration,
-      config,
-    });
+      consecutiveFailedTurns = 0;
 
-    logger.info({ gameId: run.gameId, turn: state.turn, decision }, 'decision');
+      if (outcome === 'game_over') {
+        progress.isGameOver = true;
+        return;
+      }
 
-    if (decision.kind === 'stop') {
-      logger.info({ gameId: run.gameId, reasoning: decision.reasoning }, 'engine stopped');
-      return;
-    }
+      if (outcome === 'stopped') {
+        return;
+      }
+    } catch (error) {
+      consecutiveFailedTurns += 1;
 
-    const pendingTurn = executeDecision({
-      context: { db, run, state },
-      decision,
-      board: boardResult.value,
-      shop: shopResult.value,
-    });
-    const playedTurn = await keepPlayingOnPersistenceFailure({ pendingTurn, logger });
+      if (
+        !isTurnFailureSurvivable(error) ||
+        consecutiveFailedTurns >= MAX_CONSECUTIVE_FAILED_TURNS
+      ) {
+        throw error;
+      }
 
-    if (playedTurn.status === 'game_over') {
-      progress.isGameOver = true;
-      return;
-    }
-
-    progress.state = playedTurn.value.state;
-    progress.turns += 1;
-
-    // Lives at zero already ended the game; asking for the next board would be a 410.
-    if (playedTurn.value.state.lives <= 0) {
-      progress.isGameOver = true;
-      return;
+      // The failed solve/buy is never retried (not idempotent): the next turn re-reads the
+      // board, and its successful response re-syncs lives, gold, score and turn. Local state
+      // may lag until then, and a lost purchase's dragon level cannot be recovered.
+      logger.warn(
+        { err: error, gameId: run.gameId, consecutiveFailedTurns },
+        'turn failed; playing on',
+      );
     }
   }
 };
@@ -121,6 +98,7 @@ export const playGame = async ({
   config = STRATEGY_CONFIG,
   logger,
   maxTurns = DEFAULT_MAX_TURNS,
+  signal,
 }: PlayGameInput): Promise<BotRunResult> => {
   const progress: Progress = { state, turns: 0, isGameOver: false };
 
@@ -134,6 +112,7 @@ export const playGame = async ({
       config,
       logger,
       maxTurns,
+      signal,
     });
   } catch (error) {
     // The upstream game outlives the error; without this the row stays 'active' forever.

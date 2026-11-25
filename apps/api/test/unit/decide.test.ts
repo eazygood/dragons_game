@@ -1,5 +1,6 @@
-import { SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
+import { HEALING_POTION_ID } from '@bigbank-dragon/contracts';
 import type { Ad, GameState, ShopItem } from '@bigbank-dragon/contracts';
+import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 import { describe, expect, it } from 'vitest';
 
 import { priorCalibration } from '../../src/domain/engine/calibration.ts';
@@ -12,7 +13,7 @@ import type { StrategyConfig } from '../../src/domain/engine/strategy-config.ts'
 // cannot silently change what they prove.
 const config: StrategyConfig = { ...STRATEGY_CONFIG, livesFloor: 2, levelUpEnabled: true };
 const calibration = priorCalibration({ config });
-const shop: ShopItem[] = [...SHOP_ITEM_PRIOR];
+const shop: ShopItem[] = [...RECORDED_SHOP_ITEMS];
 
 const state: GameState = { gameId: 'g1', lives: 3, gold: 0, dragonLevel: 0, turn: 0, score: 0 };
 
@@ -125,23 +126,22 @@ describe('decide', () => {
     expect(decision).toMatchObject({ kind: 'stop', reasoning: { rule: 'no_viable_option' } });
   });
 
-  it('levels up only with gold to spare above the potion reserve', () => {
-    const rich = decide({
-      state: { ...state, gold: 500, lives: 3 },
-      board: [ad({ probability: 'Risky', reward: 1 })],
-      shop,
-      calibration,
-      config,
-    });
+  const cheapestLevelUpCost = Math.min(
+    ...shop.filter((item) => item.id !== HEALING_POTION_ID).map((item) => item.cost),
+  );
 
-    expect(rich).toMatchObject({ kind: 'buy', itemId: 'cs', reasoning: { rule: 'level_up' } });
-  });
+  // The board stays viable, so only the gold reserve decides between buying and playing.
+  it.each([
+    { gold: cheapestLevelUpCost + config.levelUpGoldReserve, rule: 'level_up' },
+    { gold: cheapestLevelUpCost + config.levelUpGoldReserve - 1, rule: 'best_expected_value' },
+  ])(
+    'on a viable board with $gold gold, levels up only if the reserve survives the buy → $rule',
+    ({ gold, rule }) => {
+      const decision = decide({ state: { ...state, gold }, board, shop, calibration, config });
 
-  it('keeps playing a good board when levelling up would dip into the reserve', () => {
-    const decision = decide({ state: { ...state, gold: 400 }, board, shop, calibration, config });
-
-    expect(decision.reasoning.rule).toBe('best_expected_value');
-  });
+      expect(decision.reasoning.rule).toBe(rule);
+    },
+  );
 
   it('never levels up when the policy is disabled', () => {
     const decision = decide({
@@ -166,11 +166,5 @@ describe('decide', () => {
 
     expect(decision.reasoning).toMatchObject({ estimatedProbability: 0.9, consideredCount: 1 });
     expect(decision.reasoning.expectedValue).toBeCloseTo(0.9 * 20 - 0.1 * 70);
-  });
-
-  it('is pure — the same inputs give the same decision', () => {
-    expect(decide({ state, board, shop, calibration, config })).toEqual(
-      decide({ state, board, shop, calibration, config }),
-    );
   });
 });

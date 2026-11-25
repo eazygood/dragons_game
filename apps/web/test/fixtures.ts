@@ -1,4 +1,4 @@
-import { HEALING_POTION_ID, SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
+import { HEALING_POTION_ID } from '@bigbank-dragon/contracts';
 import type {
   AdVerdict,
   AdvisedAd,
@@ -8,8 +8,9 @@ import type {
   MoveResult,
   TurnView,
 } from '@bigbank-dragon/contracts';
+import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 
-import type { MoveControls } from '../src/features/play/moves/move-controls.ts';
+import type { MoveActions } from '../src/features/play/move-actions/move-actions.ts';
 
 export const GAME_ID = 'g1';
 export const GAME_ROUTE = 'GET /api/games/g1';
@@ -74,7 +75,7 @@ export const TURN_VIEW: TurnView = {
       advice: { verdict: 'long_shot', estimatedProbability: 0.4, expectedValue: -18 },
     }),
   ],
-  shop: [...SHOP_ITEM_PRIOR],
+  shop: [...RECORDED_SHOP_ITEMS],
   recommendation: {
     kind: 'solve',
     adId: 'sure1',
@@ -93,7 +94,7 @@ export const MOVE_RESULT: MoveResult = {
   message: 'You successfully defended the village',
 };
 
-export const IDLE_MOVES: MoveControls = {
+export const IDLE_MOVE_ACTIONS: MoveActions = {
   solve: () => undefined,
   buy: () => undefined,
   isPending: false,

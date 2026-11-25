@@ -1,11 +1,12 @@
-import { GameViewSchema, SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
+import { GameViewSchema } from '@bigbank-dragon/contracts';
+import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
-import { DbTables } from '../../src/entities/db-tables.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
+import { DbTables } from '../../src/repositories/db-tables.ts';
 import { gameRunRepository } from '../../src/repositories/index.ts';
 import { solvedAdResponse } from '../support/player-game.ts';
 import { scriptGame } from '../support/scripted-game.ts';
@@ -62,7 +63,7 @@ describe('bot routes', () => {
     scriptedGame.fetchShop.mockImplementationOnce(async () => {
       await shopReleased;
 
-      return { status: 'ok', value: [...SHOP_ITEM_PRIOR] };
+      return { status: 'ok', value: [...RECORDED_SHOP_ITEMS] };
     });
 
     const { response, gameId } = await startBotGame();
@@ -94,11 +95,11 @@ describe('bot routes', () => {
 
   it('abandons the run and keeps the API up when the upstream fails mid-game', async () => {
     const unhandledRejection = vi.fn();
-    const warn = vi.spyOn(app.log, 'warn');
+    const logError = vi.spyOn(app.log, 'error');
 
     scriptedGame.solveAd
       .mockResolvedValueOnce(solvedAdResponse())
-      .mockRejectedValueOnce(new UpstreamUnavailableError({ message: 'solve timed out' }));
+      .mockRejectedValue(new UpstreamUnavailableError({ message: 'solve timed out' }));
     process.on('unhandledRejection', unhandledRejection);
 
     try {
@@ -111,7 +112,7 @@ describe('bot routes', () => {
       expect(run).toMatchObject({ status: 'abandoned', score: 30 });
       expect(run?.endedAt).toBeInstanceOf(Date);
       expect(unhandledRejection).not.toHaveBeenCalled();
-      expect(warn).toHaveBeenCalledWith(expect.objectContaining({ gameId }), 'bot game failed');
+      expect(logError).toHaveBeenCalledWith(expect.objectContaining({ gameId }), 'bot game failed');
       expect((await app.inject({ url: '/api/health' })).statusCode).toBe(200);
     } finally {
       process.off('unhandledRejection', unhandledRejection);
@@ -126,15 +127,5 @@ describe('bot routes', () => {
     expect(response.statusCode).toBe(502);
     expect(response.json()).toMatchObject({ error: { code: 'upstream_unavailable' } });
     expect(await app.db(DbTables.GameRuns).select('id')).toEqual([]);
-  });
-
-  it("refuses to let a human play the bot's game", async () => {
-    const { gameId } = await startBotGame();
-    const turn = await app.inject({ url: `/api/games/${gameId}/turn` });
-
-    expect(turn.statusCode).toBe(409);
-    expect(turn.json()).toMatchObject({ error: { code: 'conflict' } });
-
-    await waitForRunToEnd({ gameId });
   });
 });

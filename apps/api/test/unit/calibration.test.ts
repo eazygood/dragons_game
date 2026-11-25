@@ -1,13 +1,9 @@
+import { IMPOSSIBLE_LABEL, PROBABILITY_LABELS } from '@bigbank-dragon/contracts';
 import { describe, expect, it } from 'vitest';
 
-import {
-  buildCalibration,
-  levelBucket,
-  priorCalibration,
-  rewardBand,
-} from '../../src/domain/engine/calibration.ts';
+import { buildCalibration, levelBucket, rewardBand } from '../../src/domain/engine/calibration.ts';
 import type { CalibrationCount } from '../../src/domain/engine/calibration.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { PROBABILITY_PRIOR, STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
 
 const config = STRATEGY_CONFIG;
 const CHEAP = 50;
@@ -78,19 +74,6 @@ describe('calibration', () => {
     );
   });
 
-  it('ignores evidence entirely in the baseline strategy', () => {
-    const counts: CalibrationCount[] = [
-      { probability: 'Sure thing', dragonLevel: 6, reward: CHEAP, attempts: 200, successes: 0 },
-    ];
-
-    expect(
-      priorCalibration({ config }).estimate({ label: 'Sure thing', level: 6, reward: CHEAP }),
-    ).toBeCloseTo(0.95);
-    expect(
-      calibratedFrom(counts).estimate({ label: 'Sure thing', level: 6, reward: CHEAP }),
-    ).toBeLessThan(0.95);
-  });
-
   it('keeps Impossible at zero however the evidence falls', () => {
     const calibration = calibratedFrom([
       { probability: 'Impossible', dragonLevel: 0, reward: CHEAP, attempts: 4, successes: 4 },
@@ -120,5 +103,15 @@ describe('calibration', () => {
     expect(band(99)).not.toBe(band(100));
     expect(band(159)).not.toBe(band(160));
     expect(band(160)).toBe(band(400));
+  });
+});
+
+describe('probability prior', () => {
+  it('gives every label a prior and ranks them monotonically', () => {
+    const priors = PROBABILITY_LABELS.map((label) => PROBABILITY_PRIOR[label]);
+
+    expect(priors).toHaveLength(PROBABILITY_LABELS.length);
+    expect([...priors].sort((a, b) => b - a)).toEqual(priors);
+    expect(PROBABILITY_PRIOR[IMPOSSIBLE_LABEL]).toBe(0);
   });
 });

@@ -1,8 +1,8 @@
 import type { GameView, MoveResult } from '@bigbank-dragon/contracts';
 
 import type { GameRun } from '../../entities/game-run.ts';
+import type { OrGameOver } from '../../entities/or-game-over.ts';
 import type { PlayerMove } from '../../entities/turn-result.ts';
-import type { UpstreamResult } from '../../entities/upstream-result.ts';
 import { stateFromRun } from '../../managers/game-manager/index.ts';
 
 export const toGameView = ({ run }: { run: GameRun }): GameView => ({
@@ -13,8 +13,8 @@ export const toGameView = ({ run }: { run: GameRun }): GameView => ({
 export const toMoveResult = ({
   playerMoveResult,
 }: {
-  playerMoveResult: UpstreamResult<PlayerMove>;
-}): UpstreamResult<MoveResult> => {
+  playerMoveResult: OrGameOver<PlayerMove>;
+}): OrGameOver<MoveResult> => {
   if (playerMoveResult.status === 'game_over') {
     return playerMoveResult;
   }

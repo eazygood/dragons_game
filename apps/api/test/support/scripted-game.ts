@@ -1,4 +1,4 @@
-import { SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
+import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 import { vi } from 'vitest';
 
 import {
@@ -72,7 +72,7 @@ export const scriptGame = ({ turnsUntilGameOver }: { turnsUntilGameOver: number 
     }),
     fetchShop: vi
       .spyOn(shopItemRepository.mugloar, 'findMany')
-      .mockResolvedValue({ status: 'ok', value: [...SHOP_ITEM_PRIOR] }),
+      .mockResolvedValue({ status: 'ok', value: [...RECORDED_SHOP_ITEMS] }),
     buyItem: vi.spyOn(purchaseRepository.mugloar, 'createOne').mockImplementation(() => {
       game.turn += 1;
 

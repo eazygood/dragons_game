@@ -21,7 +21,7 @@ const requestOf = ({ input, init }: { input: string | URL | Request; init?: Requ
   return { method: method.toUpperCase(), path: new URL(url).pathname };
 };
 
-export const recordingFileOf = ({
+const recordingFileOf = ({
   method,
   path,
   sequence,

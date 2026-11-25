@@ -1,7 +1,7 @@
-import type { RawAd } from '@bigbank-dragon/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { decodeAd, decodeAds } from '../../src/domain/decode-ad.ts';
+import type { RawAd } from '../../src/domain/decode-ad.ts';
 
 const toBase64 = (value: string) => Buffer.from(value, 'utf8').toString('base64');
 
@@ -61,5 +61,13 @@ describe('decodeAds', () => {
     const decoded = decodeAds({ raws: [BASE, { ...BASE64_AD, adId: 'cVlmaFlnRnQ=' }] });
 
     expect(decoded.map((ad) => ad.adId)).toEqual(['BR0b2WyN', 'qYfhYgFt']);
+  });
+
+  it('drops an ad whose decoded label is unknown instead of failing the board', () => {
+    const decoded = decodeAds({
+      raws: [{ ...BASE, adId: 'odd', probability: 'Absolutely fine' }, BASE],
+    });
+
+    expect(decoded.map((ad) => ad.adId)).toEqual(['BR0b2WyN']);
   });
 });

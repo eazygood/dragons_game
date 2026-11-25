@@ -1,43 +1,49 @@
 import type { Decision, TurnView } from '@bigbank-dragon/contracts';
 import { useId } from 'react';
 
-import { copy } from '../copy.ts';
-import { formatGold, formatPercent } from '../format.ts';
+import { formatGold, formatPercent } from '../../../shared/format.ts';
+import { playCopy } from '../play-copy.ts';
 import styles from './RecommendationBanner.module.css';
 
-const describeAction = ({ recommendation, turn }: { recommendation: Decision; turn: TurnView }) => {
+const describeAdvice = ({
+  recommendation,
+  turnView,
+}: {
+  recommendation: Decision;
+  turnView: TurnView;
+}) => {
   if (recommendation.kind === 'stop') {
     return null;
   }
 
   if (recommendation.kind === 'buy') {
-    const item = turn.shop.find(({ id }) => id === recommendation.itemId);
+    const item = turnView.shop.find(({ id }) => id === recommendation.itemId);
 
-    return copy.advice.buy(item?.name ?? recommendation.itemId);
+    return playCopy.advice.buy(item?.name ?? recommendation.itemId);
   }
 
-  const ad = turn.board.find(({ adId }) => adId === recommendation.adId);
+  const ad = turnView.board.find(({ adId }) => adId === recommendation.adId);
   const { estimatedProbability, expectedValue } = recommendation.reasoning;
-  const odds = copy.advice.odds({
+  const odds = playCopy.advice.odds({
     percent: formatPercent({ probability: estimatedProbability }),
     gold: formatGold({ gold: expectedValue }),
   });
 
-  return `${copy.advice.solve(ad?.message ?? recommendation.adId)} ${odds}`;
+  return `${playCopy.advice.solve(ad?.message ?? recommendation.adId)} ${odds}`;
 };
 
-export const RecommendationBanner = ({ turn }: { turn: TurnView }) => {
+export const RecommendationBanner = ({ turnView }: { turnView: TurnView }) => {
   const titleId = useId();
-  const { recommendation } = turn;
-  const action = describeAction({ recommendation, turn });
+  const { recommendation } = turnView;
+  const action = describeAdvice({ recommendation, turnView });
 
   return (
     <section className={styles.banner} aria-labelledby={titleId}>
       <h2 id={titleId} className={styles.title}>
-        {copy.advice.title}
+        {playCopy.advice.title}
       </h2>
       {action && <p className={styles.action}>{action}</p>}
-      <p className={styles.rule}>{copy.rules[recommendation.reasoning.rule]}</p>
+      <p className={styles.rule}>{playCopy.rules[recommendation.reasoning.rule]}</p>
     </section>
   );
 };

@@ -43,9 +43,14 @@ const verdictFor = ({
 };
 
 // The recommendation is decide() itself, so the advisor and the bot cannot disagree.
-export const adviseBoard = (input: AdviseInput): { recommendation: Decision; ads: AdvisedAd[] } => {
-  const { state, board, calibration, config } = input;
-  const recommendation = decide(input);
+export const adviseBoard = ({
+  state,
+  board,
+  shop,
+  calibration,
+  config,
+}: AdviseInput): { recommendation: Decision; ads: AdvisedAd[] } => {
+  const recommendation = decide({ state, board, shop, calibration, config });
   const attemptable = scoreAds({ board, state, calibration, config });
   const unattemptable = board
     .filter((ad) => !isAttemptable({ ad }))

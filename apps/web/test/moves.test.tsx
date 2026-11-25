@@ -1,14 +1,15 @@
-import { SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
+import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
-import { copy } from '../src/features/play/copy.ts';
+import { playCopy } from '../src/features/play/play-copy.ts';
+import { sharedCopy } from '../src/shared/shared-copy.ts';
 import { GameScreen } from '../src/features/play/game/GameScreen.tsx';
 import { ShopPanel } from '../src/features/play/shop/ShopPanel.tsx';
 import { createQueryClient } from '../src/query-client.ts';
 import { respondInSequence, respondNever, respondOk, respondWith, stubApi } from './fetch-stub.ts';
-import { GAME_VIEW, IDLE_MOVES, MOVE_RESULT, TURN_VIEW } from './fixtures.ts';
+import { GAME_VIEW, IDLE_MOVE_ACTIONS, MOVE_RESULT, TURN_VIEW } from './fixtures.ts';
 import { renderInRouter, renderWithQuery } from './render.tsx';
 
 const GAME_ROUTE = 'GET /api/games/g1';
@@ -36,6 +37,15 @@ describe('player moves', () => {
     await waitFor(() => expect(api.callCountOf(TURN_ROUTE)).toBe(2));
   });
 
+  it('moves focus to the feedback region when a move is submitted', async () => {
+    stubApi({ ...activeGameRoutes, [SOLVE_ROUTE]: respondNever() });
+
+    renderInRouter(<GameScreen gameId="g1" />);
+    await clickSolve();
+
+    expect(screen.getByRole('status')).toHaveFocus();
+  });
+
   // Review Focus #1 (client half)
   it('disables every move while one is in flight', async () => {
     stubApi({ ...activeGameRoutes, [SOLVE_ROUTE]: respondNever() });
@@ -61,7 +71,7 @@ describe('player moves', () => {
     renderInRouter(<GameScreen gameId="g1" />);
     await clickSolve();
 
-    expect(await screen.findByText(copy.moves.adExpired)).toBeVisible();
+    expect(await screen.findByText(playCopy.moves.adExpired)).toBeVisible();
     await waitFor(() => expect(api.callCountOf(TURN_ROUTE)).toBe(2));
   });
 
@@ -77,16 +87,27 @@ describe('player moves', () => {
     renderInRouter(<GameScreen gameId="g1" />, { queryClient: createQueryClient() });
     await clickSolve();
 
-    expect(await screen.findByText(copy.errors.upstreamUnavailable)).toBeVisible();
+    expect(await screen.findByText(sharedCopy.errors.upstreamUnavailable)).toBeVisible();
     expect(api.callCountOf(SOLVE_ROUTE)).toBe(1);
   });
 
   // Review Focus #3 (client half)
   it('disables a purchase the player cannot afford and says why', () => {
-    renderWithQuery(<ShopPanel shop={[...SHOP_ITEM_PRIOR]} gold={40} moves={IDLE_MOVES} />);
+    renderWithQuery(
+      <ShopPanel shop={[...RECORDED_SHOP_ITEMS]} gold={40} moveActions={IDLE_MOVE_ACTIONS} />,
+    );
 
-    expect(screen.getByRole('button', { name: /buy healing potion/i })).toBeDisabled();
-    expect(screen.getByText(copy.shop.needMoreGold(10))).toBeVisible();
+    const buyButton = screen.getByRole('button', { name: /buy healing potion/i });
+
+    expect(buyButton).toBeDisabled();
+    expect(screen.getByText(playCopy.shop.needMoreGold(10))).toBeVisible();
+    expect(buyButton).toHaveAccessibleDescription(playCopy.shop.needMoreGold(10));
+  });
+
+  it('says so when the shop has nothing for sale', () => {
+    renderWithQuery(<ShopPanel shop={[]} gold={40} moveActions={IDLE_MOVE_ACTIONS} />);
+
+    expect(screen.getByText(playCopy.shop.empty)).toBeVisible();
   });
 
   // Review Focus #5 (client half)
@@ -108,7 +129,7 @@ describe('player moves', () => {
     renderInRouter(<GameScreen gameId="g1" />);
     await clickSolve();
 
-    expect(await screen.findByRole('heading', { name: copy.gameOver.title })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: playCopy.gameOver.title })).toBeVisible();
   });
 
   it('turns a 410 on the move itself into the game over screen', async () => {
@@ -126,7 +147,7 @@ describe('player moves', () => {
     renderInRouter(<GameScreen gameId="g1" />);
     await clickSolve();
 
-    expect(await screen.findByRole('heading', { name: copy.gameOver.title })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: playCopy.gameOver.title })).toBeVisible();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
@@ -143,7 +164,7 @@ describe('player moves', () => {
 
     renderInRouter(<GameScreen gameId="g1" />, { queryClient: createQueryClient() });
 
-    expect(await screen.findByRole('heading', { name: copy.gameOver.title })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: playCopy.gameOver.title })).toBeVisible();
   });
 
   it('offers a retry when the game cannot be loaded', async () => {
@@ -160,8 +181,8 @@ describe('player moves', () => {
     });
 
     renderInRouter(<GameScreen gameId="g1" />);
-    await userEvent.click(await screen.findByRole('button', { name: copy.errors.retry }));
+    await userEvent.click(await screen.findByRole('button', { name: sharedCopy.errors.retry }));
 
-    expect(await screen.findByRole('heading', { name: copy.gameOver.title })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: playCopy.gameOver.title })).toBeVisible();
   });
 });

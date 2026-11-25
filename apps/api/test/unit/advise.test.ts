@@ -1,5 +1,5 @@
-import { SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
 import type { Ad, GameState } from '@bigbank-dragon/contracts';
+import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 import { describe, expect, it } from 'vitest';
 
 import { adviseBoard, playerChoiceReasoning } from '../../src/domain/engine/advise.ts';
@@ -25,7 +25,13 @@ const risky = ad({ adId: 'risky', probability: 'Risky', reward: 40 });
 const impossible = ad({ adId: 'imp', probability: 'Impossible', reward: 200 });
 const expired = ad({ adId: 'gone', probability: 'Piece of cake', reward: 50, expiresIn: 0 });
 const board = [sure, risky, impossible, expired];
-const input = { state, board, shop: [...SHOP_ITEM_PRIOR], calibration, config: STRATEGY_CONFIG };
+const input = {
+  state,
+  board,
+  shop: [...RECORDED_SHOP_ITEMS],
+  calibration,
+  config: STRATEGY_CONFIG,
+};
 
 describe('adviseBoard', () => {
   it('grades every ad on the board', () => {

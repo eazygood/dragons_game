@@ -1,8 +1,8 @@
 import { TARGET_SCORE } from '@bigbank-dragon/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { formatSummary, summarise } from '../../src/bot/benchmark-report.ts';
-import type { BotRunResult } from '../../src/bot/types.ts';
+import { formatSummary, summarise } from '../../src/cli/benchmark-report.ts';
+import type { BotRunResult } from '../../src/cli/types.ts';
 
 const TURNS = 40;
 
@@ -48,12 +48,40 @@ describe('summarise', () => {
   it('summarises no runs as zeros rather than NaN', () => {
     expect(summarise({ results: [], target: TARGET_SCORE })).toEqual({
       runs: 0,
+      failedRuns: 0,
       passRate: 0,
       min: 0,
       median: 0,
       max: 0,
       meanTurns: 0,
       target: TARGET_SCORE,
+    });
+  });
+});
+
+describe('summarise with failed runs', () => {
+  it('counts a failed run as a miss in the pass rate', () => {
+    const summary = summarise({
+      results: scores([1500, 500]),
+      failedRuns: 2,
+      target: TARGET_SCORE,
+    });
+
+    expect(summary).toMatchObject({ runs: 4, failedRuns: 2, passRate: 0.25 });
+  });
+
+  it('describes scores and turns from finished runs only', () => {
+    const summary = summarise({ results: scores([300, 900]), failedRuns: 1, target: TARGET_SCORE });
+
+    expect(summary).toMatchObject({ min: 300, median: 600, max: 900, meanTurns: TURNS + 0.5 });
+  });
+
+  it('reports a benchmark where every run failed without NaN', () => {
+    expect(summarise({ results: [], failedRuns: 3, target: TARGET_SCORE })).toMatchObject({
+      runs: 3,
+      failedRuns: 3,
+      passRate: 0,
+      median: 0,
     });
   });
 });
@@ -71,5 +99,15 @@ describe('formatSummary', () => {
     expect(text).toContain('calibrated');
     expect(text).toContain('50%');
     expect(text).toContain('median 1000');
+  });
+
+  it('prints how many runs failed', () => {
+    const summary = {
+      ...summarise({ results: scores([500]), failedRuns: 1, target: TARGET_SCORE }),
+      benchmarkId: 'bench-1',
+      strategy: 'calibrated' as const,
+    };
+
+    expect(formatSummary({ summary })).toContain('2 runs, 1 failed');
   });
 });

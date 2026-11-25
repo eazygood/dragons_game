@@ -1,5 +1,5 @@
-import { SHOP_ITEM_PRIOR } from '@bigbank-dragon/contracts';
 import type { Ad } from '@bigbank-dragon/contracts';
+import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 import { vi } from 'vitest';
 
 import {
@@ -10,7 +10,7 @@ import {
   shopItemRepository,
 } from '../../src/repositories/index.ts';
 
-export const SILENT_LOGGER = { info: vi.fn(), warn: vi.fn() };
+export const SILENT_LOGGER = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 export const PLAYER_GAME_ID = 'player-game';
 
 const buildAd = (overrides: Partial<Ad>): Ad => ({
@@ -63,7 +63,7 @@ export const stubPlayerUpstream = () => {
   });
   vi.spyOn(shopItemRepository.mugloar, 'findMany').mockResolvedValue({
     status: 'ok',
-    value: [...SHOP_ITEM_PRIOR],
+    value: [...RECORDED_SHOP_ITEMS],
   });
   vi.spyOn(adAttemptRepository.mugloar, 'createOne').mockResolvedValue(solvedAdResponse());
   vi.spyOn(purchaseRepository.mugloar, 'createOne');

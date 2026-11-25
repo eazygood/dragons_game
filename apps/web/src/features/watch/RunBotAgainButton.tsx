@@ -1,15 +1,14 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import { useStartBotGame } from '../../api/game-mutations.ts';
-import { errorCopy } from '../play/error-copy.ts';
-import styles from './WatchScreen.module.css';
+import { errorCopy } from '../../shared/error-copy.ts';
+import { isLaunchLocked } from '../../shared/launch-lock.ts';
+import styles from './RunBotAgainButton.module.css';
 import { watchCopy } from './watch-copy.ts';
 
 export const RunBotAgainButton = () => {
   const navigate = useNavigate();
   const botGameMutation = useStartBotGame();
-  // isPending clears before the router navigation commits; a click in that gap would start a second game.
-  const isLocked = botGameMutation.isPending || botGameMutation.isSuccess;
 
   const runBotAgain = () =>
     botGameMutation.mutate(undefined, {
@@ -19,7 +18,11 @@ export const RunBotAgainButton = () => {
 
   return (
     <>
-      <button type="button" onClick={runBotAgain} disabled={isLocked}>
+      <button
+        type="button"
+        onClick={runBotAgain}
+        disabled={isLaunchLocked({ mutations: [botGameMutation] })}
+      >
         {botGameMutation.isPending ? watchCopy.runAgainStarting : watchCopy.runAgain}
       </button>
       {botGameMutation.error !== null && (

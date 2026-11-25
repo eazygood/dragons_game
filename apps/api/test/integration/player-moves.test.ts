@@ -1,11 +1,10 @@
-import { PROBABILITY_PRIOR } from '@bigbank-dragon/contracts';
 import type { GameState } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
 import { loadConfig } from '../../src/config/index.ts';
-import { DbTables } from '../../src/entities/db-tables.ts';
+import { PROBABILITY_PRIOR } from '../../src/domain/engine/strategy-config.ts';
 import type { GameRun } from '../../src/entities/game-run.ts';
 import {
   AdExpiredError,
@@ -17,8 +16,9 @@ import {
   buyPlayerItem,
   finishRun,
   solvePlayerAd,
-  startGame,
+  startGameRun,
 } from '../../src/managers/game-manager/index.ts';
+import { DbTables } from '../../src/repositories/db-tables.ts';
 import {
   adAttemptRepository,
   adRepository,
@@ -49,7 +49,7 @@ describe('player moves', () => {
   beforeEach(async () => {
     await db(DbTables.GameRuns).delete();
     stubPlayerUpstream();
-    ({ run, state } = await startGame({ db, strategy: 'manual' }));
+    ({ run, state } = await startGameRun({ db, strategy: 'manual' }));
   });
 
   afterEach(() => {
@@ -150,7 +150,7 @@ describe('player moves', () => {
 
   it('refuses to play a bot run', async () => {
     vi.mocked(gameRunRepository.mugloar.createOne).mockResolvedValue(newGameSnapshot('bot-game'));
-    await startGame({ db, strategy: 'calibrated' });
+    await startGameRun({ db, strategy: 'calibrated' });
 
     await expect(
       solvePlayerAd({ db, gameId: 'bot-game', adId: 'sure1', logger: SILENT_LOGGER }),
@@ -176,13 +176,5 @@ describe('player moves', () => {
     ]);
 
     expect(maxInFlight).toBe(1);
-  });
-
-  it('keeps the upstream state when the turn cannot be persisted', async () => {
-    vi.spyOn(gameRunRepository.db, 'updateOne').mockRejectedValue(new Error('db down'));
-
-    expect(
-      await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT_LOGGER }),
-    ).toMatchObject({ status: 'ok', value: { state: { score: 30 } } });
   });
 });

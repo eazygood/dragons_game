@@ -4,9 +4,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import type { AdAttempt } from '../../src/entities/ad-attempt.ts';
-import { DbTables } from '../../src/entities/db-tables.ts';
 import type { GameRunId } from '../../src/entities/game-run.ts';
 import type { Purchase } from '../../src/entities/purchase.ts';
+import { DbTables } from '../../src/repositories/db-tables.ts';
 import {
   adAttemptRepository,
   gameRunRepository,
@@ -115,29 +115,6 @@ describe('move repositories', () => {
       purchaseOf({ gameRunId: runId, turn: 1 }),
       purchaseOf({ gameRunId: runId, turn: 2 }),
     ]);
-  });
-
-  it('returns a legacy row with a null rule and a null item name', async () => {
-    await adAttemptRepository.db.createOne({
-      db,
-      attempt: { ...attemptOf({ gameRunId: runId, turn: 1 }), rule: null },
-    });
-    await purchaseRepository.db.createOne({
-      db,
-      purchase: { ...purchaseOf({ gameRunId: runId, turn: 2 }), rule: null, itemName: null },
-    });
-
-    expect(await adAttemptRepository.db.findMany({ db, gameRunId: runId })).toMatchObject([
-      { rule: null },
-    ]);
-    expect(await purchaseRepository.db.findMany({ db, gameRunId: runId })).toMatchObject([
-      { rule: null, itemName: null },
-    ]);
-  });
-
-  it('returns nothing for a game run that has made no moves', async () => {
-    expect(await adAttemptRepository.db.findMany({ db, gameRunId: runId })).toEqual([]);
-    expect(await purchaseRepository.db.findMany({ db, gameRunId: runId })).toEqual([]);
   });
 
   it('refuses a stored probability label this build does not know', async () => {

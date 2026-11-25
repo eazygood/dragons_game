@@ -2,9 +2,9 @@ import { DecisionRuleSchema } from '@bigbank-dragon/contracts';
 import type { DecisionRule } from '@bigbank-dragon/contracts';
 
 import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
-import { DbTables } from '../../entities/db-tables.ts';
 import type { GameRunId } from '../../entities/game-run.ts';
 import type { Purchase } from '../../entities/purchase.ts';
+import { DbTables } from '../db-tables.ts';
 
 interface PurchaseRow {
   game_run_id: number;

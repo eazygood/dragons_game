@@ -5,7 +5,7 @@ import type { GameRun } from '../../entities/game-run.ts';
 import type { TurnResult } from '../../entities/turn-result.ts';
 import { PersistenceFailedError } from '../../errors/errors.ts';
 import { gameRunRepository } from '../../repositories/index.ts';
-import { statePatch } from './state-patch.ts';
+import { statePatch } from './run-state.ts';
 
 // One transaction for the run's live state and the turn's record (ad attempt or
 // purchase), so a failed record write rolls the state back and the two never disagree.
