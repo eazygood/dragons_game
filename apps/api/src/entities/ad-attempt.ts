@@ -1,4 +1,4 @@
-import type { ProbabilityLabel } from '@bigbank-dragon/contracts';
+import type { DecisionRule, ProbabilityLabel } from '@bigbank-dragon/contracts';
 
 import type { GameRunId } from './game-run.ts';
 
@@ -12,6 +12,8 @@ export interface AdAttempt {
   success: boolean;
   estimatedProbability: number;
   expectedValue: number;
+  // Null on rows written before the rule was recorded.
+  rule: DecisionRule | null;
   createdAt: Date;
 }
 

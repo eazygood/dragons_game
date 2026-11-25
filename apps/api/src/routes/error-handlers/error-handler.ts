@@ -2,10 +2,13 @@ import type { ApiErrorBody } from '@bigbank-dragon/contracts';
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
 import { AppError } from '../../errors/app-error.ts';
+import { API_PREFIX } from '../api-prefix.ts';
 
 const HTTP_BAD_REQUEST = 400;
 const HTTP_NOT_FOUND = 404;
 const HTTP_INTERNAL_SERVER_ERROR = 500;
+const WEB_APP_ENTRY = 'index.html';
+const API_PATH_PATTERN = new RegExp(`^${API_PREFIX}(?:[/?]|$)`);
 
 const isClientError = (statusCode: number | undefined): statusCode is number =>
   statusCode !== undefined &&
@@ -46,5 +49,18 @@ export const errorHandler = (
     .send(errorBody({ code: 'internal', message: 'Internal server error' }));
 };
 
-export const notFoundHandler = (_request: FastifyRequest, reply: FastifyReply) =>
-  reply.status(HTTP_NOT_FOUND).send(errorBody({ code: 'not_found', message: 'Route not found' }));
+// reply.sendFile exists only once @fastify/static is registered, so it tells us a web app is served.
+const isWebAppRoute = ({ request }: { request: FastifyRequest }) =>
+  request.method === 'GET' &&
+  !API_PATH_PATTERN.test(request.url) &&
+  request.server.hasReplyDecorator('sendFile');
+
+export const notFoundHandler = (request: FastifyRequest, reply: FastifyReply) => {
+  if (isWebAppRoute({ request })) {
+    return reply.sendFile(WEB_APP_ENTRY);
+  }
+
+  return reply
+    .status(HTTP_NOT_FOUND)
+    .send(errorBody({ code: 'not_found', message: 'Route not found' }));
+};

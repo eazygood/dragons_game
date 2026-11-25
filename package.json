@@ -16,6 +16,7 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
+    "test:e2e": "pnpm --filter @bigbank-dragon/web test:e2e",
     "bot": "pnpm --filter @bigbank-dragon/api bot",
     "bench": "pnpm --filter @bigbank-dragon/api bench",
     "test:integration": "pnpm --filter @bigbank-dragon/api test:integration",

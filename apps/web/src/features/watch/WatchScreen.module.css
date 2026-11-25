@@ -1,0 +1,49 @@
+.watch {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.watch h2 {
+  margin: 0;
+}
+
+.outcome {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 28rem;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.outcome p {
+  margin: 0;
+}
+
+.reached {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.target {
+  color: var(--color-muted);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.error {
+  flex-basis: 100%;
+  color: var(--color-danger);
+}
+
+.moveToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
+}

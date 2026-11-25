@@ -2,8 +2,6 @@ import type { StrategyName } from '@bigbank-dragon/contracts';
 
 import type { BotRunResult } from './types.ts';
 
-export const BENCHMARK_TARGET = 1000;
-
 const PERCENT = 100;
 
 export type BenchmarkStats = {

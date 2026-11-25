@@ -1,4 +1,4 @@
-import type { Ad, GameState, ShopItem } from '@bigbank-dragon/contracts';
+import type { Ad, GameState, Reasoning, ShopItem } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -31,6 +31,13 @@ const REASONING = {
   expectedValue: 12.5,
   consideredCount: 4,
 } as const;
+
+const PURCHASE_REASONING: Reasoning = {
+  rule: 'level_up',
+  estimatedProbability: null,
+  expectedValue: null,
+  consideredCount: 11,
+};
 
 describe('game manager', () => {
   let db: Knex;
@@ -105,6 +112,7 @@ describe('game manager', () => {
       dragon_level: 0,
       estimated_probability: 0.8,
       expected_value: 12.5,
+      rule: 'best_expected_value',
       success: 1,
     });
     expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
@@ -115,18 +123,23 @@ describe('game manager', () => {
   });
 
   it('raises the dragon level and the purchase row in one transaction', async () => {
-    await buyItem({ db, run, state, item: CLAW_HONING });
+    await buyItem({ db, run, state, item: CLAW_HONING, reasoning: PURCHASE_REASONING });
 
     expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
       dragonLevel: 2,
     });
-    expect(await db(DbTables.Purchases).first()).toMatchObject({ item_id: 'ch', success: 1 });
+    expect(await db(DbTables.Purchases).first()).toMatchObject({
+      item_id: 'ch',
+      item_name: 'Claw Honing',
+      rule: 'level_up',
+      success: 1,
+    });
   });
 
   it('leaves no purchase row and no level change when the transaction fails', async () => {
     vi.spyOn(purchaseRepository.db, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
 
-    const attempt = buyItem({ db, run, state, item: CLAW_HONING });
+    const attempt = buyItem({ db, run, state, item: CLAW_HONING, reasoning: PURCHASE_REASONING });
 
     await expect(attempt).rejects.toBeInstanceOf(PersistenceFailedError);
     await expect(attempt).rejects.toMatchObject({
@@ -145,7 +158,13 @@ describe('game manager', () => {
       value: { success: false, gold: 10, lives: 3, level: 0, turn: 6 },
     });
 
-    const result = await buyItem({ db, run, state, item: CLAW_HONING });
+    const result = await buyItem({
+      db,
+      run,
+      state,
+      item: CLAW_HONING,
+      reasoning: PURCHASE_REASONING,
+    });
 
     expect(result).toMatchObject({
       status: 'ok',

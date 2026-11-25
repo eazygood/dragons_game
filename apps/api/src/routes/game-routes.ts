@@ -25,6 +25,12 @@ export const registerGameRoutes = (app: FastifyInstance) => {
   );
 
   app.get<{ Params: GameParams }>(
+    '/games/:gameId/moves',
+    { schema: { params: GameParamsSchema } },
+    ({ params }) => gameMediator.findMoves({ db: app.db, gameId: params.gameId }),
+  );
+
+  app.get<{ Params: GameParams }>(
     '/games/:gameId/turn',
     { schema: { params: GameParamsSchema } },
     async ({ params, log }, reply) => {

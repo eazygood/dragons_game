@@ -34,7 +34,7 @@ export const GameScreen = ({ gameId }: { gameId: string }) => {
 
   // The only turn conflict is a game the bot is playing.
   if (isApiError({ error: turnQuery.error, code: 'conflict' })) {
-    return <GameUnavailable reason="bot_game" />;
+    return <GameUnavailable reason="bot_game" gameId={gameId} />;
   }
 
   if (turnQuery.isError) {

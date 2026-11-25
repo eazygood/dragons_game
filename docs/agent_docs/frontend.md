@@ -4,9 +4,9 @@ React 19 + TypeScript + TanStack Router + TanStack Query + Vite.
 
 ## State management
 
-TanStack Query owns **all** server state — game state, ad board, shop, bot
-stream, history. Local `useState` covers only ephemeral UI: open dialogs,
-selected ad, form drafts.
+TanStack Query owns **all** server state — game state, ad board, shop, the move
+log. A bot game's progress is server state too: the page polls it. Local
+`useState` covers only ephemeral UI: form drafts and the _Show moves_ checkbox.
 
 There is no Redux or Zustand store, and that is a decision rather than an
 omission: no state exists in this app that isn't derived from the server. Adding
@@ -19,11 +19,12 @@ board and the game state together. **Turn-advancing mutations invalidate the
 board**, because every turn decrements `expiresIn` on every ad — stale ads are
 not a cosmetic problem, they produce `400`s.
 
-| Key (`api/game-queries.ts`) | Value                      | Fetches                       |
-| --------------------------- | -------------------------- | ----------------------------- |
-| `gameKeys.all(gameId)`      | `['game', gameId]`         | (prefix, for invalidation)    |
-| `gameKeys.game(gameId)`     | `['game', gameId, 'view']` | `GET /api/games/:gameId`      |
-| `gameKeys.turn(gameId)`     | `['game', gameId, 'turn']` | `GET /api/games/:gameId/turn` |
+| Key (`api/game-queries.ts`) | Value                       | Fetches                        |
+| --------------------------- | --------------------------- | ------------------------------ |
+| `gameKeys.all(gameId)`      | `['game', gameId]`          | (prefix, for invalidation)     |
+| `gameKeys.game(gameId)`     | `['game', gameId, 'view']`  | `GET /api/games/:gameId`       |
+| `gameKeys.turn(gameId)`     | `['game', gameId, 'turn']`  | `GET /api/games/:gameId/turn`  |
+| `gameKeys.moves(gameId)`    | `['game', gameId, 'moves']` | `GET /api/games/:gameId/moves` |
 
 - Moves invalidate `gameKeys.all` in `onSettled`, not `onSuccess`: a failed
   move can still have burnt a turn.
@@ -31,9 +32,31 @@ not a cosmetic problem, they produce `400`s.
   retry at most twice, and only on `unreachable` or a 5xx. Mutations never
   retry, because `solve` and `buy` are not idempotent.
 - **Game over from the board.** The `QueryCache` `onError` watches turn queries.
-  On a `410 game_over` it invalidates `gameKeys.game(gameId)`. `GET
-/api/games/:gameId` never answers 410, so the refetch returns the finished
-  game and the screen switches to the end screen.
+  On a `410 game_over` it invalidates `gameKeys.game(gameId)`. `GET /api/games/:gameId`
+  never answers 410, so the refetch returns the finished game and the screen
+  switches to the end screen.
+- **One last moves fetch.** The `QueryCache` `onSuccess` watches game-view
+  queries. When one comes back with a status other than `active` it invalidates
+  `gameKeys.moves(gameId)`. The game and moves polls run on independent timers, so
+  without this the moves made since the previous tick would never be shown once
+  polling stops. It costs one extra request.
+
+### Polling
+
+`/watch` is the only place that polls, and it polls **only while the game is
+`active`**, every `WATCH_POLL_INTERVAL_MS` (1000 ms).
+
+- `useWatchedGame` shares its key with `useGame`. Its `refetchInterval` is a
+  function of the last response: 1000 ms while `status === 'active'`, `false`
+  otherwise. Polling stops by itself on `game_over` or `abandoned`, and nothing
+  has to be unsubscribed.
+- `useMoves` is `enabled` only while _Show moves_ is checked, and polls on the
+  same rule, driven by the game's status. A viewer who never opens the log never
+  sends a moves request.
+- The rule reads only `status`, so a manual game opened at `/watch` is polled and
+  stopped the same way.
+- Polling is cheap on the server. Both routes read the database only (the bot
+  loop owns the upstream), and the throttle never sees them.
 
 ## Layout
 
@@ -43,20 +66,62 @@ apps/web/
 │   ├── api/                 - api-error, client (apiRequest), game-paths, queries, mutations
 │   ├── features/play/
 │   │   ├── copy.ts          - every user-facing string
-│   │   ├── start/           - new game + resume-by-id form
+│   │   ├── start/           - new game, let the bot play, resume-by-id form
 │   │   ├── game/            - GameScreen, ActiveGame, status bar, game over, unavailable game
 │   │   ├── board/           - AdBoard, AdCard, AdviceBadge
 │   │   ├── advice/          - RecommendationBanner
 │   │   ├── shop/            - ShopPanel
 │   │   └── moves/           - usePlayerMoves, MoveFeedback, ErrorNotice
-│   ├── routes/              - file routes: / → /play, /play, /play/$gameId
+│   ├── features/watch/      - WatchScreen, WatchOutcome, RunBotAgainButton, MoveLog, MoveLine, watch-copy
+│   ├── routes/              - file routes: / → /play, /play, /play/$gameId, /watch/$gameId
 │   ├── query-client.ts
 │   └── styles/tokens.css    - palette and spacing variables
+├── e2e/                     - Playwright specs and their intercepted-API helpers
 └── test/                    - all web tests, plus stubApi, fixtures and render helpers
 ```
 
 `routeTree.gen.ts` is generated by the router plugin and committed, because
 `tsc --noEmit` needs it before any Vite run. Lint and Prettier ignore it.
+
+## The watch view
+
+`/watch/$gameId` follows one game, normally a bot's. The start screen's _Let the
+bot play_ button calls `POST /api/bot-games` and navigates there.
+
+- **Status bar and outcome.** The shared `GameStatusBar` shows score, gold, lives,
+  dragon level and turn. Below it, `WatchOutcome` shows the score against
+  `TARGET_SCORE` (1000, from `packages/contracts`, shared with `pnpm bench`).
+- **One outcome, keyed on score alone.** While `active` the line is "In progress…".
+  Once the status is anything else, it reads "Reached 1000 ✓ — final score N" when
+  `score >= TARGET_SCORE`, and "Finished at N" otherwise. `game_over` and
+  `abandoned` are not told apart: the common bot ending is `abandoned` (the engine
+  stops when no ad is worth taking) with a score far above 1000, so a copy keyed
+  on status would call the usual success a failure. The neutral wording also keeps
+  a manual game opened here from being labelled as the bot's. `GameView` carries
+  no strategy and is unchanged.
+- **Show moves.** A checkbox, unchecked by default, held in `useState` and
+  therefore reset on reload. There is no URL parameter and no store. Checking it
+  enables `useMoves`.
+- **Move log.** Newest first, in the order the API returns them, one line per
+  move, for example:
+  - `Turn 14 · Solved a “Quite likely” ad for 45 gold · best value, est. 78%, EV +31 gold · ✓`
+  - `Turn 15 · Bought Healing potion · keep lives safe · ✓`
+
+  The wording of each `DecisionRule` lives in `watch-copy.ts`
+  (`satisfies Record<DecisionRule, string>`, so a new rule fails typecheck until
+  it has copy). A `null` rule or `null` item name drops that part of the line
+  rather than showing a placeholder. A failed refresh keeps the last good list.
+
+- **Finished.** A link to "Play a game yourself" (`/play`) and a "Run the bot again"
+  button. The button calls `POST /api/bot-games` through `useStartBotGame`, locks while
+  the request is pending or has succeeded, and navigates to the new game's
+  `/watch/$gameId`. The route keys `WatchScreen` on the game id, so _Show moves_
+  starts unchecked on the new game.
+- **Unusable ids.** The route checks the id with `GameIdSchema` before any request
+  (`invalid_id`), and an unknown game is `not_found`; both reuse `GameUnavailable`.
+
+A bot's game opened at `/play/$gameId` answers `409` on its turn query. That
+renders "The bot's game" with a link to `/watch/$gameId` next to the way back.
 
 ---
 
@@ -74,11 +139,13 @@ The app has few real inputs — most interactions are clicks on server-supplied
 ids, which need no validation because the user never typed them. Validate the
 ones that are genuinely free-form:
 
-| Input                       | Where                | Rule                                                                                                                                           |
-| --------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gameId` to resume a run    | `/play`              | **The important one.** Free text that ends up in an outbound URL path. Validate shape and length, reject anything else, never interpolate raw. |
-| Bot run config              | `/watch`             | Strategy is a closed set; run count is a bounded integer.                                                                                      |
-| History filters, pagination | `/history`, `/stats` | Bounded ranges; reject negative or absurd page sizes.                                                                                          |
+| Input                    | Where                             | Rule                                                                                                                                           |
+| ------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gameId` to resume a run | `/play`                           | **The important one.** Free text that ends up in an outbound URL path. Validate shape and length, reject anything else, never interpolate raw. |
+| `gameId` in the URL      | `/play/$gameId`, `/watch/$gameId` | Hand-editable, so it gets the same `GameIdSchema` check before any request. A bad id renders `GameUnavailable`, not a failed request.          |
+
+Nothing else is typed: the start buttons and the _Show moves_ checkbox carry no
+data.
 
 Validate with the **same zod schemas** from `packages/contracts` that the API
 uses. One definition, both sides — a rule that drifts is worse than no rule.
@@ -93,7 +160,7 @@ server re-validates everything regardless of what the client checked.
 **Parse every API response with its contract schema at the boundary**, in the
 query function, before it reaches a component.
 
-This is not ceremony. The upstream API is wrong in six documented ways (see
+This is not ceremony. The upstream API is wrong in eight documented ways (see
 [`architecture.md`](architecture.md)), which is proof that assumed response
 shapes are a real failure mode here. Parsing at the boundary turns contract drift
 into one clear error next to the request that caused it, instead of a
@@ -113,7 +180,7 @@ are UI work, not `catch` blocks:
 | ----------------------------- | ----------------------------------------------------------------------- |
 | `GameOver` (`410`)            | A screen with the final score and a "new game" action. Not a toast.     |
 | `GameNotFound` (`404`)        | "No such game" with a way back to the start. No retry.                  |
-| `GameNotPlayable` (`409`)     | "The bot's game" with a way back to the start. No retry.                |
+| `GameNotPlayable` (`409`)     | "The bot's game" with a link to watch it, and a way back. No retry.     |
 | `AdExpired` (`409`)           | Refresh the board and say why the ad vanished.                          |
 | `InsufficientGold` (`409`)    | The buy control is disabled with the reason visible _before_ the click. |
 | `UpstreamUnavailable` (`502`) | Retry affordance; make clear the game is intact and the remote is down. |
@@ -143,7 +210,8 @@ request is the worst outcome in this app.
 
 Explicit brief requirements, so they are verified rather than assumed: one
 responsive layout from ~360px upward, exercised by Playwright across Chromium,
-Firefox and WebKit at mobile and desktop viewports.
+Firefox and WebKit at 360px and 1280px. Each flow ends by asserting that the page
+does not scroll horizontally at the width it ran in. See [`testing.md`](testing.md).
 
 ## Accessibility
 

@@ -9,7 +9,7 @@
 | Contract    | Vitest + mock server      | Adapter against **recorded** fixtures: HTML errors, `410`, both encryption modes                 |
 | API         | Vitest + `fastify.inject` | Routes, schemas, error mapping (`test/integration/game-routes.test.ts`, `test/unit/app.test.ts`) |
 | Component   | Vitest + Testing Library  | `apps/web/test/`: the API client, retry policy, routing, every play-view state                   |
-| E2E         | Playwright                | Full game flow against a stubbed upstream, 3 browsers, 2 viewports                               |
+| E2E         | Playwright                | The built web app with `/api` intercepted in the browser, 3 browsers × 2 widths (360, 1280)      |
 | Benchmark   | CLI, manual               | 20 live runs, pass rate against 1000                                                             |
 
 The engine being **pure** is what makes the most important tests fast and
@@ -29,7 +29,7 @@ ads. That table is the regression suite for the whole submission.
 
 Hand-written fixtures would assert _our reading_ of the upstream API rather than
 the API itself — the exact mistake this project exists to avoid, given that the
-published docs are wrong in six separate ways.
+published docs are wrong in eight separate ways.
 
 `apps/api/test/fixtures/` holds every response of one live game (`xuRILCk8`,
 2026-11-23), stored verbatim: both HTML error bodies in full, the `410 Game
@@ -72,6 +72,49 @@ Web tests never reach Fastify. `apps/web/test/fetch-stub.ts` replaces `fetch`:
 - `vitest.config.ts` sets `unstubGlobals: true`, so each test starts with the
   real `fetch` again.
 
+## E2E
+
+```bash
+pnpm test:e2e                                           # from the repo root
+pnpm --filter @bigbank-dragon/web exec playwright install   # once, to fetch the browsers
+```
+
+`apps/web/playwright.config.ts` builds the web app and serves the **production
+bundle** with `vite preview` on `127.0.0.1:4173`, because the build is what ships.
+No API, database or upstream is started. There are six projects: Chromium,
+Firefox and WebKit, each at a phone width (360 × 740) and a desktop width
+(1280 × 800).
+
+Every `/api` request is **intercepted in the browser**, so what is tested is the
+layout and behaviour of the UI, not game correctness (that is `pnpm bench`).
+
+- `e2e/api-fixtures.ts` builds each response with the contract's own zod schema
+  (`GameViewSchema.parse`, `TurnViewSchema.parse`, `MoveListSchema.parse`), so a
+  fixture that drifts from the contract fails when the spec loads. `routeApi({
+page, routes })` takes keys of the form `'METHOD /path'`, built from the real
+  `gamePaths`, and each responder returns the JSON of a `200`.
+- `e2e/guarded-test.ts` is the `test` every spec imports. It first installs a
+  **deny-all** route on `**/api/**` that aborts and records the request; `routeApi`
+  layers on top and falls back to it for anything it does not script. After the
+  spec, any recorded request fails the test, so a request nobody scripted cannot
+  pass unnoticed.
+- `e2e/layout.ts` (`expectNoHorizontalOverflow`) is called at the end of each
+  flow, so the 360px projects fail on a layout that scrolls sideways.
+
+Two specs:
+
+1. `play.spec.ts` — start a game, see the engine's advice, solve the recommended
+   ad, see the score move.
+2. `watch.spec.ts` — press _Let the bot play_, land on `/watch/:gameId` "In
+   progress…", let the scripted game become `abandoned` with a score of 1240, see
+   "Reached 1000 ✓", tick _Show moves_ and read the move log. The game flips state
+   when the spec says so, not after a request count, because the page may refetch
+   on focus and consume a scripted step early. A second test presses _Run the bot
+   again_ on the finished game and lands on the new game's `/watch` view.
+
+The component tests under `apps/web/test/` cover the states the E2E does not (every
+error treatment, retry policy, the polling rule).
+
 ## Benchmark
 
 ```bash
@@ -79,13 +122,18 @@ pnpm bench          # 20 cold runs — calibration scoped to this benchmark's ga
 pnpm bench --warm   # same, keeping accumulated history
 ```
 
+Latest cold run, 2026-11-24 (20 runs, `calibrated`, tuned defaults): **95% (19
+of 20) at 1000 or more**; score min 955, median 2723.5, max 3993; mean 107.6
+turns. The score target, `TARGET_SCORE` (1000), lives in `packages/contracts`
+and is shared with the web app's "Reached 1000" line.
+
 Reports the score distribution, pass rate against 1000, and mean turns survived.
 
 **Cold is the headline number**, because an empty store is what a reviewer gets
 on their first `docker compose up`. Cold reads only the evidence of the current
 benchmark's own games, so no history is ever deleted, and the concurrent games
 learn from each other as they go. The warm figure shows what the learning is
-worth. Both go in the README.
+worth. The README quotes the cold number.
 
 **Acceptance: ≥ 95% of cold runs clear 1000.**
 
@@ -95,17 +143,22 @@ buried.
 
 ## CI
 
-CI runs unit, integration, contract, API, component and E2E.
+There is no CI configuration in the repository; the suites run locally. If one is
+added, it should run unit, integration, contract, API, component and E2E.
 
-**CI never touches the live API.** The benchmark is a manual command — it plays
-hundreds of real games and its results depend on a remote service, so it can
-neither be fast nor deterministic.
+**Nothing but the benchmark touches the live API**, and a CI job must never run
+it. The benchmark is a manual command — it plays hundreds of real games and its
+results depend on a remote service, so it can neither be fast nor deterministic.
 
 ## Before asking for approval
 
 ```bash
 pnpm lint && pnpm format && pnpm typecheck && pnpm test
 ```
+
+`pnpm format:check` is the read-only form of `pnpm format`. Run
+`pnpm test:integration` too when the change touches the database, and
+`pnpm test:e2e` when it touches the web app's behaviour or layout.
 
 Docker runtime is Colima. Integration tests spin up MySQL; container failures
 usually mean Colima isn't running — check `colima status`.

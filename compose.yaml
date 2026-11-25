@@ -20,5 +20,24 @@ services:
       retries: 20
       start_period: 10s
 
+  app:
+    build:
+      context: .
+      args:
+        NPM_REGISTRY: '${NPM_REGISTRY:-https://registry.npmjs.org/}'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: '3000'
+      DATABASE_URL: mysql://dragon:dragon@mysql:3306/dragon
+      WEB_DIST_DIR: /app/apps/web/dist
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    # The corepack shim ignores SIGTERM as PID 1, so `down` would wait out the kill timeout.
+    init: true
+    command: sh -c 'pnpm db:migrate && pnpm --filter @bigbank-dragon/api start'
+
 volumes:
   mysql-data:

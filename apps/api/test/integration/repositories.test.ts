@@ -47,6 +47,7 @@ const attemptOf = ({
   success,
   estimatedProbability: 0.95,
   expectedValue: 9.5,
+  rule: 'best_expected_value',
   createdAt: STARTED_AT,
 });
 
@@ -164,6 +165,8 @@ describe('repositories', () => {
       purchase: {
         gameRunId: id,
         itemId: 'hpot',
+        itemName: 'Healing potion',
+        rule: 'survival_floor',
         cost: 50,
         turn: 8,
         success: false,

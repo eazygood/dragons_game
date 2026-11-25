@@ -6,8 +6,10 @@ const PlayPage = () => {
   const navigate = useNavigate();
 
   const openGame = (gameId: string) => void navigate({ to: '/play/$gameId', params: { gameId } });
+  const openBotGame = (gameId: string) =>
+    void navigate({ to: '/watch/$gameId', params: { gameId } });
 
-  return <StartGamePanel onGameReady={openGame} />;
+  return <StartGamePanel onGameReady={openGame} onBotGameReady={openBotGame} />;
 };
 
 export const Route = createFileRoute('/play/')({ component: PlayPage });

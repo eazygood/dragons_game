@@ -94,6 +94,23 @@ describe('core schema migration', () => {
     expect(await db(DbTables.Purchases).where({ game_run_id: gameRunId })).toEqual([]);
   });
 
+  it('adds a nullable rule to moves and the item name to purchases', async () => {
+    const attemptColumns = await db(DbTables.AdAttempts).columnInfo();
+    const purchaseColumns = await db(DbTables.Purchases).columnInfo();
+
+    expect(attemptColumns.rule).toMatchObject({ nullable: true });
+    expect(purchaseColumns.rule).toMatchObject({ nullable: true });
+    expect(purchaseColumns.item_name).toMatchObject({ nullable: true });
+
+    await db.migrate.down();
+
+    expect(Object.keys(await db(DbTables.AdAttempts).columnInfo())).not.toContain('rule');
+    expect(Object.keys(await db(DbTables.Purchases).columnInfo())).not.toContain('rule');
+    expect(Object.keys(await db(DbTables.Purchases).columnInfo())).not.toContain('item_name');
+
+    await db.migrate.latest();
+  });
+
   it('rolls back cleanly', async () => {
     await db.migrate.rollback(undefined, true);
 

@@ -7,9 +7,9 @@ the entry point and stays short; the detail lives here.
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [`architecture.md`](architecture.md) | Layer boundaries and invocation rules, the **verified API reference** (the published docs are wrong), the decision engine, bot runtime, diagrams |
 | [`database.md`](database.md)         | Schema and ERD, knex patterns, migrations, transaction boundaries, why dragon level is persisted                                                 |
-| [`routes.md`](routes.md)             | Route organisation, request/response schemas, validation, error mapping, SSE                                                                     |
+| [`routes.md`](routes.md)             | Route organisation, request/response schemas, validation, error mapping, serving the web app                                                     |
 | [`frontend.md`](frontend.md)         | State management, the three validation boundaries, error states, component rules, responsiveness, a11y                                           |
-| [`testing.md`](testing.md)           | Test levels, recorded fixtures and replay, the benchmark, what CI may and may not touch                                                          |
+| [`testing.md`](testing.md)           | Test levels, recorded fixtures and replay, the benchmark, E2E with an intercepted `/api`, what may touch the live API                            |
 
 ## Where to start
 

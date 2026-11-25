@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// The bar the brief sets; the benchmark and the watch page both judge against it.
+export const TARGET_SCORE = 1000;
+
 export const STRATEGY_NAMES = ['manual', 'baseline', 'calibrated'] as const;
 
 export const StrategyNameSchema = z.enum(STRATEGY_NAMES);

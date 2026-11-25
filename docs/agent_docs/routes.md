@@ -5,11 +5,12 @@
 ```
 routes/
 ├── index.ts              - registration under /api, called from app.ts
-├── game-routes.ts        - start, state, turn, solve, buy
+├── game-routes.ts        - start, state, moves, turn, solve, buy
 ├── game-over-reply.ts    - the only 410 mapping
 ├── health-routes.ts      - liveness
-├── bot-routes.ts         - (Phase 3) start a bot run, SSE stream
-└── error-handlers/       - the single registered handler
+├── bot-routes.ts         - start a bot game
+├── api-prefix.ts         - the `/api` prefix, shared with the 404 handler
+└── error-handlers/       - the single registered handler, and the not-found handler
 ```
 
 Request schemas are the zod schemas in `packages/contracts`. There is no local
@@ -19,21 +20,48 @@ Request schemas are the zod schemas in `packages/contracts`. There is no local
 
 All endpoints are under `/api`.
 
-| Method | Path                              | 2xx              | Other               |
-| ------ | --------------------------------- | ---------------- | ------------------- |
-| GET    | `/health`                         | 200 `{status}`   |                     |
-| POST   | `/games`                          | 201 `GameView`   | 502                 |
-| GET    | `/games/:gameId`                  | 200 `GameView`   | 404 (database only) |
-| GET    | `/games/:gameId/turn`             | 200 `TurnView`   | 404, 409, 410, 502  |
-| POST   | `/games/:gameId/ads/:adId/solve`  | 200 `MoveResult` | 404, 409, 410, 502  |
-| POST   | `/games/:gameId/shop/:itemId/buy` | 200 `MoveResult` | 404, 409, 410, 502  |
+| Method | Path                              | 2xx              | Other                    |
+| ------ | --------------------------------- | ---------------- | ------------------------ |
+| GET    | `/health`                         | 200 `{status}`   |                          |
+| POST   | `/games`                          | 201 `GameView`   | 502                      |
+| POST   | `/bot-games`                      | 201 `GameView`   | 502                      |
+| GET    | `/games/:gameId`                  | 200 `GameView`   | 400, 404 (database only) |
+| GET    | `/games/:gameId/moves`            | 200 `Move[]`     | 400, 404 (database only) |
+| GET    | `/games/:gameId/turn`             | 200 `TurnView`   | 400, 404, 409, 410, 502  |
+| POST   | `/games/:gameId/ads/:adId/solve`  | 200 `MoveResult` | 400, 404, 409, 410, 502  |
+| POST   | `/games/:gameId/shop/:itemId/buy` | 200 `MoveResult` | 400, 404, 409, 410, 502  |
+
+`400` is the schema layer: an id that fails the shape check never reaches a
+manager or the upstream. Every route that takes a path parameter can answer it.
+Both game-creating routes answer `502` when the upstream will not start a game.
 
 `GET /games/:gameId` never answers 410: a finished game reports its final state
 with `status: 'game_over'`. The client calls it after a 410 to render the end
 screen.
 
-One file per scope, each exporting a `register[Scope]Routes` function. `app.ts`
-registers them and does nothing else.
+`GET /games/:gameId/moves` reads the database only, so it answers for a finished
+game and for a bot's game alike, and never calls the upstream. It returns the
+moves **newest first**, by turn: every solve or buy advances the turn, so a turn
+holds exactly one move. A move is a `solve` or a `buy`, each with the `rule` that
+chose it; `rule` is `null` for rows written before the second migration (see
+[`database.md`](database.md)). A game with no moves yet is `200 []`.
+
+`POST /bot-games` starts a game and answers `201` as soon as the upstream game
+exists. The bot then plays the rest **after the response**, inside the API
+process, so the request returns in about one upstream round trip. The client
+follows the game with `GET /games/:gameId` and `GET /games/:gameId/moves`. A bot
+game is refused by `/turn`, `/solve` and `/buy` with `409 conflict`
+(`GameNotPlayable`); `/moves` and `/games/:gameId` are open to anyone. The route
+passes `app.log`, not `request.log`, because the game keeps logging after its
+request has ended.
+
+An unknown `/api/*` path answers `404 not_found` as JSON. Any other `GET` that no
+route matches is answered with `index.html` when the web app is being served (see
+_Serving the web app_).
+
+One file per scope, each exporting a `register[Scope]Routes` function.
+`routes/index.ts` registers them under `/api`; `app.ts` adds that to the plugins
+and the two handlers and does nothing else.
 
 Routes are **thin**: extract from the request, call a mediator (or a manager when
 there is nothing to compose), bind the response. No game logic, no direct
@@ -80,7 +108,7 @@ HTTP mapping:
 | `InsufficientGold`    | `409` |                                       |
 | `ShopItemNotFound`    | `404` |                                       |
 | `GameNotPlayable`     | `409` | A bot's game; humans cannot move it   |
-| `ValidationError`     | `400` | From the schema layer                 |
+| _(schema validation)_ | `400` | Fastify's `error.validation`          |
 | Fastify 4xx           | `4xx` | Malformed JSON, wrong content type    |
 | `UpstreamUnavailable` | `502` | Mugloar unreachable after retries     |
 | _(unmapped)_          | `500` | Logged; the message is never sent     |
@@ -108,14 +136,19 @@ owns:
 
 See [`architecture.md`](architecture.md) for the verified upstream contract.
 
-## SSE
+## Serving the web app
 
-`/watch` streams bot decisions. Rules:
+When `WEB_DIST_DIR` is set, `plugins/web-app.ts` registers `@fastify/static` for
+the built React app, and `notFoundHandler` answers any unmatched non-`/api` `GET`
+with `index.html` so client-side routes survive a reload. A request for a missing
+asset therefore gets `200 text/html`, not a 404 (a known limit). `/api/*` misses
+keep the JSON envelope. `WEB_DIST_DIR` is unset in development, where Vite serves
+the app and proxies `/api`. `compose.yaml` sets it for the `app` service.
 
-- The stream is a **subscriber**, never a driver. Disconnecting a viewer must not
-  stop a run.
-- Many viewers may attach to one run; fan-out happens in the registry.
-- Each event carries the turn's structured `reasoning`, so the UI explains the
-  decision rather than just showing the outcome.
-- On reconnect the client replays from the persisted decision trail.
-- Heartbeat to keep proxies from closing idle streams.
+## No streaming
+
+There is no SSE or WebSocket. `/watch` polls `GET /games/:gameId` (and `/moves`
+when the move log is open) once a second while the game is `active`. A bot game's
+progress is just rows in the database, so a viewer can come and go, reload, or
+open the same game twice without touching the run. See
+[`frontend.md`](frontend.md) for the polling rule.

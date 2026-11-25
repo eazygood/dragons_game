@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlayIndexRouteImport } from './routes/play/index'
 import { Route as PlayGameIdRouteImport } from './routes/play/$gameId'
+import { Route as WatchGameIdRouteImport } from './routes/watch/$gameId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,34 +29,43 @@ const PlayGameIdRoute = PlayGameIdRouteImport.update({
   path: '/play/$gameId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WatchGameIdRoute = WatchGameIdRouteImport.update({
+  id: '/watch/$gameId',
+  path: '/watch/$gameId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/play/$gameId': typeof PlayGameIdRoute
+  '/watch/$gameId': typeof WatchGameIdRoute
   '/play/': typeof PlayIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/play/$gameId': typeof PlayGameIdRoute
+  '/watch/$gameId': typeof WatchGameIdRoute
   '/play': typeof PlayIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/play/$gameId': typeof PlayGameIdRoute
+  '/watch/$gameId': typeof WatchGameIdRoute
   '/play/': typeof PlayIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/play/$gameId' | '/play/'
+  fullPaths: '/' | '/play/$gameId' | '/watch/$gameId' | '/play/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/play/$gameId' | '/play'
-  id: '__root__' | '/' | '/play/$gameId' | '/play/'
+  to: '/' | '/play/$gameId' | '/watch/$gameId' | '/play'
+  id: '__root__' | '/' | '/play/$gameId' | '/watch/$gameId' | '/play/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PlayGameIdRoute: typeof PlayGameIdRoute
+  WatchGameIdRoute: typeof WatchGameIdRoute
   PlayIndexRoute: typeof PlayIndexRoute
 }
 
@@ -82,12 +92,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayGameIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/watch/$gameId': {
+      id: '/watch/$gameId'
+      path: '/watch/$gameId'
+      fullPath: '/watch/$gameId'
+      preLoaderRoute: typeof WatchGameIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PlayGameIdRoute: PlayGameIdRoute,
+  WatchGameIdRoute: WatchGameIdRoute,
   PlayIndexRoute: PlayIndexRoute,
 }
 export const routeTree = rootRouteImport

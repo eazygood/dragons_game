@@ -2,6 +2,7 @@ export { buyItem } from './buy-item.ts';
 export { buyPlayerItem } from './buy-player-item.ts';
 export { recordGameOver } from './record-game-over.ts';
 export { findAds } from './find-ads.ts';
+export { findMoves } from './find-moves.ts';
 export { findPlayableRun, findRun } from './find-run.ts';
 export { findShopItems } from './find-shop-items.ts';
 export { finishRun } from './finish-run.ts';

@@ -1,3 +1,4 @@
+import type { Reasoning } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
 import type { Logger } from '../../config/logger.ts';
@@ -56,7 +57,13 @@ export const buyPlayerItem = ({
         });
       }
 
-      const action = buyItem({ db, run, state, item });
+      const reasoning: Reasoning = {
+        rule: 'player_choice',
+        estimatedProbability: null,
+        expectedValue: null,
+        consideredCount: shop.value.length,
+      };
+      const action = buyItem({ db, run, state, item, reasoning });
       const result = await keepPlayingOnPersistenceFailure({ action, logger });
 
       return applyMoveOutcome({ db, run, result, logger });
