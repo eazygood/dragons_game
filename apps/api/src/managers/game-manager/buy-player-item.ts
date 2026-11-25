@@ -28,21 +28,21 @@ export const buyPlayerItem = ({
   withGameLock({
     gameId,
     task: async () => {
-      const runLookup = await findPlayableRun({ db, gameId });
+      const playableRunResult = await findPlayableRun({ db, gameId });
 
-      if (runLookup.status === 'game_over') {
-        return runLookup;
+      if (playableRunResult.status === 'game_over') {
+        return playableRunResult;
       }
 
-      const run = runLookup.value;
-      const shop = await findShopItems({ gameId });
+      const run = playableRunResult.value;
+      const shopResult = await findShopItems({ gameId });
 
-      if (shop.status === 'game_over') {
+      if (shopResult.status === 'game_over') {
         await recordGameOver({ db, run, logger });
-        return shop;
+        return shopResult;
       }
 
-      const item = shop.value.find((candidate) => candidate.id === itemId);
+      const item = shopResult.value.find((candidate) => candidate.id === itemId);
 
       if (!item) {
         throw new ShopItemNotFoundError({ message: `Item ${itemId} is not in the shop` });
@@ -61,11 +61,11 @@ export const buyPlayerItem = ({
         rule: 'player_choice',
         estimatedProbability: null,
         expectedValue: null,
-        consideredCount: shop.value.length,
+        consideredCount: shopResult.value.length,
       };
-      const action = buyItem({ db, run, state, item, reasoning });
-      const result = await keepPlayingOnPersistenceFailure({ action, logger });
+      const pendingTurn = buyItem({ db, run, state, item, reasoning });
+      const playedTurn = await keepPlayingOnPersistenceFailure({ pendingTurn, logger });
 
-      return applyMoveOutcome({ db, run, result, logger });
+      return applyMoveOutcome({ db, run, playedTurn, logger });
     },
   });

@@ -8,21 +8,23 @@ const SILENT = { info: vi.fn(), warn: vi.fn() };
 
 describe('keepPlayingOnPersistenceFailure', () => {
   it('plays on with the upstream result when persistence fails', async () => {
-    const result = { state: STATE, success: true, message: 'ok' };
+    const turnResult = { state: STATE, success: true, message: 'ok' };
     const warn = vi.fn();
-    const action = Promise.reject(new PersistenceFailedError({ message: 'db down', result }));
+    const pendingTurn = Promise.reject(
+      new PersistenceFailedError({ message: 'db down', turnResult }),
+    );
 
     await expect(
-      keepPlayingOnPersistenceFailure({ action, logger: { info: vi.fn(), warn } }),
-    ).resolves.toEqual({ status: 'ok', value: result });
+      keepPlayingOnPersistenceFailure({ pendingTurn, logger: { info: vi.fn(), warn } }),
+    ).resolves.toEqual({ status: 'ok', value: turnResult });
     expect(warn).toHaveBeenCalledOnce();
   });
 
   it('rethrows anything else', async () => {
-    const action = Promise.reject(new AdExpiredError({ message: 'x' }));
+    const pendingTurn = Promise.reject(new AdExpiredError({ message: 'x' }));
 
     await expect(
-      keepPlayingOnPersistenceFailure({ action, logger: SILENT }),
+      keepPlayingOnPersistenceFailure({ pendingTurn, logger: SILENT }),
     ).rejects.toBeInstanceOf(AdExpiredError);
   });
 });

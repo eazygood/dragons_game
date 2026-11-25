@@ -213,7 +213,9 @@ in `apps/api/src/config/index.ts`.
 ## Known limits
 
 - An API restart leaves an in-progress bot game `active` forever; the loop is
-  not resumed. Human games resume, because their state is persisted.
+  not resumed. So does a failed final database write when a bot game ends: the
+  failure is logged, but nothing retries it. Human games resume, because their
+  state is persisted.
 - There is no cap on concurrent bot games. Each one shares the single 8 requests
   per second outbound limit, so many at once all slow down.
 - `docker compose down` stops a running bot game abruptly, with no clean finish.

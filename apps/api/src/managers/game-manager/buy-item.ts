@@ -20,18 +20,18 @@ export const buyItem = async ({
   item: ShopItem;
   reasoning: Reasoning;
 }): Promise<UpstreamResult<TurnResult>> => {
-  const result = await purchaseRepository.mugloar.createOne({
+  const buyResult = await purchaseRepository.mugloar.createOne({
     gameId: run.gameId,
     itemId: item.id,
   });
 
-  if (result.status === 'game_over') {
-    return result;
+  if (buyResult.status === 'game_over') {
+    return buyResult;
   }
 
-  const outcome = result.value;
+  const outcome = buyResult.value;
   // A failed purchase still burns a turn, but must not move the level.
-  const next: GameState = {
+  const nextState: GameState = {
     ...state,
     lives: outcome.lives,
     gold: outcome.gold,
@@ -39,12 +39,12 @@ export const buyItem = async ({
     dragonLevel: outcome.success ? outcome.level : state.dragonLevel,
   };
 
-  const turn: TurnResult = { state: next, success: outcome.success, message: null };
+  const turnResult: TurnResult = { state: nextState, success: outcome.success, message: null };
 
   await saveStateWithRecord({
     db,
     run,
-    result: turn,
+    turnResult,
     writeRecord: (trx) =>
       purchaseRepository.db.createOne({
         db: trx,
@@ -61,5 +61,5 @@ export const buyItem = async ({
       }),
   });
 
-  return { status: 'ok', value: turn };
+  return { status: 'ok', value: turnResult };
 };

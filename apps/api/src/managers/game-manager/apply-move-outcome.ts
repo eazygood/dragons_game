@@ -10,23 +10,23 @@ import { recordGameOver } from './record-game-over.ts';
 export const applyMoveOutcome = async ({
   db,
   run,
-  result,
+  playedTurn,
   logger,
 }: {
   db: Knex;
   run: GameRun;
-  result: UpstreamResult<TurnResult>;
+  playedTurn: UpstreamResult<TurnResult>;
   logger: Logger;
 }): Promise<UpstreamResult<PlayerMove>> => {
-  if (result.status === 'game_over') {
+  if (playedTurn.status === 'game_over') {
     await recordGameOver({ db, run, logger });
-    return result;
+    return playedTurn;
   }
 
-  if (result.value.state.lives <= 0) {
-    await recordGameOver({ db, run, state: result.value.state, logger });
-    return { status: 'ok', value: { ...result.value, status: 'game_over' } };
+  if (playedTurn.value.state.lives <= 0) {
+    await recordGameOver({ db, run, state: playedTurn.value.state, logger });
+    return { status: 'ok', value: { ...playedTurn.value, status: 'game_over' } };
   }
 
-  return { status: 'ok', value: { ...result.value, status: 'active' } };
+  return { status: 'ok', value: { ...playedTurn.value, status: 'active' } };
 };

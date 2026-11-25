@@ -13,33 +13,36 @@ export const StartGamePanel = ({
   onGameReady: (gameId: string) => void;
   onBotGameReady: (gameId: string) => void;
 }) => {
-  const startGame = useStartGame();
-  const startBotGame = useStartBotGame();
+  const newGameMutation = useStartGame();
+  const botGameMutation = useStartBotGame();
   const titleId = useId();
   // isPending clears before the router navigation commits; a click in that gap would start a second game.
   const isStartLocked =
-    startGame.isPending || startGame.isSuccess || startBotGame.isPending || startBotGame.isSuccess;
-  const startError = startGame.error ?? startBotGame.error;
+    newGameMutation.isPending ||
+    newGameMutation.isSuccess ||
+    botGameMutation.isPending ||
+    botGameMutation.isSuccess;
+  const startError = newGameMutation.error ?? botGameMutation.error;
 
   // Reset the other mutation so only the latest failure is shown.
-  const handleNewGame = () => {
-    startBotGame.reset();
-    startGame.mutate(undefined, { onSuccess: (game) => onGameReady(game.state.gameId) });
+  const startGame = () => {
+    botGameMutation.reset();
+    newGameMutation.mutate(undefined, { onSuccess: (game) => onGameReady(game.state.gameId) });
   };
 
-  const handleBotGame = () => {
-    startGame.reset();
-    startBotGame.mutate(undefined, { onSuccess: (game) => onBotGameReady(game.state.gameId) });
+  const startBotGame = () => {
+    newGameMutation.reset();
+    botGameMutation.mutate(undefined, { onSuccess: (game) => onBotGameReady(game.state.gameId) });
   };
 
   return (
     <section className={styles.panel} aria-labelledby={titleId}>
       <h2 id={titleId}>{copy.start.title}</h2>
-      <button type="button" onClick={handleNewGame} disabled={isStartLocked}>
-        {startGame.isPending ? copy.start.starting : copy.start.newGame}
+      <button type="button" onClick={startGame} disabled={isStartLocked}>
+        {newGameMutation.isPending ? copy.start.starting : copy.start.newGame}
       </button>
-      <button type="button" onClick={handleBotGame} disabled={isStartLocked}>
-        {startBotGame.isPending ? copy.start.botStarting : copy.start.botPlay}
+      <button type="button" onClick={startBotGame} disabled={isStartLocked}>
+        {botGameMutation.isPending ? copy.start.botStarting : copy.start.botPlay}
       </button>
       {startError !== null && (
         <p role="alert" className={styles.error}>

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Prior ranking only (spec §3.4): what the engine believes before it has data.
+// Prior ranking only: what the engine believes before it has data.
 export const PROBABILITY_LABELS = [
   'Sure thing',
   'Piece of cake',

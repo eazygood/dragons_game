@@ -8,7 +8,7 @@ import { buyItem, solveAd } from '../game-manager/index.ts';
 
 type TurnContext = { db: Knex; run: GameRun; state: GameState };
 
-export const execute = ({
+export const executeDecision = ({
   context,
   decision,
   board,

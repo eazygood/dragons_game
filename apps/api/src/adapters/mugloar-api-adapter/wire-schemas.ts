@@ -1,7 +1,8 @@
 import { GameSnapshotSchema, RawAdSchema, ShopItemSchema } from '@bigbank-dragon/contracts';
 import { z } from 'zod';
 
-// Shapes as the live API returns them (spec §3.1–3.2), not as its published docs claim.
+// Shapes as the live API returns them, not as its published docs claim; see
+// "Verified API reference" in docs/agent_docs/architecture.md.
 export const GameStartWireSchema = GameSnapshotSchema;
 
 export const AdListWireSchema = z.array(RawAdSchema);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RawAdSchema } from '../src/index.ts';
 
-// The exact payload from spec §3.2
+// Captured verbatim from the live API.
 const LIVE_AD = {
   adId: 'BR0b2WyN',
   message: 'Help Gisilfrid Jephson to transport a magic wagon to village in Blackcawl',

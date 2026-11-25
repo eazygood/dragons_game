@@ -12,9 +12,9 @@ export const ResumeGameForm = ({ onResume }: { onResume: (gameId: string) => voi
   const errorId = useId();
   const trimmedGameId = typedGameId.trim();
   const isValid = GameIdSchema.safeParse(trimmedGameId).success;
-  const showError = trimmedGameId.length > 0 && !isValid;
+  const shouldShowError = trimmedGameId.length > 0 && !isValid;
 
-  const handleSubmit = (event: FormEvent) => {
+  const resumeGame = (event: FormEvent) => {
     event.preventDefault();
 
     if (isValid) {
@@ -23,22 +23,22 @@ export const ResumeGameForm = ({ onResume }: { onResume: (gameId: string) => voi
   };
 
   return (
-    <form className={styles.resumeForm} onSubmit={handleSubmit}>
+    <form className={styles.resumeForm} onSubmit={resumeGame}>
       <label htmlFor={inputId}>{copy.start.resumeLabel}</label>
       <div className={styles.resumeRow}>
         <input
           id={inputId}
           value={typedGameId}
           onChange={(event) => setTypedGameId(event.target.value)}
-          aria-invalid={showError}
-          aria-describedby={showError ? errorId : undefined}
+          aria-invalid={shouldShowError}
+          aria-describedby={shouldShowError ? errorId : undefined}
           autoComplete="off"
         />
         <button type="submit" disabled={!isValid}>
           {copy.start.resume}
         </button>
       </div>
-      {showError && (
+      {shouldShowError && (
         <p id={errorId} className={styles.error}>
           {copy.start.invalidGameId}
         </p>

@@ -32,16 +32,19 @@ export const adviseTurn = async ({
   gameId: string;
   logger: Logger;
 }): Promise<UpstreamResult<PlayerTurn>> => {
-  const runLookup = await findPlayableRun({ db, gameId });
+  const playableRunResult = await findPlayableRun({ db, gameId });
 
-  if (runLookup.status === 'game_over') {
-    return runLookup;
+  if (playableRunResult.status === 'game_over') {
+    return playableRunResult;
   }
 
-  const run = runLookup.value;
-  const [board, shop] = await Promise.all([findAds({ gameId }), findShopItems({ gameId })]);
+  const run = playableRunResult.value;
+  const [boardResult, shopResult] = await Promise.all([
+    findAds({ gameId }),
+    findShopItems({ gameId }),
+  ]);
 
-  if (board.status === 'game_over' || shop.status === 'game_over') {
+  if (boardResult.status === 'game_over' || shopResult.status === 'game_over') {
     await recordGameOver({ db, run, logger });
     return { status: 'game_over' };
   }
@@ -56,11 +59,11 @@ export const adviseTurn = async ({
   });
   const { recommendation, ads } = adviseBoard({
     state: stateFromRun({ run }),
-    board: board.value,
-    shop: shop.value,
+    board: boardResult.value,
+    shop: shopResult.value,
     calibration,
     config,
   });
 
-  return { status: 'ok', value: { run, board: ads, shop: shop.value, recommendation } };
+  return { status: 'ok', value: { run, board: ads, shop: shopResult.value, recommendation } };
 };

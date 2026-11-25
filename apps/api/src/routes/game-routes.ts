@@ -34,9 +34,15 @@ export const registerGameRoutes = (app: FastifyInstance) => {
     '/games/:gameId/turn',
     { schema: { params: GameParamsSchema } },
     async ({ params, log }, reply) => {
-      const turn = await gameMediator.findTurn({ db: app.db, gameId: params.gameId, logger: log });
+      const turnViewResult = await gameMediator.findTurn({
+        db: app.db,
+        gameId: params.gameId,
+        logger: log,
+      });
 
-      return turn.status === 'game_over' ? replyGameOver({ reply }) : turn.value;
+      return turnViewResult.status === 'game_over'
+        ? replyGameOver({ reply })
+        : turnViewResult.value;
     },
   );
 
@@ -44,9 +50,9 @@ export const registerGameRoutes = (app: FastifyInstance) => {
     '/games/:gameId/ads/:adId/solve',
     { schema: { params: SolveParamsSchema } },
     async ({ params, log }, reply) => {
-      const move = await gameMediator.solveAd({ db: app.db, ...params, logger: log });
+      const moveResult = await gameMediator.solveAd({ db: app.db, ...params, logger: log });
 
-      return move.status === 'game_over' ? replyGameOver({ reply }) : move.value;
+      return moveResult.status === 'game_over' ? replyGameOver({ reply }) : moveResult.value;
     },
   );
 
@@ -54,9 +60,9 @@ export const registerGameRoutes = (app: FastifyInstance) => {
     '/games/:gameId/shop/:itemId/buy',
     { schema: { params: BuyParamsSchema } },
     async ({ params, log }, reply) => {
-      const move = await gameMediator.buyItem({ db: app.db, ...params, logger: log });
+      const moveResult = await gameMediator.buyItem({ db: app.db, ...params, logger: log });
 
-      return move.status === 'game_over' ? replyGameOver({ reply }) : move.value;
+      return moveResult.status === 'game_over' ? replyGameOver({ reply }) : moveResult.value;
     },
   );
 };

@@ -15,13 +15,13 @@ export const findTurn = async ({
   gameId: string;
   logger: Logger;
 }): Promise<UpstreamResult<TurnView>> => {
-  const turn = await adviseTurn({ db, gameId, logger });
+  const playerTurnResult = await adviseTurn({ db, gameId, logger });
 
-  if (turn.status === 'game_over') {
-    return turn;
+  if (playerTurnResult.status === 'game_over') {
+    return playerTurnResult;
   }
 
-  const { run, board, shop, recommendation } = turn.value;
+  const { run, board, shop, recommendation } = playerTurnResult.value;
 
   return { status: 'ok', value: { game: toGameView({ run }), board, shop, recommendation } };
 };

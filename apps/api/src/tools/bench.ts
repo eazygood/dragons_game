@@ -27,12 +27,18 @@ const main = async () => {
       override: { type: 'string' },
     },
   });
-  const args = BenchArgsSchema.parse(values);
+  const { warm, ...args } = BenchArgsSchema.parse(values);
   const config = applyStrategyOverride({ json: args.override });
   const { db } = createLiveRuntime();
 
   try {
-    const summary = await runBenchmark({ db, ...args, config, logger: consoleLogger });
+    const summary = await runBenchmark({
+      db,
+      ...args,
+      readsAllHistory: warm,
+      config,
+      logger: consoleLogger,
+    });
 
     console.log(formatSummary({ summary }));
     console.log(`  config ${JSON.stringify(config)}`);

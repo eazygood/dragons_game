@@ -17,4 +17,4 @@ export const solveAd = async ({
   adId: string;
   logger: Logger;
 }): Promise<UpstreamResult<MoveResult>> =>
-  toMoveResult({ move: await solvePlayerAd({ db, gameId, adId, logger }) });
+  toMoveResult({ playerMoveResult: await solvePlayerAd({ db, gameId, adId, logger }) });

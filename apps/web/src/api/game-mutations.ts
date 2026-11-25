@@ -23,13 +23,13 @@ const useMove = <T>({
   buildPath,
 }: {
   gameId: string;
-  buildPath: (variables: T) => string;
+  buildPath: (pathParams: T) => string;
 }) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (variables: T) =>
-      apiRequest({ path: buildPath(variables), method: 'POST', schema: MoveResultSchema }),
+    mutationFn: (pathParams: T) =>
+      apiRequest({ path: buildPath(pathParams), method: 'POST', schema: MoveResultSchema }),
     onSettled: () => queryClient.invalidateQueries({ queryKey: gameKeys.all(gameId) }),
   });
 };

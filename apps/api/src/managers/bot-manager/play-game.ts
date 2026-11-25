@@ -14,14 +14,14 @@ import {
   finishRun,
   keepPlayingOnPersistenceFailure,
 } from '../game-manager/index.ts';
-import { execute } from './execute-decision.ts';
+import { executeDecision } from './execute-decision.ts';
 
 // Far beyond any observed game; only a misbehaving upstream ever reaches it.
 export const DEFAULT_MAX_TURNS = 1000;
 
 export const SILENT_LOGGER: Logger = { info: () => undefined, warn: () => undefined };
 
-type Progress = { state: GameState; turns: number; gameOver: boolean };
+type Progress = { state: GameState; turns: number; isGameOver: boolean };
 
 type PlayGameInput = {
   db: Knex;
@@ -35,10 +35,10 @@ type PlayGameInput = {
   maxTurns?: number;
 };
 
-type PlayInput = Required<Omit<PlayGameInput, 'state'>> & { progress: Progress };
+type PlayTurnsInput = Required<Omit<PlayGameInput, 'state'>> & { progress: Progress };
 
 // Writes into `progress` as it goes, so a thrown error still leaves the last known state.
-const play = async ({
+const playTurns = async ({
   db,
   run,
   progress,
@@ -47,20 +47,20 @@ const play = async ({
   config,
   logger,
   maxTurns,
-}: PlayInput) => {
+}: PlayTurnsInput) => {
   // Fetched once: the listing can differ between games, not within one.
-  const shop = await findShopItems({ gameId: run.gameId });
+  const shopResult = await findShopItems({ gameId: run.gameId });
 
-  if (shop.status === 'game_over') {
-    progress.gameOver = true;
+  if (shopResult.status === 'game_over') {
+    progress.isGameOver = true;
     return;
   }
 
   while (progress.turns < maxTurns) {
-    const board = await findAds({ gameId: run.gameId });
+    const boardResult = await findAds({ gameId: run.gameId });
 
-    if (board.status === 'game_over') {
-      progress.gameOver = true;
+    if (boardResult.status === 'game_over') {
+      progress.isGameOver = true;
       return;
     }
 
@@ -73,7 +73,13 @@ const play = async ({
       benchmarkId: calibrationBenchmarkId,
     });
     const { state } = progress;
-    const decision = decide({ state, board: board.value, shop: shop.value, calibration, config });
+    const decision = decide({
+      state,
+      board: boardResult.value,
+      shop: shopResult.value,
+      calibration,
+      config,
+    });
 
     logger.info({ gameId: run.gameId, turn: state.turn, decision }, 'decision');
 
@@ -82,25 +88,25 @@ const play = async ({
       return;
     }
 
-    const action = execute({
+    const pendingTurn = executeDecision({
       context: { db, run, state },
       decision,
-      board: board.value,
-      shop: shop.value,
+      board: boardResult.value,
+      shop: shopResult.value,
     });
-    const result = await keepPlayingOnPersistenceFailure({ action, logger });
+    const playedTurn = await keepPlayingOnPersistenceFailure({ pendingTurn, logger });
 
-    if (result.status === 'game_over') {
-      progress.gameOver = true;
+    if (playedTurn.status === 'game_over') {
+      progress.isGameOver = true;
       return;
     }
 
-    progress.state = result.value.state;
+    progress.state = playedTurn.value.state;
     progress.turns += 1;
 
     // Lives at zero already ended the game; asking for the next board would be a 410.
-    if (result.value.state.lives <= 0) {
-      progress.gameOver = true;
+    if (playedTurn.value.state.lives <= 0) {
+      progress.isGameOver = true;
       return;
     }
   }
@@ -116,10 +122,10 @@ export const playGame = async ({
   logger,
   maxTurns = DEFAULT_MAX_TURNS,
 }: PlayGameInput): Promise<BotRunResult> => {
-  const progress: Progress = { state, turns: 0, gameOver: false };
+  const progress: Progress = { state, turns: 0, isGameOver: false };
 
   try {
-    await play({
+    await playTurns({
       db,
       run,
       progress,
@@ -132,15 +138,20 @@ export const playGame = async ({
   } catch (error) {
     // The upstream game outlives the error; without this the row stays 'active' forever.
     await finishRun({ db, run, state: progress.state, status: 'abandoned' }).catch(
-      (finishError: unknown) => logger.warn({ err: finishError }, 'errored run not finalised'),
+      (finishError: unknown) =>
+        logger.warn({ err: finishError, gameId: run.gameId }, 'errored run not finalised'),
     );
     throw error;
   }
 
   // Stopping early leaves the upstream game alive, so it is abandoned, not over.
-  const status = progress.gameOver ? 'game_over' : 'abandoned';
+  const status = progress.isGameOver ? 'game_over' : 'abandoned';
 
-  await finishRun({ db, run, state: progress.state, status });
+  // The game itself finished; a failed bookkeeping write leaves the row 'active' (a known
+  // limit) but must not turn a finished game into an error or stop a benchmark.
+  await finishRun({ db, run, state: progress.state, status }).catch((finishError: unknown) =>
+    logger.warn({ err: finishError, gameId: run.gameId }, 'finished run not finalised'),
+  );
   logger.info(
     { gameId: run.gameId, score: progress.state.score, turns: progress.turns },
     'run finished',
