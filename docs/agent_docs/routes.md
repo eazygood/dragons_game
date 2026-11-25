@@ -69,9 +69,9 @@ repository or adapter access.
 
 ## Validation
 
-Every route declares a schema. Invalid input is rejected at the boundary before
-any outbound call is made — this is the brief's "input validation" requirement
-and it is not optional.
+Every route that takes input declares a schema. Invalid input is rejected at the
+boundary before any outbound call is made — this is the brief's "input
+validation" requirement and it is not optional.
 
 Validate, at minimum:
 

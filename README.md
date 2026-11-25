@@ -120,9 +120,9 @@ Three boundaries, one set of zod schemas shared by both sides:
 
 1. **User input → client.** UX only: the resume form checks the id shape, start
    buttons lock while a start is in flight.
-2. **Client → API.** Every route declares a Fastify schema; the server never
-   trusts the client. Ids must match `^[A-Za-z0-9_-]{1,64}$` and are rejected
-   before any outbound call.
+2. **Client → API.** Every route that takes input declares a Fastify schema;
+   the server never trusts the client. Ids must match `^[A-Za-z0-9_-]{1,64}$`
+   and are rejected before any outbound call.
 3. **API → client.** Every response is parsed with its contract schema in the
    query function, before a component sees it.
 
@@ -224,5 +224,10 @@ in `apps/api/src/config/index.ts`.
 - The published Mugloar API docs are wrong in several ways (bare arrays, numeric
   rewards, HTML errors, undocumented `probability` and `encrypted`). The verified
   contract is in [`architecture.md`](docs/agent_docs/architecture.md) §Verified API reference.
+- No stats or history pages. The brief asks for play, advice and a reliable bot;
+  those are done. Every attempt is stored in `ad_attempts` with the predicted
+  chance and the outcome, so a calibration dashboard (predicted against actual
+  win rate per probability label) is a query and a page away. It was left out to
+  keep the scope on what the brief asks for.
 
 More detail: [`docs/agent_docs/`](docs/agent_docs/README.md).

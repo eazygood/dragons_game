@@ -72,8 +72,8 @@ The bot executes the `Decision`. The UI renders it. Same function.
 ## Validation — three boundaries
 
 1. **User input → client** — UX only (feedback, disabled controls).
-2. **Client → API** — Fastify schema on every route. **The server never trusts
-   the client**; it re-validates regardless.
+2. **Client → API** — Fastify schema on every route that takes input. **The server
+   never trusts the client**; it re-validates regardless.
 3. **API → client** — **parse every response with its contract schema** in the
    query function, before it reaches a component.
 
