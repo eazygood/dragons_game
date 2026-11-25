@@ -7,7 +7,7 @@ import type { AdAttempt } from '../../entities/ad-attempt.ts';
 import { DbTables } from '../../entities/db-tables.ts';
 import type { GameRunId } from '../../entities/game-run.ts';
 
-export interface AdAttemptRow {
+interface AdAttemptRow {
   game_run_id: number;
   ad_id: string;
   probability: string;
@@ -29,7 +29,7 @@ interface CalibrationCountRow {
   successes: number | string | null;
 }
 
-export const transform = ({ attempt }: { attempt: AdAttempt }): AdAttemptRow => ({
+const transform = ({ attempt }: { attempt: AdAttempt }): AdAttemptRow => ({
   game_run_id: attempt.gameRunId,
   ad_id: attempt.adId,
   probability: attempt.probability,

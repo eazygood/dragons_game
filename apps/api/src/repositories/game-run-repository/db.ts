@@ -6,7 +6,7 @@ import { DbTables } from '../../entities/db-tables.ts';
 import { RUN_STATUSES } from '../../entities/game-run.ts';
 import type { GameRun, GameRunId, GameRunPatch, NewGameRun } from '../../entities/game-run.ts';
 
-export interface GameRunRow {
+interface GameRunRow {
   id: number;
   game_id: string;
   strategy: string;
@@ -36,7 +36,7 @@ const PATCH_COLUMNS = {
 
 const RunStatusSchema = z.enum(RUN_STATUSES);
 
-export const transform = ({ gameRun }: { gameRun: NewGameRun }): NewGameRunRow => ({
+const transform = ({ gameRun }: { gameRun: NewGameRun }): NewGameRunRow => ({
   game_id: gameRun.gameId,
   strategy: gameRun.strategy,
   benchmark_id: gameRun.benchmarkId,

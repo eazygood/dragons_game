@@ -6,7 +6,7 @@ import { DbTables } from '../../entities/db-tables.ts';
 import type { GameRunId } from '../../entities/game-run.ts';
 import type { Purchase } from '../../entities/purchase.ts';
 
-export interface PurchaseRow {
+interface PurchaseRow {
   game_run_id: number;
   item_id: string;
   item_name: string | null;
@@ -17,7 +17,7 @@ export interface PurchaseRow {
   created_at: Date;
 }
 
-export const transform = ({ purchase }: { purchase: Purchase }): PurchaseRow => ({
+const transform = ({ purchase }: { purchase: Purchase }): PurchaseRow => ({
   game_run_id: purchase.gameRunId,
   item_id: purchase.itemId,
   item_name: purchase.itemName,

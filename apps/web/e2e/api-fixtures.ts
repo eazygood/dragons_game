@@ -11,7 +11,7 @@ export const PLAYER_GAME_ID = 'e2e-player';
 export const BOT_GAME_ID = 'e2e-bot';
 export const RECOMMENDED_AD_ID = 'sure1';
 export const RECOMMENDED_AD_MESSAGE = 'Help defend the village';
-export const SOLVE_REWARD = 30;
+const SOLVE_REWARD = 30;
 
 type Progress = { score: number; gold: number; turn: number };
 

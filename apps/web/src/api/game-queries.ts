@@ -7,7 +7,7 @@ import { gamePaths } from './game-paths.ts';
 export const GAME_KEY_ROOT = 'game';
 export const VIEW_KEY_SUFFIX = 'view';
 export const TURN_KEY_SUFFIX = 'turn';
-export const MOVES_KEY_SUFFIX = 'moves';
+const MOVES_KEY_SUFFIX = 'moves';
 export const WATCH_POLL_INTERVAL_MS = 1000;
 
 export const gameKeys = {
