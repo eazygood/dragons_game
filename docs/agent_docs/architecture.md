@@ -202,11 +202,12 @@ never is.
 
 - **Config is injected once.** Each composition root calls
   `configureMugloarApi({ config })` (`adapter-config.ts`), which also builds the
-  process-wide token bucket. An adapter that was never configured throws
+  process-wide throttle: a `p-queue` letting `MUGLOAR_BURST` requests start in
+  any sliding window sized to average `MUGLOAR_RATE_PER_SECOND`. An adapter that was never configured throws
   rather than fall back to `process.env`, so a caller cannot talk to whatever
   host the environment happens to name. Tests call it through `pointAdapterAt`.
 - **One deadline per attempt.** A single `AbortSignal.timeout` covers both the
-  wait for a throttle token and the `fetch`, so a backed-up queue cannot stretch
+  wait in the throttle queue and the `fetch`, so a backed-up queue cannot stretch
   a call past `MUGLOAR_TIMEOUT_MS`.
 - **Status mapping.** `410` → `{ status: 'game_over' }`; `404` →
   `GameNotFoundError`; `400` → the caller's `badRequestError` (solve passes
@@ -478,8 +479,8 @@ request does not wait. A failed start releases the slot.
   do; `GET /api/games/:gameId` and `/moves` read them from the database and the
   web app polls. Viewers never affect the run. Player routes refuse a bot game
   with `409`.
-- **Concurrency.** Bot, benchmark and human moves share one process-wide token
-  bucket (`MUGLOAR_RATE_PER_SECOND`, 8), because what is protected is the remote
+- **Concurrency.** Bot, benchmark and human moves share one process-wide throttle
+  (`MUGLOAR_RATE_PER_SECOND`, 8), because what is protected is the remote
   host.
 - **Shutdown.** `server.ts` calls `app.close()` on `SIGINT`/`SIGTERM`. The
   `bot-games` plugin's `onClose` runs before the pool closes: it refuses new
@@ -502,7 +503,7 @@ under that assumption, because each lives in memory:
 - the `@fastify/rate-limit` counters, so every limit is per process;
 - the per-game move lock (`withGameLock` in `game-manager.ts`), so two processes could each send a
   move of the same game upstream at once;
-- the outbound token bucket, so two processes would double the rate the upstream
+- the outbound throttle, so two processes would double the rate the upstream
   sees.
 
 Running replicas would need all four moved to a shared store (Redis, or row

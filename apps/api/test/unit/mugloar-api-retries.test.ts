@@ -77,7 +77,7 @@ describe('mugloar api: retries and transport failures', () => {
     await expect(mugloarRepository.startGame()).rejects.toBeInstanceOf(UpstreamUnavailableError);
   });
 
-  it('fails a request starved of throttle tokens instead of queueing it forever', async () => {
+  it('fails a request starved by the throttle instead of queueing it forever', async () => {
     pointAdapterAt({
       baseUrl: stub.baseUrl,
       overrides: { mugloarBurst: 1, mugloarRatePerSecond: 0.01, mugloarTimeoutMs: 50 },

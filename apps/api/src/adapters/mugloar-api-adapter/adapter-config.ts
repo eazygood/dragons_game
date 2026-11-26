@@ -1,8 +1,6 @@
-import { setTimeout as sleep } from 'node:timers/promises';
+import PQueue from 'p-queue';
 
 import type { AppConfig } from '../../config/index.ts';
-import { createTokenBucket } from './throttle.ts';
-import type { Throttle } from './throttle.ts';
 
 export type MugloarApiConfig = Pick<
   AppConfig,
@@ -14,20 +12,22 @@ export type MugloarApiConfig = Pick<
   | 'mugloarBurst'
 >;
 
-export type MugloarApiRuntime = { config: MugloarApiConfig; throttle: Throttle };
+export type MugloarApiRuntime = { config: MugloarApiConfig; throttle: PQueue };
+
+const MS_PER_SECOND = 1000;
 
 let runtime: MugloarApiRuntime | undefined;
 
-// Called once by each composition root (the app, each CLI). One bucket per process,
-// because what it protects is the remote host, not any caller.
+// Called once by each composition root (the app, each CLI). One throttle per process,
+// because what it protects is the remote host, not any caller. A sliding window (`strict`)
+// so a burst cannot straddle two windows and double up.
 export const configureMugloarApi = ({ config }: { config: MugloarApiConfig }): void => {
   runtime = {
     config,
-    throttle: createTokenBucket({
-      capacity: config.mugloarBurst,
-      refillPerSecond: config.mugloarRatePerSecond,
-      now: () => performance.now(),
-      sleep: ({ ms, signal }) => sleep(ms, undefined, { signal }),
+    throttle: new PQueue({
+      intervalCap: config.mugloarBurst,
+      interval: (config.mugloarBurst / config.mugloarRatePerSecond) * MS_PER_SECOND,
+      strict: true,
     }),
   };
 };

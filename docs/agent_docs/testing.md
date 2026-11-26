@@ -118,7 +118,7 @@ make a test pass — re-record instead.
   retry tests), or by replaying fixtures (`startReplay`).
   `pointAdapterAt({ baseUrl, overrides })` (`test/support/mugloar-api.ts`) calls
   `configureMugloarApi` with the test config aimed at that URL, which also builds
-  a fresh token bucket.
+  a fresh throttle.
 - `vitest.config.ts` gives every project fast adapter settings (200 ms timeout,
   1000 req/s) and the unreachable base URL `http://127.0.0.1:1`, so a test that
   forgets to stub cannot reach the live API.

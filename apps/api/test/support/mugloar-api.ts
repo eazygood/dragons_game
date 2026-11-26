@@ -12,7 +12,7 @@ export const LIVE_AD = {
 };
 
 // The fast test settings from vitest.config.ts, aimed at a test's own stub. Configuring
-// also builds a fresh token bucket, so no test inherits another's spent tokens.
+// also builds a fresh throttle, so no test inherits another's spent rate limit.
 export const pointAdapterAt = ({
   baseUrl,
   overrides = {},
