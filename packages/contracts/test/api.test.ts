@@ -6,18 +6,8 @@ import {
   GameIdSchema,
   GameStateSchema,
   IDENTIFIER_MAX_LENGTH,
-  RawAdSchema,
   ShopItemSchema,
 } from '../src/index.ts';
-
-const RAW_AD = {
-  adId: 'cVlmaFlnRnQ=',
-  message: 'SGVscCBhIGZhcm1lcg==',
-  reward: 30,
-  expiresIn: 5,
-  encrypted: 1,
-  probability: 'R2FtYmxl',
-};
 
 const ID_BEARERS = [
   {
@@ -116,15 +106,5 @@ describe.each(ID_BEARERS)('the $field of a decoded schema', ({ schema, field, va
 
   it.each(UNSAFE_IDS)('refuses %j', (unsafeId) => {
     expect(schema.safeParse({ ...valid, [field]: unsafeId }).success).toBe(false);
-  });
-});
-
-describe('RawAdSchema', () => {
-  it('keeps an encoded adId, which only becomes an identifier once decoded', () => {
-    expect(RawAdSchema.safeParse(RAW_AD).success).toBe(true);
-  });
-
-  it('refuses an empty adId', () => {
-    expect(RawAdSchema.safeParse({ ...RAW_AD, adId: '' }).success).toBe(false);
   });
 });

@@ -1,7 +1,14 @@
-import type { RunStatus, StrategyName } from '@dragons-game/contracts';
+import type { RunStatus } from '@dragons-game/contracts';
+import { z } from 'zod';
 
 export { RUN_STATUSES } from '@dragons-game/contracts';
 export type { RunStatus } from '@dragons-game/contracts';
+
+const STRATEGY_NAMES = ['manual', 'baseline', 'calibrated'] as const;
+
+export const StrategyNameSchema = z.enum(STRATEGY_NAMES);
+
+export type StrategyName = (typeof STRATEGY_NAMES)[number];
 
 export type GameRunId = number;
 

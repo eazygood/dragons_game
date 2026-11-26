@@ -2,10 +2,10 @@ import type { Ad, GameState } from '@dragons-game/contracts';
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { describe, expect, it } from 'vitest';
 
-import { adviseBoard, playerChoiceReasoning } from '../../src/domain/engine/advise.ts';
-import { priorCalibration } from '../../src/domain/engine/calibration.ts';
-import { decide } from '../../src/domain/engine/decide.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { adviseBoard, playerChoiceReasoning } from '../../src/engine/advise.ts';
+import { priorCalibration } from '../../src/engine/calibration.ts';
+import { decide } from '../../src/engine/decide.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 
 const state: GameState = { gameId: 'g', lives: 3, gold: 0, dragonLevel: 0, turn: 0, score: 0 };
 const calibration = priorCalibration({ config: STRATEGY_CONFIG });

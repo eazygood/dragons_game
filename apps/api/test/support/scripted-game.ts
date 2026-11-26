@@ -2,13 +2,7 @@ import { HEALING_POTION_ID } from '@dragons-game/contracts';
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { vi } from 'vitest';
 
-import {
-  adAttemptRepository,
-  adRepository,
-  gameRunRepository,
-  purchaseRepository,
-  shopItemRepository,
-} from '../../src/repositories/index.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 
 const REWARD_BASE = 31;
 const STARTING_LIVES = 3;
@@ -24,7 +18,7 @@ export const scriptGame = ({ turnsUntilGameOver }: { turnsUntilGameOver: number 
   const reward = () => REWARD_BASE + game.turn;
 
   return {
-    startGame: vi.spyOn(gameRunRepository.mugloar, 'createOne').mockImplementation(() => {
+    startGame: vi.spyOn(mugloarRepository, 'startGame').mockImplementation(() => {
       gameCounter += 1;
       Object.assign(game, {
         gameId: `bot-${gameCounter}`,
@@ -44,7 +38,7 @@ export const scriptGame = ({ turnsUntilGameOver }: { turnsUntilGameOver: number 
         turn: 0,
       });
     }),
-    fetchAds: vi.spyOn(adRepository.mugloar, 'findMany').mockImplementation(() =>
+    fetchAds: vi.spyOn(mugloarRepository, 'findAds').mockImplementation(() =>
       Promise.resolve(
         over()
           ? { status: 'game_over' }
@@ -63,7 +57,7 @@ export const scriptGame = ({ turnsUntilGameOver }: { turnsUntilGameOver: number 
             },
       ),
     ),
-    solveAd: vi.spyOn(adAttemptRepository.mugloar, 'createOne').mockImplementation(() => {
+    solveAd: vi.spyOn(mugloarRepository, 'solveAd').mockImplementation(() => {
       if (over()) {
         return Promise.resolve({ status: 'game_over' });
       }
@@ -78,9 +72,9 @@ export const scriptGame = ({ turnsUntilGameOver }: { turnsUntilGameOver: number 
       });
     }),
     fetchShop: vi
-      .spyOn(shopItemRepository.mugloar, 'findMany')
+      .spyOn(mugloarRepository, 'findShopItems')
       .mockResolvedValue({ status: 'ok', value: [...RECORDED_SHOP_ITEMS] }),
-    buyItem: vi.spyOn(purchaseRepository.mugloar, 'createOne').mockImplementation(({ itemId }) => {
+    buyItem: vi.spyOn(mugloarRepository, 'buyItem').mockImplementation(({ itemId }) => {
       const item = RECORDED_SHOP_ITEMS.find(({ id }) => id === itemId);
       const isAffordable = item !== undefined && game.gold >= item.cost;
 

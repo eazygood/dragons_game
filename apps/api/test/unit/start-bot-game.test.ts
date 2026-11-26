@@ -1,9 +1,8 @@
 import type { Knex } from 'knex';
 import { describe, expect, it } from 'vitest';
 
-import { SILENT_LOGGER } from '../../src/managers/bot-manager/index.ts';
-import { createBotGameRegistry } from '../../src/mediators/bot-mediator/bot-game-registry.ts';
-import { startBotGame } from '../../src/mediators/bot-mediator/start-bot-game.ts';
+import { SILENT_LOGGER } from '../../src/managers/bot-manager.ts';
+import { createBotGameRegistry, startBotGame } from '../../src/mediators/bot-mediator.ts';
 
 // A refused reservation is answered before the database or the upstream is touched, so
 // the handle is never used.

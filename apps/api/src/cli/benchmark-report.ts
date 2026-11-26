@@ -1,6 +1,4 @@
-import type { StrategyName } from '@dragons-game/contracts';
-
-import type { BotRunResult } from './types.ts';
+import type { BotRunResult, BotStrategy } from '../managers/bot-manager.ts';
 
 const PERCENT = 100;
 const percentOf = ({ rate }: { rate: number }) => `${Math.round(rate * PERCENT)}%`;
@@ -22,7 +20,7 @@ type BenchmarkStats = {
   target: number;
 };
 
-export type BenchmarkSummary = BenchmarkStats & { benchmarkId: string; strategy: StrategyName };
+export type BenchmarkSummary = BenchmarkStats & { benchmarkId: string; strategy: BotStrategy };
 
 const meanOf = ({ values }: { values: number[] }) =>
   values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;

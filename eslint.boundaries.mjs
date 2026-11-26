@@ -30,7 +30,7 @@ export const layerBoundaries = [
                 '**/managers/**',
                 '**/repositories/**',
                 '**/adapters/**',
-                '**/domain/**',
+                '**/engine/**',
                 '**/cli/**',
               ],
               message: 'Routes call mediators only.',
@@ -51,7 +51,7 @@ export const layerBoundaries = [
               group: [
                 '**/managers/**',
                 '**/repositories/**',
-                '**/domain/**',
+                '**/engine/**',
                 '**/cli/**',
                 '**/routes/**',
               ],
@@ -74,16 +74,16 @@ export const layerBoundaries = [
               group: [
                 '**/repositories/**',
                 '**/adapters/**',
-                '**/domain/**',
+                '**/engine/**',
                 '**/cli/**',
                 '**/routes/**',
               ],
               message: 'Mediators compose managers; they never reach lower or call upward.',
             },
             {
-              group: ['../*-mediator/**'],
+              group: ['./*-mediator.ts'],
               message:
-                'A mediator never imports a sibling mediator; shared code lives in mediators/shared.',
+                'A mediator never imports a sibling mediator; shared code belongs to a manager.',
             },
           ],
         },
@@ -102,7 +102,10 @@ export const layerBoundaries = [
               allowImportNames: ['withTransaction'],
               message: 'Managers call repositories; only withTransaction comes from an adapter.',
             },
-            { group: ['**/cli/**'], message: 'Managers never call upward.' },
+            {
+              group: ['**/mediators/**', '**/routes/**', '**/cli/**'],
+              message: 'Managers never call upward.',
+            },
           ],
         },
       ],
@@ -115,9 +118,12 @@ export const layerBoundaries = [
         'error',
         {
           patterns: [
-            { group: ['**/managers/**', '**/cli/**'], message: 'Repositories never call upward.' },
             {
-              group: ['../*-repository/**'],
+              group: ['**/managers/**', '**/mediators/**', '**/routes/**', '**/cli/**'],
+              message: 'Repositories never call upward.',
+            },
+            {
+              group: ['./*-repository.ts'],
               message: 'A repository serves one entity; composing two is a manager job.',
             },
           ],
@@ -126,7 +132,7 @@ export const layerBoundaries = [
     },
   },
   {
-    files: ['apps/api/src/domain/**/*.ts'],
+    files: ['apps/api/src/engine/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -143,9 +149,13 @@ export const layerBoundaries = [
                 '**/config/**',
                 '**/entities/**',
                 '**/managers/**',
+                '**/mediators/**',
+                '**/plugins/**',
                 '**/repositories/**',
+                '**/routes/**',
+                '**/tools/**',
               ],
-              message: 'The engine is pure: no I/O and no imports from outside domain/.',
+              message: 'The engine is pure: no I/O and no imports from outside engine/.',
             },
           ],
         },

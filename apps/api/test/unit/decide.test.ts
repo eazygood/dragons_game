@@ -2,11 +2,11 @@ import type { Ad, GameState, ShopItem } from '@dragons-game/contracts';
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { describe, expect, it } from 'vitest';
 
-import { priorCalibration } from '../../src/domain/engine/calibration.ts';
-import type { Calibration } from '../../src/domain/engine/calibration.ts';
-import { decide } from '../../src/domain/engine/decide.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
-import type { StrategyConfig } from '../../src/domain/engine/strategy-config.ts';
+import { priorCalibration } from '../../src/engine/calibration.ts';
+import type { Calibration } from '../../src/engine/calibration.ts';
+import { decide } from '../../src/engine/decide.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
+import type { StrategyConfig } from '../../src/engine/strategy-config.ts';
 
 // Mechanism tests pin the values they exercise, so retuning the defaults
 // cannot silently change what they prove.

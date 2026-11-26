@@ -1,11 +1,12 @@
 import { TARGET_SCORE } from '@dragons-game/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { runBenchmark } from '../../src/cli/benchmark.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { runBenchmark } from '../../src/cli/run-benchmark.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';
+import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
+import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 import { useMigratedDatabase } from '../support/integration-db.ts';
 import { scriptGame } from '../support/scripted-game.ts';
 
@@ -38,7 +39,7 @@ describe('runBenchmark: history scoping and run accounting', () => {
   });
 
   beforeEach(async () => {
-    seededRunId = await gameRunRepository.db.createOne({
+    seededRunId = await gameRunRepository.createOne({
       db,
       gameRun: {
         gameId: SEEDED_GAME_ID,
@@ -54,7 +55,7 @@ describe('runBenchmark: history scoping and run accounting', () => {
         endedAt: new Date(),
       },
     });
-    await adAttemptRepository.db.createOne({
+    await adAttemptRepository.createOne({
       db,
       attempt: {
         gameRunId: seededRunId,
@@ -79,7 +80,7 @@ describe('runBenchmark: history scoping and run accounting', () => {
   });
 
   it('keeps earlier history out of a cold benchmark without deleting it', async () => {
-    const counts = vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts');
+    const counts = vi.spyOn(adAttemptRepository, 'findCalibrationCounts');
     const summary = await runBenchmark({
       db,
       strategy: 'calibrated',
@@ -96,7 +97,7 @@ describe('runBenchmark: history scoping and run accounting', () => {
   });
 
   it('reads all accumulated calibration when readsAllHistory is set', async () => {
-    const counts = vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts');
+    const counts = vi.spyOn(adAttemptRepository, 'findCalibrationCounts');
 
     await runBenchmark({
       db,
@@ -177,7 +178,7 @@ describe('runBenchmark: history scoping and run accounting', () => {
 
   it('leaves a run that never ended out of the mean duration', async () => {
     scriptedGame.solveAd.mockRejectedValue(new Error('upstream exploded'));
-    vi.spyOn(gameRunRepository.db, 'updateOne').mockRejectedValue(new Error('db went away'));
+    vi.spyOn(gameRunRepository, 'updateOne').mockRejectedValue(new Error('db went away'));
 
     const summary = await runBenchmark({
       db,

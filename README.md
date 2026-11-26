@@ -108,11 +108,11 @@ Dependencies move downward only; the `no-restricted-imports` rules in
 `eslint.boundaries.mjs` make `pnpm lint` fail on a shortcut. The CLIs call
 managers directly, because the bot loop is a manager and a mediator would only
 pass it through; `StrategyConfig` reaches them as a re-export from
-`bot-manager`, so `cli/` never imports `domain/`. Everything goes through
+`bot-manager`, so `cli/` never imports `engine/`. Everything goes through
 Fastify so the retry, decode and `410` logic is written once, and the advisor
 can learn from the history of every game.
 
-One bot turn, as `managers/bot-manager/play-turn.ts` plays it:
+One bot turn, as `playTurn` in `managers/bot-manager.ts` plays it:
 
 ```mermaid
 sequenceDiagram
@@ -148,10 +148,10 @@ the loop plays on; the third failure in a row ends the run `abandoned`.
 
 ```
 apps/api/            Fastify API: plugins, routes, mediators, managers, repositories,
-                     adapters, domain/engine, cli/ (bot, bench), migrations, tests
+                     adapters, engine, cli/ (bot, bench), migrations, tests
 apps/web/            React app: api/ (query + mutation functions), features/, routes/,
                      Vitest tests, Playwright specs
-packages/contracts/  zod schemas for every request, response and error, used by both apps
+packages/contracts/  zod schemas the API and the web exchange: responses, errors, ids
 docs/agent_docs/     the detail: architecture, database, routes, frontend, testing
 ```
 
@@ -222,8 +222,8 @@ Rate limits are per client IP and per route, kept in memory:
 At most 3 bot games play at once. Every response carries security headers
 (`@fastify/helmet`): a CSP that allows only the app's own origin,
 `X-Frame-Options: DENY`, and no HSTS, because the app is served over plain
-http. `GET /api/health` answers `200 {"status":"ok"}`, or
-`503 {"status":"unavailable"}` when MySQL does not answer.
+http. `GET /api/health` is a liveness check: it answers `200 {"status":"ok"}`
+while the process runs and never queries MySQL.
 
 ```bash
 API=http://localhost:3000/api
@@ -252,7 +252,7 @@ BOT=$(curl -s -X POST $API/bot-games | jq -r .state.gameId)
 curl -s $API/games/$BOT/moves        # grows while the bot plays  → 200
 curl -s $API/games/$BOT/turn         # not playable by hand       → 409
 
-# Readiness: checks MySQL                                         → 200, or 503
+# Liveness: no MySQL query                                        → 200
 curl -s $API/health
 
 # Errors

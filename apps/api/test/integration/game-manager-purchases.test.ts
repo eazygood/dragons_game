@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import { purchaseRepository } from '../../src/repositories/index.ts';
+import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import {
   LEVEL_AFTER_PURCHASE,
   TURN_AFTER_PURCHASE,
@@ -24,7 +25,7 @@ describe('game manager purchases', () => {
   });
 
   it('keep_playing: a failed purchase record rolls the level back, but the turn is still reported', async () => {
-    vi.spyOn(purchaseRepository.db, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
+    vi.spyOn(purchaseRepository, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
 
     const result = await buyClawHoning({ onPersistFailure: 'keep_playing' });
 
@@ -40,7 +41,7 @@ describe('game manager purchases', () => {
   });
 
   it('advances the turn but not the level when a purchase fails upstream', async () => {
-    vi.mocked(purchaseRepository.mugloar.createOne).mockResolvedValue({
+    vi.mocked(mugloarRepository.buyItem).mockResolvedValue({
       status: 'ok',
       value: { success: false, gold: 10, lives: 3, level: 0, turn: 6 },
     });

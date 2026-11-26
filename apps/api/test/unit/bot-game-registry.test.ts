@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createBotGameRegistry } from '../../src/mediators/bot-mediator/bot-game-registry.ts';
+import { createBotGameRegistry } from '../../src/mediators/bot-mediator.ts';
 import { isPending } from '../support/is-pending.ts';
 
 const LIMIT = 2;

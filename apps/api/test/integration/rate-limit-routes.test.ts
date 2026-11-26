@@ -4,9 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../../src/app.ts';
 import { DEFAULT_APP_LIMITS, type AppLimits } from '../../src/app-limits.ts';
 import { loadConfig } from '../../src/config/index.ts';
-import { startGameRun } from '../../src/managers/game-manager/index.ts';
+import { startGameRun } from '../../src/managers/game-manager.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import { gameRunRepository } from '../../src/repositories/index.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import { PLAYER_GAME_ID, newGameSnapshot, stubPlayerUpstream } from '../support/player-game.ts';
 
 const RATE_LIMIT_MAX = 2;
@@ -66,7 +66,7 @@ describe('rate limits on the game routes', () => {
     // game_id is unique, so every later start needs its own upstream id.
     let startedGames = 0;
 
-    vi.mocked(gameRunRepository.mugloar.createOne).mockImplementation(() =>
+    vi.mocked(mugloarRepository.startGame).mockImplementation(() =>
       Promise.resolve(newGameSnapshot(`limited-${(startedGames += 1)}`)),
     );
   });

@@ -1,12 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { GameNotFoundError, UpstreamUnavailableError } from '../../src/errors/errors.ts';
-import {
-  adAttemptRepository,
-  adRepository,
-  purchaseRepository,
-  shopItemRepository,
-} from '../../src/repositories/index.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import { LIVE_AD, pointAdapterAt } from '../support/mugloar-api.ts';
 import { startStubServer } from '../support/stub-server.ts';
 import type { StubServer } from '../support/stub-server.ts';
@@ -48,9 +43,7 @@ describe('mugloar api: shapes and errors', () => {
   it('turns a 410 into a terminal game_over result instead of throwing', async () => {
     stub.post('/:gameId/solve/:adId', () => GAME_OVER);
 
-    await expect(
-      adAttemptRepository.mugloar.createOne({ gameId: 'g1', adId: 'a1' }),
-    ).resolves.toEqual({
+    await expect(mugloarRepository.solveAd({ gameId: 'g1', adId: 'a1' })).resolves.toEqual({
       status: 'game_over',
     });
   });
@@ -58,7 +51,7 @@ describe('mugloar api: shapes and errors', () => {
   it('treats a 410 on a read as game_over too, not only on messages', async () => {
     stub.get('/:gameId/shop', () => GAME_OVER);
 
-    await expect(shopItemRepository.mugloar.findMany({ gameId: 'g1' })).resolves.toEqual({
+    await expect(mugloarRepository.findShopItems({ gameId: 'g1' })).resolves.toEqual({
       status: 'game_over',
     });
   });
@@ -67,14 +60,14 @@ describe('mugloar api: shapes and errors', () => {
     stub.post('/:gameId/shop/buy/:itemId', () => [404, '<html>Not Found</html>']);
 
     await expect(
-      purchaseRepository.mugloar.createOne({ gameId: 'g1', itemId: 'hpot' }),
+      mugloarRepository.buyItem({ gameId: 'g1', itemId: 'hpot' }),
     ).rejects.toBeInstanceOf(GameNotFoundError);
   });
 
   it('rejects a 200 whose body does not match the contract', async () => {
     stub.get('/:gameId/shop', () => [{ id: 'hpot' }]);
 
-    await expect(shopItemRepository.mugloar.findMany({ gameId: 'g1' })).rejects.toBeInstanceOf(
+    await expect(mugloarRepository.findShopItems({ gameId: 'g1' })).rejects.toBeInstanceOf(
       UpstreamUnavailableError,
     );
   });
@@ -86,7 +79,7 @@ describe('mugloar api: shapes and errors', () => {
   ])('drops an ad with %s and keeps the rest of the board', async (_name, override) => {
     stub.get('/:gameId/messages', () => [{ ...LIVE_AD, adId: 'odd', ...override }, LIVE_AD]);
 
-    await expect(adRepository.mugloar.findMany({ gameId: 'g1' })).resolves.toEqual({
+    await expect(mugloarRepository.findAds({ gameId: 'g1' })).resolves.toEqual({
       status: 'ok',
       value: [expect.objectContaining({ adId: LIVE_AD.adId })],
     });
@@ -96,15 +89,15 @@ describe('mugloar api: shapes and errors', () => {
     stub.post('/:gameId/shop/buy/:itemId', () => [400, '<html>Bad Request</html>']);
 
     await expect(
-      purchaseRepository.mugloar.createOne({ gameId: 'g1', itemId: 'hpot' }),
+      mugloarRepository.buyItem({ gameId: 'g1', itemId: 'hpot' }),
     ).rejects.toBeInstanceOf(UpstreamUnavailableError);
   });
 
   it('keeps the upstream path and HTML body out of the message, in the cause only', async () => {
     stub.get('/:gameId/messages', () => [503, '<html><body>busy</body></html>']);
 
-    const failure: unknown = await adRepository.mugloar
-      .findMany({ gameId: 'secret-game' })
+    const failure: unknown = await mugloarRepository
+      .findAds({ gameId: 'secret-game' })
       .catch((error: unknown) => error);
 
     expect(failure).toBeInstanceOf(UpstreamUnavailableError);
@@ -122,7 +115,7 @@ describe('mugloar api: shapes and errors', () => {
       return SOLVE_SUCCESS;
     });
 
-    const board = await adRepository.mugloar.findMany({ gameId: 'g1' });
+    const board = await mugloarRepository.findAds({ gameId: 'g1' });
 
     if (board.status !== 'ok') {
       throw new Error('expected a board');
@@ -130,7 +123,7 @@ describe('mugloar api: shapes and errors', () => {
 
     const [ad] = board.value;
 
-    await adAttemptRepository.mugloar.createOne({ gameId: 'g1', adId: ad?.adId ?? '' });
+    await mugloarRepository.solveAd({ gameId: 'g1', adId: ad?.adId ?? '' });
 
     expect(ad?.adId).toBe(DECODED_AD_ID);
     expect(solvedPath).toBe(`/g1/solve/${DECODED_AD_ID}`);

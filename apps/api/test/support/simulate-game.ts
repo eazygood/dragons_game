@@ -1,12 +1,12 @@
 import { HEALING_POTION_ID } from '@dragons-game/contracts';
 import type { GameState, ShopItem } from '@dragons-game/contracts';
 
-import { priorCalibration, withAttempt } from '../../src/domain/engine/calibration.ts';
-import type { MeasuredCalibration } from '../../src/domain/engine/calibration.ts';
-import { decide } from '../../src/domain/engine/decide.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
-import type { StrategyConfig } from '../../src/domain/engine/strategy-config.ts';
-import type { BotStrategy } from '../../src/entities/bot-run.ts';
+import { priorCalibration, withAttempt } from '../../src/engine/calibration.ts';
+import type { MeasuredCalibration } from '../../src/engine/calibration.ts';
+import { decide } from '../../src/engine/decide.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
+import type { StrategyConfig } from '../../src/engine/strategy-config.ts';
+import type { BotStrategy } from '../../src/managers/bot-manager.ts';
 import { drawBoard, randomFor, succeeds } from './simulated-world.ts';
 
 // A seeded model of the game for regression-testing the strategy, not evidence about the

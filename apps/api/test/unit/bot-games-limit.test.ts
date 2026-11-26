@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DEFAULT_APP_LIMITS } from '../../src/app-limits.ts';
 import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
-import { BOT_SLOT_RETRY_AFTER_SECONDS } from '../../src/mediators/bot-mediator/start-bot-game.ts';
+import { BOT_SLOT_RETRY_AFTER_SECONDS } from '../../src/mediators/bot-mediator.ts';
 
 const BOT_GAMES_URL = '/api/bot-games';
 const RATE_LIMIT_MAX = 2;

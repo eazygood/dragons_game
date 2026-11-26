@@ -19,7 +19,7 @@ flowchart TB
         MED["Mediators — compose responses"]
         MAN["Managers — game rules, transactions, the bot loop"]
         ENG["Decision engine — PURE"]
-        REPO["Repositories — one entity each"]
+        REPO["Repositories — one table each, plus mugloar-repository"]
         MYA["mysql-adapter — knex pool, withTransaction"]
         ADP["mugloar-api-adapter — only outbound caller"]
     end
@@ -57,44 +57,62 @@ Routes → Mediators → Managers → Repositories → Adapters
 Dependencies move **downward only**. Never skip a layer, never call upward.
 `eslint.boundaries.mjs` (spread into `eslint.config.mjs`) enforces this with
 `no-restricted-imports` for `cli/`, `routes/`, `plugins/`, `mediators/`,
-`managers/`, `repositories/` and `domain/`, so a shortcut fails `pnpm lint`. The
-`domain/` rules also ban the `Date`, `process`, `fetch`, `setTimeout` and
+`managers/`, `repositories/` and `engine/`, so a shortcut fails `pnpm lint`. The
+`engine/` rules also ban the `Date`, `process`, `fetch`, `setTimeout` and
 `setInterval` globals. No rule is relaxed for the bot: the loop that calls
 `decide()` is a manager precisely so that routes and mediators never import the
-engine. A mediator never imports a sibling mediator; what two share lives in
-`mediators/shared/`.
+engine. A mediator never imports a sibling mediator; what two share belongs to
+a manager.
 
-| Layer            | May call                                 | Must not                                               |
-| ---------------- | ---------------------------------------- | ------------------------------------------------------ |
-| **Routes**       | Mediators                                | contain business logic; touch repositories or adapters |
-| **CLI**          | Managers ²                               | touch repositories or adapters ³                       |
-| **Mediators**    | Managers                                 | contain game rules; touch repositories or the engine   |
-| **Managers**     | Repositories, Engine, other Managers     | be called by anything below them; touch adapters ¹     |
-| **Repositories** | one data-source Adapter                  | span entities; call managers or other repositories     |
-| **Adapters**     | one external system                      | contain business logic                                 |
+| Layer            | May call                               | Must not                                               |
+| ---------------- | -------------------------------------- | ------------------------------------------------------ |
+| **Routes**       | Mediators                              | contain business logic; touch repositories or adapters |
+| **CLI**          | Managers ²                             | touch repositories or adapters ³                       |
+| **Mediators**    | Managers                               | contain game rules; touch repositories or the engine   |
+| **Managers**     | Repositories, Engine, other Managers   | be called by anything below them; touch adapters ¹     |
+| **Repositories** | one data-source Adapter                | span tables; call managers or other repositories       |
+| **Adapters**     | one external system                    | contain business logic                                 |
 | **Engine**       | `@dragons-game/contracts` schemas only | perform I/O of any kind                                |
 
 ¹ The one exception is `withTransaction` from `mysql-adapter`: a manager owns
 the transaction boundary, so it opens the transaction and hands it to repositories.
 ² The CLIs need `StrategyConfig` and `STRATEGY_CONFIG` to override thresholds;
-`bot-manager/index.ts` re-exports both, so `cli/` imports nothing from `domain/`.
+`bot-manager.ts` re-exports both, so `cli/` imports nothing from `engine/`.
 ³ Except `cli/live-runtime.ts`, the CLIs' composition root, which opens the pool
 and configures the Mugloar adapter.
 
 `plugins/` is infrastructure wired in `app.ts`: it may use adapters and mediators
 (`plugins/bot-games.ts` builds the registry from `bot-mediator`) but never managers,
 repositories, the engine or routes.
-`cli/` (`bot.ts`, `bench.ts`, `runBot`, the benchmark, its pool and report) is an
-entry point beside `routes/`, but calls `bot-manager` and `game-manager`
-directly: the bot loop is a manager, and a mediator would only pass it through.
+`cli/` is an entry point beside `routes/`: one file per `pnpm` command
+(`bot.ts`, `bench.ts`), plus `run-benchmark.ts`, `benchmark-report.ts` and the
+composition root `live-runtime.ts`. It calls `bot-manager` directly: the bot
+loop is a manager, and a mediator would only pass it through.
 
-Contract shapes: mediators build `GameView` (`mediators/shared/game-view.ts`),
-`MoveResult` (`game-mediator/move-result.ts`) and `TurnView`
-(`game-mediator/find-turn.ts`); `game-manager`'s
-`findMoveHistory` builds `Move[]`, which the mediator passes through; the engine
-returns `Decision` and `AdvisedAd`. Types that cross layers live in `entities/`
-(`OrGameOver`, `TurnResult`, `SolveOutcome`, `BuyOutcome`, `Logger`, `GameRun`);
-the row types (`DbTables`) live in `repositories/db-tables.ts`.
+Contract shapes: `game-manager`'s `toGameView` builds `GameView`, which both
+mediators return; `game-mediator.ts` builds `MoveResult` and `TurnView`;
+`game-manager`'s `findMoveHistory` builds `Move[]`, which the mediator passes
+through; the engine returns `Decision` and `AdvisedAd`.
+
+`entities/` holds one type per table: `GameRun` (`game_runs`), `AdAttempt`
+(`ad_attempts`) and `Purchase` (`purchases`). `game-run.ts` also owns the values
+of its `strategy` column (`StrategyName`, `StrategyNameSchema`), which the web
+never sees. The two types every layer needs, `Logger` and `OrGameOver`, live in
+`src/types.ts`. Any other type lives beside the code that produces it:
+`TurnResult` in `game-manager.ts`, `RawAd` in the Mugloar adapter's
+`wire-schemas.ts`, `SolveOutcome` and `BuyOutcome` in `mugloar-repository.ts`,
+`BotStrategy` in `bot-manager.ts`.
+The table names (`DbTables`) live in `repositories/db-tables.ts`.
+`tools/` holds helpers that belong to no layer, such as `discard-outcome.ts`;
+any layer may import them except the engine, which imports nothing from outside
+`engine/`.
+
+`packages/contracts` holds only what the API and the web exchange: the response
+and error schemas the web parses, the id schema both sides check, and the pieces
+those are built from. A schema only the API uses lives beside the layer that
+uses it: path params in `routes/schemas/`, `RawAdSchema` in the Mugloar
+adapter's `wire-schemas.ts`, `StrategyName` in `entities/game-run.ts` and
+`IMPOSSIBLE_LABEL` in `engine/calibration.ts`.
 
 ### Routes
 
@@ -105,62 +123,74 @@ catch. See [`routes.md`](routes.md).
 ### Mediators
 
 API-facing aggregators. They call multiple managers and shape an API response.
-They hold no game rules. One file per use case inside an entity folder, named
-for the operation — `game-mediator/start-game.ts`, not one growing file.
+They hold no game rules. One file per mediator: `game-mediator.ts` serves the
+player's routes, and `bot-mediator.ts` starts bot games and owns their registry.
 
 ### Managers
 
-Own one entity's lifecycle, its rules and its transaction boundary. A manager
-may compose every repository its transaction writes: `game-manager/` owns the
+Own one entity's lifecycle, its rules and its transaction boundary. One file
+per manager, which holds that entity's whole workflow, so the 200-line limit
+does not apply to `managers/*.ts`. A manager
+may compose every repository its transaction writes: `game-manager.ts` owns the
 game state machine and writes a turn's run update together with its attempt or
 purchase row, atomically. It also fronts the reads (`findAds`, `findShopItems`,
 `findRun`, `findPlayableRun`, `findMoveHistory`) so that callers never reach a
-repository. Every move runs through `playMove` (`play-move.ts`): call the
+repository. Every move runs through `playMove`: call the
 upstream, turn its answer into the next state, and save that state with the
 move's record in `saveStateWithRecord`. A player's move is wrapped in
-`withPlayerTurn`, which takes the per-game lock (`game-lock.ts`), re-reads the
+`withPlayerTurn`, which takes the per-game lock (`withGameLock`), re-reads the
 playable run and the board or shop, and settles a game that ended. When the
 turn's transaction fails after the upstream move happened, the caller's
 `onPersistFailure` decides: `'keep_playing'` (the bot, which carries its state
 in memory) logs and plays on, `'save_state_only'` (the player, whose next move
 rebuilds state from the row) saves the state without the record; see
 [`database.md`](database.md).
-`calibration-manager/` turns stored attempts into a `Calibration`, falling back
+`calibration-manager.ts` turns stored attempts into a `Calibration`, falling back
 to the prior (or, on a bot's re-read, the calibration it already holds) when the
 read fails, and `learnFromAttempt` folds one new attempt
-into a calibration in memory. `bot-manager/` owns the bot's play loop
-(`playGame`, `playTurn`) and `execute-decision.ts`, which turns a `Decision`
-into a call on `game-manager`; see _Bot runtime_.
+into a calibration in memory. `advisor-manager.ts` builds the player's advice
+for a turn. `bot-manager.ts` owns the bot's play loop (`playGame`, `playTurn`)
+and `executeDecision`, which turns a `Decision` into a call on `game-manager`;
+see _Bot runtime_.
+
+Managers call each other through namespace imports
+(`import * as gameManager from './game-manager.ts'`), so a call site names the
+manager it reaches.
 
 ### Repositories
 
-One entity each, with one file per data source:
-`<entity>-repository/{db.ts, mugloar.ts}`, exposed as
-`gameRunRepository.db.createOne(...)` and `gameRunRepository.mugloar.createOne()`.
-Enforce no business rules. On the DB side, `transform` / `reverseTransform`
-convert between the row shape (snake_case) and the domain entity (camelCase).
-On the mugloar side, the zod schema's `transform` maps the wire shape into an
-entity (`SolveOutcome`, `BuyOutcome`), so `shoppingSuccess` and `highScore`
-never get past the repository.
+One flat file per table, plus one for the upstream API:
+`game-run-repository.ts`, `ad-attempt-repository.ts`,
+`purchase-repository.ts` and `mugloar-repository.ts`. Callers import them as
+namespaces (`import * as gameRunRepository from ...`) and call
+`gameRunRepository.createOne(...)`. Repositories enforce no business rules. In
+the table repositories, `transform` / `reverseTransform` convert between the
+row shape (snake_case) and the entity (camelCase). In `mugloar-repository.ts`,
+the zod schema's `transform` maps the wire shape into `SolveOutcome` and
+`BuyOutcome`, so `shoppingSuccess` and `highScore` never get past the
+repository.
 
-"One entity" governs what a repository returns and writes. A read may still
+"One table" governs what a table repository returns and writes. A read may still
 filter by a related table: `findCalibrationCounts` scopes attempts to a
 benchmark with a subquery on `game_runs`. That is cheaper than a second
 round-trip through `gameRunRepository`, and it writes nothing.
 
-The `mugloar` side owns the endpoints: the path, the wire schema, and decoding
-encrypted ads.
+`mugloar-repository.ts` owns every endpoint: the path, the wire schema, and
+decoding encrypted ads. Its reads keep the `find` verb; its writes are named
+for the game move (`startGame`, `solveAd`, `buyItem`) rather than `createOne`,
+because each one plays a turn upstream rather than inserting a row.
 
-| Upstream call                  | Repository                              |
-| ------------------------------ | --------------------------------------- |
-| `POST /game/start`             | `gameRunRepository.mugloar.createOne`   |
-| `GET /{gameId}/messages`       | `adRepository.mugloar.findMany`         |
-| `POST /{gameId}/solve/{adId}`  | `adAttemptRepository.mugloar.createOne` |
-| `GET /{gameId}/shop`           | `shopItemRepository.mugloar.findMany`   |
-| `POST /{gameId}/shop/buy/{id}` | `purchaseRepository.mugloar.createOne`  |
+| Upstream call                  | Repository                        |
+| ------------------------------ | --------------------------------- |
+| `POST /game/start`             | `mugloarRepository.startGame`     |
+| `GET /{gameId}/messages`       | `mugloarRepository.findAds`       |
+| `POST /{gameId}/solve/{adId}`  | `mugloarRepository.solveAd`       |
+| `GET /{gameId}/shop`           | `mugloarRepository.findShopItems` |
+| `POST /{gameId}/shop/buy/{id}` | `mugloarRepository.buyItem`       |
 
-Every repository is a plain object, never a bare module export: ESM namespaces
-are frozen, and `vi.spyOn` needs something it can patch.
+Tests replace a repository function with `vi.spyOn(gameRunRepository,
+'updateOne')`: Vitest can patch the exports of an ESM namespace, so a repository
+needs no wrapping object.
 
 ### Adapters
 
@@ -188,18 +218,19 @@ never is.
   refusing a larger declared `Content-Length` up front and stopping a stream that
   passes the cap, so a misbehaving upstream cannot fill the process's memory.
 - **Bad ads are dropped, not fatal.** `wire-schemas.ts` parses ad by ad and
-  drops one failing `RawAdSchema`; `domain/decode-ad.ts` drops one whose decoded
-  label is unknown or whose decoded id is unsafe in the solve URL. The rest of
-  the board stays playable.
+  drops one failing `RawAdSchema`; `decodeAds` in `mugloar-repository.ts` drops
+  one whose decoded label is unknown or whose decoded id is unsafe in the solve
+  URL. The rest of the board stays playable.
 
 ### Engine
 
 **Pure.** No I/O, no clock, no randomness. Its only import from outside
-`domain/` is `@dragons-game/contracts`, for the shared types and constants
-(`Ad`, `GameState`, `Decision`, `IMPOSSIBLE_LABEL`); lint forbids `node:*`,
-config, entities, adapters, repositories, managers and `cli/`. The engine owns
-its input types: `CalibrationCount` is defined in `calibration.ts`, and the
-repository maps rows into it. `StrategyConfig` and the per-label
+`engine/` is `@dragons-game/contracts`, for the shared types and constants
+(`Ad`, `GameState`, `Decision`, `HEALING_POTION_ID`); lint forbids `node:*`,
+config, entities, tools, adapters, repositories, managers, mediators, plugins,
+routes and `cli/`. The engine owns its input types: `CalibrationCount` is
+defined in `calibration.ts`, and the repository maps rows into it.
+`IMPOSSIBLE_LABEL`, the one label the engine never attempts, lives there too. `StrategyConfig` and the per-label
 prior (`STRATEGY_CONFIG.probabilityPrior`) live in `strategy-config.ts`.
 
 ---
@@ -399,21 +430,21 @@ passed in: `baseline` uses the priors alone (does the database earn its place?),
 
 ## Bot runtime
 
-One loop, three callers. `managers/bot-manager/play-game.ts` plays a game from
-its start state to the end: load the shop and the calibration once, then each
-turn (`play-turn.ts`) fetch the board, re-read calibration if the refresh is
+One loop, three callers. `playGame` in `managers/bot-manager.ts` plays a game
+from its start state to the end: load the shop and the calibration once, then
+each turn (`playTurn`) fetch the board, re-read calibration if the refresh is
 due, call `decide`, execute the `Decision` through `game-manager` and fold the
 attempt into the calibration. The loop lives in a manager because it calls the
 engine, and `eslint.boundaries.mjs` forbids routes and mediators from importing
-`domain/`.
+`engine/`.
 
-| Caller                            | How it uses the loop                                                       |
-| --------------------------------- | -------------------------------------------------------------------------- |
-| `pnpm bot` (`cli/run-bot.ts`)     | Starts a game, awaits `playGame`, prints the result.                       |
-| `pnpm bench` (`cli/benchmark.ts`) | Runs `runBot` through `runBounded` and reports the pass rate against 1000. |
-| `POST /api/bot-games`             | `bot-mediator/start-bot-game.ts` starts a game and **detaches** the loop.  |
+| Caller                        | How it uses the loop                                                                           |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm bot` (`cli/bot.ts`)     | Awaits `playNewGame`, which starts a game and plays it, and prints the result.                 |
+| `pnpm bench` (`cli/bench.ts`) | `runBenchmark` runs `playNewGame` through `runBounded` and reports the pass rate against 1000. |
+| `POST /api/bot-games`         | `bot-mediator.ts` starts a game and **detaches** the loop.                                     |
 
-`runBounded` (`cli/bounded-pool.ts`) settles every run: one that throws counts in
+`runBounded` (`cli/run-benchmark.ts`) settles every run: one that throws counts in
 `failedRuns` and the rest carry on. The advisor and the bot share `game-manager`
 and `calibration-manager`, so advice and bot moves take one code path.
 
@@ -429,7 +460,7 @@ failed solve or buy is never retried. On the third consecutive failure
 
 `POST /api/bot-games` answers `201` with the new `GameView` as soon as the
 upstream game exists. The mediator first reserves a slot in the bot-game
-registry (`bot-mediator/bot-game-registry.ts`, decorated as `app.botGames` by
+registry (`createBotGameRegistry` in `bot-mediator.ts`, decorated as `app.botGames` by
 `plugins/bot-games.ts`); at the cap (`AppLimits.maxBotGames`, 3) it answers
 `429` with `Retry-After: 30` (`BOT_SLOT_RETRY_AFTER_SECONDS`), and while the
 server is shutting down `503 service_unavailable`. It then starts `playGame` with the slot's `AbortSignal` and strategy
@@ -469,7 +500,7 @@ under that assumption, because each lives in memory:
 
 - the bot-game registry, so the cap of 3 bot games is per process;
 - the `@fastify/rate-limit` counters, so every limit is per process;
-- the per-game move lock (`game-lock.ts`), so two processes could each send a
+- the per-game move lock (`withGameLock` in `game-manager.ts`), so two processes could each send a
   move of the same game upstream at once;
 - the outbound token bucket, so two processes would double the rate the upstream
   sees.
@@ -504,4 +535,4 @@ priors alone, and the 20 games share evidence as they go.
 The acceptance run's endings (16 of 20 stopped on an exhausted board), the
 reverted exhausted-board level-up rule and the full threshold sweep are in
 [`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md). The tuned
-values themselves live in `STRATEGY_CONFIG` (`domain/engine/strategy-config.ts`).
+values themselves live in `STRATEGY_CONFIG` (`engine/strategy-config.ts`).

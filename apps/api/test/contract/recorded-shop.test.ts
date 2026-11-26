@@ -1,7 +1,7 @@
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { shopItemRepository } from '../../src/repositories/index.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import {
   findRecording,
   gameIdOf,
@@ -24,7 +24,7 @@ describe('Mugloar API against the recorded shop', () => {
   it('reads the recorded bare array into the shop items, field for field', async () => {
     const result = await replayThrough({
       recording,
-      call: () => shopItemRepository.mugloar.findMany({ gameId: gameIdOf(recording) }),
+      call: () => mugloarRepository.findShopItems({ gameId: gameIdOf(recording) }),
     });
 
     expect(Array.isArray(recording.body)).toBe(true);

@@ -18,5 +18,3 @@ export const PROBABILITY_LABELS = [
 export type ProbabilityLabel = (typeof PROBABILITY_LABELS)[number];
 
 export const ProbabilityLabelSchema = z.enum(PROBABILITY_LABELS);
-
-export const IMPOSSIBLE_LABEL = 'Impossible' satisfies ProbabilityLabel;

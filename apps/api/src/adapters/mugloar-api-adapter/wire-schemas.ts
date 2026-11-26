@@ -1,4 +1,4 @@
-import { IdentifierSchema, RawAdSchema, ShopItemSchema } from '@dragons-game/contracts';
+import { IdentifierSchema, ShopItemSchema } from '@dragons-game/contracts';
 import { z } from 'zod';
 
 // Shapes as the live API returns them, not as its published docs claim; see
@@ -14,6 +14,20 @@ export const GameStartWireSchema = z.object({
 });
 
 export type GameSnapshot = z.infer<typeof GameStartWireSchema>;
+
+// The ad as the upstream sends it. Its id, message and label are ciphertext when
+// `encrypted` is set, so only the decoded `AdSchema` holds a validated identifier.
+export const RawAdSchema = z.object({
+  adId: z.string().min(1),
+  message: z.string(),
+  reward: z.number(),
+  expiresIn: z.number().int(),
+  encrypted: z.union([z.literal(1), z.literal(2), z.null()]),
+  // Still ciphertext on an encrypted ad, so not yet a ProbabilityLabel.
+  probability: z.string(),
+});
+
+export type RawAd = z.infer<typeof RawAdSchema>;
 
 // Per ad, not per list: one ad of an unforeseen shape must not cost the rest of the board.
 export const AdListWireSchema = z.array(z.unknown()).transform((entries) =>

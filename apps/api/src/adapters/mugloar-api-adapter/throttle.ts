@@ -1,4 +1,4 @@
-import { discardOutcome } from '../../entities/discard-outcome.ts';
+import { discardOutcome } from '../../tools/discard-outcome.ts';
 
 export type Throttle = { acquire({ signal }: { signal: AbortSignal }): Promise<void> };
 

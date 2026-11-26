@@ -32,6 +32,11 @@ export default tseslint.config(
     },
   },
   {
+    // One file per manager, so a manager holds its whole entity's workflow.
+    files: ['apps/api/src/managers/*.ts'],
+    rules: { 'max-lines': 'off' },
+  },
+  {
     files: ['apps/web/**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat.recommended],
   },

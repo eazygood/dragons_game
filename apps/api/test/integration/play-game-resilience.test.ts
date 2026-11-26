@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { AdExpiredError, UpstreamUnavailableError } from '../../src/errors/errors.ts';
-import { playGame } from '../../src/managers/bot-manager/index.ts';
-import { MAX_CONSECUTIVE_FAILED_TURNS } from '../../src/managers/bot-manager/play-game.ts';
-import { startGameRun } from '../../src/managers/game-manager/index.ts';
-import { gameRunRepository } from '../../src/repositories/index.ts';
+import { MAX_CONSECUTIVE_FAILED_TURNS, playGame } from '../../src/managers/bot-manager.ts';
+import { startGameRun } from '../../src/managers/game-manager.ts';
+import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 import {
   BOT_CONFIG,
   SCRIPTED_SCORE,
@@ -38,7 +37,7 @@ describe('playGame resilience', () => {
   };
 
   const statusOf = async ({ gameId }: { gameId: string }) =>
-    (await gameRunRepository.db.findOne({ db, gameId }))?.status;
+    (await gameRunRepository.findOne({ db, gameId }))?.status;
 
   // Wraps the scripted solve so chosen calls (1-based) fail and the rest play as scripted.
   const failSolveOnCalls = ({ calls, error }: { calls: number[]; error: () => Error }) => {

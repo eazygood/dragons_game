@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin';
 
-import { createBotGameRegistry } from '../mediators/bot-mediator/index.ts';
-import type { BotGameRegistry } from '../mediators/bot-mediator/index.ts';
+import { createBotGameRegistry } from '../mediators/bot-mediator.ts';
+import type { BotGameRegistry } from '../mediators/bot-mediator.ts';
 
 declare module 'fastify' {
   interface FastifyInstance {

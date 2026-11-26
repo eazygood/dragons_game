@@ -16,13 +16,3 @@ export interface AdAttempt {
   rule: DecisionRule | null;
   createdAt: Date;
 }
-
-// What a solve reports back; the turn's attempt row is built from it.
-export interface SolveOutcome {
-  success: boolean;
-  lives: number;
-  gold: number;
-  score: number;
-  turn: number;
-  message: string;
-}

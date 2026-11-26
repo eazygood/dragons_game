@@ -7,7 +7,7 @@ import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import { gameRunRepository } from '../../src/repositories/index.ts';
+import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 import { solvedAdResponse } from '../support/player-game.ts';
 import { scriptGame } from '../support/scripted-game.ts';
 
@@ -30,7 +30,7 @@ describe('bot routes', () => {
   const waitForRunToEnd = ({ gameId }: { gameId: string }) =>
     vi.waitFor(
       async () => {
-        const run = await gameRunRepository.db.findOne({ db: app.db, gameId });
+        const run = await gameRunRepository.findOne({ db: app.db, gameId });
 
         expect(run?.status).not.toBe('active');
 
@@ -70,7 +70,7 @@ describe('bot routes', () => {
 
     expect(response.statusCode).toBe(201);
     expect(GameViewSchema.parse(response.json())).toMatchObject({ status: 'active' });
-    expect(await gameRunRepository.db.findOne({ db: app.db, gameId })).toMatchObject({
+    expect(await gameRunRepository.findOne({ db: app.db, gameId })).toMatchObject({
       strategy: 'calibrated',
       status: 'active',
     });

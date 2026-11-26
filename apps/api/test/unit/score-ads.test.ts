@@ -1,10 +1,10 @@
 import type { Ad, GameState } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { buildCalibration, priorCalibration } from '../../src/domain/engine/calibration.ts';
-import type { Calibration } from '../../src/domain/engine/calibration.ts';
-import { scoreAds } from '../../src/domain/engine/score-ads.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { buildCalibration, priorCalibration } from '../../src/engine/calibration.ts';
+import type { Calibration } from '../../src/engine/calibration.ts';
+import { scoreAds } from '../../src/engine/score-ads.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 
 const config = STRATEGY_CONFIG;
 const calibration = priorCalibration({ config });

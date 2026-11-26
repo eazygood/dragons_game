@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 
 import type { AppLimits } from '../app-limits.ts';
-import { botMediator } from '../mediators/index.ts';
+import * as botMediator from '../mediators/bot-mediator.ts';
 import { rateLimitConfig } from './rate-limit-config.ts';
 
 const HTTP_CREATED = 201;

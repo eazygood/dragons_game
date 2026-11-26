@@ -13,12 +13,3 @@ export interface Purchase {
   success: boolean;
   createdAt: Date;
 }
-
-// What a buy reports back; level only counts when the purchase succeeded.
-export interface BuyOutcome {
-  success: boolean;
-  lives: number;
-  gold: number;
-  level: number;
-  turn: number;
-}

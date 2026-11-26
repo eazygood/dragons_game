@@ -1,8 +1,7 @@
 import { parseArgs } from 'node:util';
 
 import { consoleLogger, createLiveRuntime } from './live-runtime.ts';
-import { runBot } from './run-bot.ts';
-import { BotStrategySchema } from './types.ts';
+import { BotStrategySchema, playNewGame } from '../managers/bot-manager.ts';
 
 const main = async () => {
   const { values } = parseArgs({
@@ -12,7 +11,7 @@ const main = async () => {
   const { db } = createLiveRuntime();
 
   try {
-    const result = await runBot({ db, strategy, logger: consoleLogger });
+    const result = await playNewGame({ db, strategy, logger: consoleLogger });
 
     console.log(
       `Game ${result.gameId}: score ${result.score} in ${result.turns} turns (${strategy})`,

@@ -1,9 +1,9 @@
 import { TARGET_SCORE } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { priorCalibration } from '../../src/domain/engine/calibration.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
-import type { StrategyConfig } from '../../src/domain/engine/strategy-config.ts';
+import { priorCalibration } from '../../src/engine/calibration.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
+import type { StrategyConfig } from '../../src/engine/strategy-config.ts';
 import { SIMULATED_TURN_CAP, simulateGame, simulateMany } from '../support/simulate-game.ts';
 import type { SimulatedGame } from '../support/simulate-game.ts';
 

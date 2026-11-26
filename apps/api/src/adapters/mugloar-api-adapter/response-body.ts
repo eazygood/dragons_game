@@ -1,4 +1,4 @@
-import { discardOutcome } from '../../entities/discard-outcome.ts';
+import { discardOutcome } from '../../tools/discard-outcome.ts';
 
 const BYTES_PER_KIB = 1024;
 const MAX_RESPONSE_KIB = 256;

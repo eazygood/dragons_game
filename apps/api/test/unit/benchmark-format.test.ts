@@ -2,7 +2,7 @@ import { TARGET_SCORE } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { formatSummary, summarise } from '../../src/cli/benchmark-report.ts';
-import type { BotRunResult } from '../../src/cli/types.ts';
+import type { BotRunResult } from '../../src/managers/bot-manager.ts';
 
 const TURNS = 40;
 const DURATIONS_IN_MS = [2000, 4000];

@@ -5,17 +5,15 @@ import type { AdAttempt } from '../../src/entities/ad-attempt.ts';
 import type { GameRunId } from '../../src/entities/game-run.ts';
 import type { Purchase } from '../../src/entities/purchase.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import {
-  adAttemptRepository,
-  gameRunRepository,
-  purchaseRepository,
-} from '../../src/repositories/index.ts';
+import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
+import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';
 import { useMigratedDatabase } from '../support/integration-db.ts';
 
 const STARTED_AT = new Date('2026-11-24T10:00:00.000Z');
 
 const startRun = ({ db, gameId }: { db: Knex; gameId: string }): Promise<GameRunId> =>
-  gameRunRepository.db.createOne({
+  gameRunRepository.createOne({
     db,
     gameRun: {
       gameId,
@@ -68,40 +66,40 @@ describe('move repositories', () => {
   });
 
   it('finds one game run its ad attempts, oldest first, as entities', async () => {
-    await adAttemptRepository.db.createOne({
+    await adAttemptRepository.createOne({
       db,
       attempt: attemptOf({ gameRunId: runId, turn: 1 }),
     });
-    await adAttemptRepository.db.createOne({
+    await adAttemptRepository.createOne({
       db,
       attempt: attemptOf({ gameRunId: runId, turn: 2 }),
     });
-    await adAttemptRepository.db.createOne({
+    await adAttemptRepository.createOne({
       db,
       attempt: attemptOf({ gameRunId: otherRunId, turn: 1 }),
     });
 
-    expect(await adAttemptRepository.db.findMany({ db, gameRunId: runId })).toEqual([
+    expect(await adAttemptRepository.findMany({ db, gameRunId: runId })).toEqual([
       attemptOf({ gameRunId: runId, turn: 1 }),
       attemptOf({ gameRunId: runId, turn: 2 }),
     ]);
   });
 
   it('finds one game run its purchases, oldest first, as entities', async () => {
-    await purchaseRepository.db.createOne({
+    await purchaseRepository.createOne({
       db,
       purchase: purchaseOf({ gameRunId: runId, turn: 1 }),
     });
-    await purchaseRepository.db.createOne({
+    await purchaseRepository.createOne({
       db,
       purchase: purchaseOf({ gameRunId: runId, turn: 2 }),
     });
-    await purchaseRepository.db.createOne({
+    await purchaseRepository.createOne({
       db,
       purchase: purchaseOf({ gameRunId: otherRunId, turn: 1 }),
     });
 
-    expect(await purchaseRepository.db.findMany({ db, gameRunId: runId })).toEqual([
+    expect(await purchaseRepository.findMany({ db, gameRunId: runId })).toEqual([
       purchaseOf({ gameRunId: runId, turn: 1 }),
       purchaseOf({ gameRunId: runId, turn: 2 }),
     ]);
@@ -122,6 +120,6 @@ describe('move repositories', () => {
       created_at: STARTED_AT,
     });
 
-    await expect(adAttemptRepository.db.findMany({ db, gameRunId: runId })).rejects.toThrow();
+    await expect(adAttemptRepository.findMany({ db, gameRunId: runId })).rejects.toThrow();
   });
 });
