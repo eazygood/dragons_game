@@ -1,4 +1,4 @@
-import type { Ad, ProbabilityLabel } from '@bigbank-dragon/contracts';
+import type { Ad, ProbabilityLabel } from '@dragons-game/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { CALIBRATION_REFRESH_TURNS } from '../../src/managers/bot-manager/play-turn.ts';

@@ -1,4 +1,4 @@
-name: bigbank-dragon
+name: dragons-game
 
 services:
   mysql:

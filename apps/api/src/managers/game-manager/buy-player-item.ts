@@ -1,4 +1,4 @@
-import type { Reasoning } from '@bigbank-dragon/contracts';
+import type { Reasoning } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import type { Logger } from '../../entities/logger.ts';

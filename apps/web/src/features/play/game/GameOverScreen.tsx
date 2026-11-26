@@ -1,4 +1,4 @@
-import type { GameView } from '@bigbank-dragon/contracts';
+import type { GameView } from '@dragons-game/contracts';
 import { Link } from '@tanstack/react-router';
 
 import { Panel } from '../../../shared/Panel.tsx';

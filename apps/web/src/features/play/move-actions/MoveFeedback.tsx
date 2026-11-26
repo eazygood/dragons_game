@@ -1,4 +1,4 @@
-import type { MoveResult } from '@bigbank-dragon/contracts';
+import type { MoveResult } from '@dragons-game/contracts';
 
 import { playCopy } from '../play-copy.ts';
 import type { FeedbackRef, MoveReport } from './move-actions.ts';

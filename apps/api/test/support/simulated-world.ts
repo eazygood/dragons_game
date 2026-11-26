@@ -1,5 +1,5 @@
-import { PROBABILITY_LABELS } from '@bigbank-dragon/contracts';
-import type { Ad, ProbabilityLabel } from '@bigbank-dragon/contracts';
+import { PROBABILITY_LABELS } from '@dragons-game/contracts';
+import type { Ad, ProbabilityLabel } from '@dragons-game/contracts';
 
 // What the simulated game is, as opposed to how simulateGame plays it: the boards it deals and
 // the hidden odds behind each label. Nothing here reads StrategyConfig, so the strategy is

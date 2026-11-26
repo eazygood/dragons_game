@@ -1,4 +1,4 @@
-import type { GameState, StrategyName } from '@bigbank-dragon/contracts';
+import type { GameState, StrategyName } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import type { GameRun, NewGameRun } from '../../entities/game-run.ts';

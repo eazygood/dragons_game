@@ -1,4 +1,4 @@
-import type { RawAd } from '@bigbank-dragon/contracts';
+import type { RawAd } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { decodeAds } from '../../src/domain/decode-ad.ts';

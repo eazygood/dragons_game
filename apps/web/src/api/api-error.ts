@@ -1,4 +1,4 @@
-import type { ApiErrorCode } from '@bigbank-dragon/contracts';
+import type { ApiErrorCode } from '@dragons-game/contracts';
 
 export type ClientErrorCode = ApiErrorCode | 'unreachable' | 'invalid_response';
 

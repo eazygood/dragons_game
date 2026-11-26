@@ -1,5 +1,5 @@
 {
-  "name": "@bigbank-dragon/api",
+  "name": "@dragons-game/api",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,7 +15,7 @@
     "db:make": "tsx node_modules/knex/bin/cli.js --knexfile knexfile.ts migrate:make -x ts"
   },
   "dependencies": {
-    "@bigbank-dragon/contracts": "workspace:*",
+    "@dragons-game/contracts": "workspace:*",
     "@fastify/helmet": "13.2.0",
     "@fastify/rate-limit": "11.2.2",
     "@fastify/static": "10.1.11",

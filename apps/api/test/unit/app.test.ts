@@ -1,4 +1,4 @@
-import { GameParamsSchema } from '@bigbank-dragon/contracts';
+import { GameParamsSchema } from '@dragons-game/contracts';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 

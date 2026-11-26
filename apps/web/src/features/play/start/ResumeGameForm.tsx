@@ -1,4 +1,4 @@
-import { GameIdSchema } from '@bigbank-dragon/contracts';
+import { GameIdSchema } from '@dragons-game/contracts';
 import { useId, useState } from 'react';
 import type { FormEvent } from 'react';
 

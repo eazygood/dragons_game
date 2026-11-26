@@ -1,4 +1,4 @@
-import type { Move } from '@bigbank-dragon/contracts';
+import type { Move } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import type { AdAttempt } from '../../entities/ad-attempt.ts';

@@ -1,5 +1,5 @@
-import { HEALING_POTION_ID } from '@bigbank-dragon/contracts';
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import { HEALING_POTION_ID } from '@dragons-game/contracts';
+import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { vi } from 'vitest';
 
 import {

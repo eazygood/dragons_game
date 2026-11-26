@@ -1,4 +1,4 @@
-import type { ApiErrorCode } from '@bigbank-dragon/contracts';
+import type { ApiErrorCode } from '@dragons-game/contracts';
 
 export class AppError extends Error {
   readonly code: ApiErrorCode;

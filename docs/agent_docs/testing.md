@@ -71,7 +71,7 @@ claim; the live benchmark carries that.
 Both derive their expectations from `STRATEGY_CONFIG` rather than literals, so a
 retune moves the thresholds without rewriting the tests. They, and the web
 fixtures, take the shop from `RECORDED_SHOP_ITEMS`, exported by contracts as
-`@bigbank-dragon/contracts/test-support` (`packages/contracts/test/support/index.ts`,
+`@dragons-game/contracts/test-support` (`packages/contracts/test/support/index.ts`,
 which also exports the `turn-view.ts` builders). `RECORDED_SHOP_ITEMS` itself
 lives in `recorded-shop-items.ts` and is checked against a recorded `/shop`
 response (see below), so the strategy tests run on a shop the upstream really
@@ -158,7 +158,7 @@ Web tests never reach Fastify. `apps/web/test/fetch-stub.ts` replaces `fetch`:
 
 ```bash
 pnpm test:e2e                                           # from the repo root
-pnpm --filter @bigbank-dragon/web exec playwright install   # once, to fetch the browsers
+pnpm --filter @dragons-game/web exec playwright install   # once, to fetch the browsers
 ```
 
 `apps/web/playwright.config.ts` builds the web app and serves the **production

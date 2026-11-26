@@ -1,4 +1,4 @@
-import { PROBABILITY_LABELS } from '@bigbank-dragon/contracts';
+import { PROBABILITY_LABELS } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { buildCalibration, withAttempt } from '../../src/domain/engine/calibration.ts';

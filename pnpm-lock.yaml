@@ -184,7 +184,7 @@ importers:
 
   apps/api:
     dependencies:
-      '@bigbank-dragon/contracts':
+      '@dragons-game/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
       '@fastify/helmet':
@@ -224,7 +224,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@bigbank-dragon/contracts':
+      '@dragons-game/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
       '@tanstack/react-query':

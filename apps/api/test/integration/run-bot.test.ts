@@ -1,5 +1,5 @@
-import { DecisionRuleSchema, HEALING_POTION_ID } from '@bigbank-dragon/contracts';
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import { DecisionRuleSchema, HEALING_POTION_ID } from '@dragons-game/contracts';
+import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { describe, expect, it, vi } from 'vitest';
 
 import { runBot } from '../../src/cli/run-bot.ts';

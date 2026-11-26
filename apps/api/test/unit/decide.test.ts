@@ -1,5 +1,5 @@
-import type { Ad, GameState, ShopItem } from '@bigbank-dragon/contracts';
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import type { Ad, GameState, ShopItem } from '@dragons-game/contracts';
+import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { describe, expect, it } from 'vitest';
 
 import { priorCalibration } from '../../src/domain/engine/calibration.ts';

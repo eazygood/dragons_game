@@ -1,5 +1,5 @@
-import { TARGET_SCORE } from '@bigbank-dragon/contracts';
-import type { DecisionRule, ProbabilityLabel } from '@bigbank-dragon/contracts';
+import { TARGET_SCORE } from '@dragons-game/contracts';
+import type { DecisionRule, ProbabilityLabel } from '@dragons-game/contracts';
 
 export const watchCopy = {
   title: 'Watching a game',

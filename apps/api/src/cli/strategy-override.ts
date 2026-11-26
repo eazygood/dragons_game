@@ -1,4 +1,4 @@
-import { ProbabilityLabelSchema } from '@bigbank-dragon/contracts';
+import { ProbabilityLabelSchema } from '@dragons-game/contracts';
 import { z } from 'zod';
 
 import { STRATEGY_CONFIG } from '../managers/bot-manager/index.ts';

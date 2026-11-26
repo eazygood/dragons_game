@@ -1,6 +1,6 @@
-import { HEALING_POTION_ID, IMPOSSIBLE_LABEL, PROBABILITY_LABELS } from '@bigbank-dragon/contracts';
-import type { Ad, DecisionRule, GameState, ProbabilityLabel } from '@bigbank-dragon/contracts';
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import { HEALING_POTION_ID, IMPOSSIBLE_LABEL, PROBABILITY_LABELS } from '@dragons-game/contracts';
+import type { Ad, DecisionRule, GameState, ProbabilityLabel } from '@dragons-game/contracts';
+import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { describe, expect, it } from 'vitest';
 
 import { priorCalibration } from '../../src/domain/engine/calibration.ts';

@@ -73,7 +73,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @bigbank-dragon/web exec playwright install --with-deps
+      - run: pnpm --filter @dragons-game/web exec playwright install --with-deps
       # Playwright builds and previews the web app itself, and /api is intercepted,
       # so this job needs neither the API nor a database.
       - run: pnpm test:e2e

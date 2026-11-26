@@ -1,4 +1,4 @@
-import type { MoveResult } from '@bigbank-dragon/contracts';
+import type { MoveResult } from '@dragons-game/contracts';
 
 import type { OrGameOver } from '../../entities/or-game-over.ts';
 import type { PlayerMove } from '../../entities/turn-result.ts';

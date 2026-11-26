@@ -1,4 +1,4 @@
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';

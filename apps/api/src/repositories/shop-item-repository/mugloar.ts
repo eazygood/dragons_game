@@ -1,4 +1,4 @@
-import type { ShopItem } from '@bigbank-dragon/contracts';
+import type { ShopItem } from '@dragons-game/contracts';
 
 import { mugloarApiAdapter } from '../../adapters/mugloar-api-adapter/index.ts';
 import { ShopWireSchema } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';

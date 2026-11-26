@@ -1,4 +1,4 @@
-import type { GameState } from '@bigbank-dragon/contracts';
+import type { GameState } from '@dragons-game/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';

@@ -1,4 +1,4 @@
-import { GameViewSchema } from '@bigbank-dragon/contracts';
+import { GameViewSchema } from '@dragons-game/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { UNREACHABLE_STATUS } from '../src/api/api-error.ts';

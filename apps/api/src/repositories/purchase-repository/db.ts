@@ -1,5 +1,5 @@
-import { DecisionRuleSchema } from '@bigbank-dragon/contracts';
-import type { DecisionRule } from '@bigbank-dragon/contracts';
+import { DecisionRuleSchema } from '@dragons-game/contracts';
+import type { DecisionRule } from '@dragons-game/contracts';
 
 import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
 import type { GameRunId } from '../../entities/game-run.ts';

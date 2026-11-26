@@ -1,4 +1,4 @@
-import type { TurnView } from '@bigbank-dragon/contracts';
+import type { TurnView } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import type { Logger } from '../../entities/logger.ts';

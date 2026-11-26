@@ -1,4 +1,4 @@
-import { GameViewSchema, MoveListSchema, TurnViewSchema } from '@bigbank-dragon/contracts';
+import { GameViewSchema, MoveListSchema, TurnViewSchema } from '@dragons-game/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 
 import { isApiError } from './api-error.ts';

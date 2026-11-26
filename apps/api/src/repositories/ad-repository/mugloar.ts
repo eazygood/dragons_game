@@ -1,4 +1,4 @@
-import type { Ad } from '@bigbank-dragon/contracts';
+import type { Ad } from '@dragons-game/contracts';
 
 import { mugloarApiAdapter } from '../../adapters/mugloar-api-adapter/index.ts';
 import { AdListWireSchema } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';

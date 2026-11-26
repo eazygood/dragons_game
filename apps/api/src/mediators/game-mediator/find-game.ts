@@ -1,4 +1,4 @@
-import type { GameView } from '@bigbank-dragon/contracts';
+import type { GameView } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import { findRun } from '../../managers/game-manager/index.ts';

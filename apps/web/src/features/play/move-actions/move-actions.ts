@@ -1,4 +1,4 @@
-import type { MoveResult } from '@bigbank-dragon/contracts';
+import type { MoveResult } from '@dragons-game/contracts';
 import type { RefObject } from 'react';
 
 export type MoveActions = {

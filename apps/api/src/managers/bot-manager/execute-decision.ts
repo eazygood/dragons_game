@@ -1,4 +1,4 @@
-import type { Ad, Decision, ShopItem } from '@bigbank-dragon/contracts';
+import type { Ad, Decision, ShopItem } from '@dragons-game/contracts';
 
 import type { CalibrationAttempt } from '../../domain/engine/calibration.ts';
 import type { OrGameOver } from '../../entities/or-game-over.ts';

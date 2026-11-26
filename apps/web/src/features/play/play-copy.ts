@@ -1,5 +1,5 @@
-import { IDENTIFIER_MAX_LENGTH } from '@bigbank-dragon/contracts';
-import type { AdVerdict, DecisionRule } from '@bigbank-dragon/contracts';
+import { IDENTIFIER_MAX_LENGTH } from '@dragons-game/contracts';
+import type { AdVerdict, DecisionRule } from '@dragons-game/contracts';
 
 const SINGLE_TURN = 1;
 

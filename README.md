@@ -290,7 +290,7 @@ pnpm lint && pnpm format:check && pnpm typecheck
 race the server's start-up. The integration tests create their own schema in
 `dragon_test`; the benchmark writes its games to the `dragon` database, so it
 needs the migrations first. The first `pnpm test:e2e` needs the browsers:
-`pnpm --filter @bigbank-dragon/web exec playwright install`. E2E intercepts
+`pnpm --filter @dragons-game/web exec playwright install`. E2E intercepts
 every `/api` request in the browser, so it needs no API, database or game
 server. The web build targets Chrome 111, Firefox 114 and Safari 16.4, the
 oldest browsers supported; E2E runs the current engine of each. `pnpm bench --warm` reads all stored history instead of just the run's

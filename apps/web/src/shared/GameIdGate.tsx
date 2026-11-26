@@ -1,4 +1,4 @@
-import { GameIdSchema } from '@bigbank-dragon/contracts';
+import { GameIdSchema } from '@dragons-game/contracts';
 import type { ReactNode } from 'react';
 
 import { GameUnavailable } from './GameUnavailable.tsx';

@@ -1,5 +1,5 @@
 {
-  "name": "bigbank-dragon",
+  "name": "dragons-game",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,12 +16,12 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
-    "test:e2e": "pnpm --filter @bigbank-dragon/web test:e2e",
-    "bot": "pnpm --filter @bigbank-dragon/api bot",
-    "bench": "pnpm --filter @bigbank-dragon/api bench",
-    "test:integration": "pnpm --filter @bigbank-dragon/api test:integration",
-    "db:migrate": "pnpm --filter @bigbank-dragon/api db:migrate",
-    "db:make": "pnpm --filter @bigbank-dragon/api db:make"
+    "test:e2e": "pnpm --filter @dragons-game/web test:e2e",
+    "bot": "pnpm --filter @dragons-game/api bot",
+    "bench": "pnpm --filter @dragons-game/api bench",
+    "test:integration": "pnpm --filter @dragons-game/api test:integration",
+    "db:migrate": "pnpm --filter @dragons-game/api db:migrate",
+    "db:make": "pnpm --filter @dragons-game/api db:make"
   },
   "devDependencies": {
     "eslint": "10.15.0",

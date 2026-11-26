@@ -1,4 +1,4 @@
-import { TARGET_SCORE } from '@bigbank-dragon/contracts';
+import { TARGET_SCORE } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { formatSummary, summarise } from '../../src/cli/benchmark-report.ts';

@@ -1,5 +1,5 @@
-import { IMPOSSIBLE_LABEL } from '@bigbank-dragon/contracts';
-import type { Ad, GameState } from '@bigbank-dragon/contracts';
+import { IMPOSSIBLE_LABEL } from '@dragons-game/contracts';
+import type { Ad, GameState } from '@dragons-game/contracts';
 
 import type { Calibration } from './calibration.ts';
 import type { StrategyConfig } from './strategy-config.ts';

@@ -1,5 +1,5 @@
-import { IMPOSSIBLE_LABEL } from '@bigbank-dragon/contracts';
-import type { ProbabilityLabel } from '@bigbank-dragon/contracts';
+import { IMPOSSIBLE_LABEL } from '@dragons-game/contracts';
+import type { ProbabilityLabel } from '@dragons-game/contracts';
 
 import type { StrategyConfig } from './strategy-config.ts';
 

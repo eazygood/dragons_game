@@ -1,4 +1,4 @@
-import type { GameState, ShopItem } from '@bigbank-dragon/contracts';
+import type { GameState, ShopItem } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import { decide } from '../../domain/engine/decide.ts';

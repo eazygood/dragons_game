@@ -1,4 +1,4 @@
-import type { Ad, GameState, Reasoning, ShopItem } from '@bigbank-dragon/contracts';
+import type { Ad, GameState, Reasoning, ShopItem } from '@dragons-game/contracts';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 import type { GameRun } from '../../src/entities/game-run.ts';

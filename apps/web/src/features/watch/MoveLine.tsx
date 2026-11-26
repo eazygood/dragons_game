@@ -1,4 +1,4 @@
-import type { Move } from '@bigbank-dragon/contracts';
+import type { Move } from '@dragons-game/contracts';
 
 import { formatChance, formatGold } from '../../shared/format.ts';
 import styles from './MoveLine.module.css';

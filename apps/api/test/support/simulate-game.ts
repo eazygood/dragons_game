@@ -1,5 +1,5 @@
-import { HEALING_POTION_ID } from '@bigbank-dragon/contracts';
-import type { GameState, ShopItem } from '@bigbank-dragon/contracts';
+import { HEALING_POTION_ID } from '@dragons-game/contracts';
+import type { GameState, ShopItem } from '@dragons-game/contracts';
 
 import { priorCalibration, withAttempt } from '../../src/domain/engine/calibration.ts';
 import type { MeasuredCalibration } from '../../src/domain/engine/calibration.ts';

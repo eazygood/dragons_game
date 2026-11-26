@@ -1,4 +1,4 @@
-import type { GameState } from '@bigbank-dragon/contracts';
+import type { GameState } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import { STRATEGY_CONFIG } from '../../domain/engine/strategy-config.ts';

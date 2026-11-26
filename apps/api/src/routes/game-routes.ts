@@ -5,7 +5,7 @@ import {
   type BuyParams,
   type GameParams,
   type SolveParams,
-} from '@bigbank-dragon/contracts';
+} from '@dragons-game/contracts';
 import type { FastifyInstance } from 'fastify';
 
 import type { AppLimits } from '../app-limits.ts';

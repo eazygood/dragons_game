@@ -72,7 +72,7 @@ engine. A mediator never imports a sibling mediator; what two share lives in
 | **Managers**     | Repositories, Engine, other Managers     | be called by anything below them; touch adapters ¹     |
 | **Repositories** | one data-source Adapter                  | span entities; call managers or other repositories     |
 | **Adapters**     | one external system                      | contain business logic                                 |
-| **Engine**       | `@bigbank-dragon/contracts` schemas only | perform I/O of any kind                                |
+| **Engine**       | `@dragons-game/contracts` schemas only | perform I/O of any kind                                |
 
 ¹ The one exception is `withTransaction` from `mysql-adapter`: a manager owns
 the transaction boundary, so it opens the transaction and hands it to repositories.
@@ -195,7 +195,7 @@ never is.
 ### Engine
 
 **Pure.** No I/O, no clock, no randomness. Its only import from outside
-`domain/` is `@bigbank-dragon/contracts`, for the shared types and constants
+`domain/` is `@dragons-game/contracts`, for the shared types and constants
 (`Ad`, `GameState`, `Decision`, `IMPOSSIBLE_LABEL`); lint forbids `node:*`,
 config, entities, adapters, repositories, managers and `cli/`. The engine owns
 its input types: `CalibrationCount` is defined in `calibration.ts`, and the

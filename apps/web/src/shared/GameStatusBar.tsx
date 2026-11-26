@@ -1,4 +1,4 @@
-import type { GameState } from '@bigbank-dragon/contracts';
+import type { GameState } from '@dragons-game/contracts';
 
 import styles from './GameStatusBar.module.css';
 import { RefreshHint } from './RefreshHint.tsx';

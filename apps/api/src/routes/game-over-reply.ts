@@ -1,4 +1,4 @@
-import type { ApiErrorBody } from '@bigbank-dragon/contracts';
+import type { ApiErrorBody } from '@dragons-game/contracts';
 import type { FastifyReply } from 'fastify';
 
 const HTTP_GONE = 410;

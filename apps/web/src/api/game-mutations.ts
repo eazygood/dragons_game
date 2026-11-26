@@ -1,4 +1,4 @@
-import { GameViewSchema, MoveResultSchema } from '@bigbank-dragon/contracts';
+import { GameViewSchema, MoveResultSchema } from '@dragons-game/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { apiRequest } from './client.ts';

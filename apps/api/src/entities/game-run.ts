@@ -1,7 +1,7 @@
-import type { RunStatus, StrategyName } from '@bigbank-dragon/contracts';
+import type { RunStatus, StrategyName } from '@dragons-game/contracts';
 
-export { RUN_STATUSES } from '@bigbank-dragon/contracts';
-export type { RunStatus } from '@bigbank-dragon/contracts';
+export { RUN_STATUSES } from '@dragons-game/contracts';
+export type { RunStatus } from '@dragons-game/contracts';
 
 export type GameRunId = number;
 

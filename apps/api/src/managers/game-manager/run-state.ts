@@ -1,4 +1,4 @@
-import type { GameState } from '@bigbank-dragon/contracts';
+import type { GameState } from '@dragons-game/contracts';
 
 import type { GameRun, GameRunPatch } from '../../entities/game-run.ts';
 

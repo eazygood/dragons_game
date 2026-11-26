@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { TARGET_SCORE } from '@bigbank-dragon/contracts';
+import { TARGET_SCORE } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import type { Logger } from '../entities/logger.ts';
