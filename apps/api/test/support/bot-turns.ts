@@ -2,11 +2,11 @@ import type { ShopItem } from '@dragons-game/contracts';
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import type { Knex } from 'knex';
 
-import { priorCalibration } from '../../src/domain/engine/calibration.ts';
-import { loadCalibration } from '../../src/managers/calibration-manager/index.ts';
-import { startGameRun } from '../../src/managers/game-manager/index.ts';
-import { playTurn } from '../../src/managers/bot-manager/play-turn.ts';
-import type { BotGameContext, BotRunProgress } from '../../src/managers/bot-manager/play-turn.ts';
+import { priorCalibration } from '../../src/engine/calibration.ts';
+import { loadCalibration } from '../../src/managers/calibration-manager.ts';
+import { startGameRun } from '../../src/managers/game-manager.ts';
+import { playTurn } from '../../src/managers/bot-manager.ts';
+import type { BotGameContext, BotRunProgress } from '../../src/managers/bot-manager.ts';
 import { BOT_CONFIG, botLogger } from './bot-run.ts';
 
 export type BotTurnFixture = {

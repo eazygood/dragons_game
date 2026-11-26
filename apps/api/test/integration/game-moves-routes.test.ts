@@ -6,15 +6,11 @@ import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import type { AdAttempt } from '../../src/entities/ad-attempt.ts';
 import type { GameRunId } from '../../src/entities/game-run.ts';
-import { startGameRun } from '../../src/managers/game-manager/index.ts';
+import { startGameRun } from '../../src/managers/game-manager.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import {
-  adAttemptRepository,
-  adRepository,
-  gameRunRepository,
-  purchaseRepository,
-  shopItemRepository,
-} from '../../src/repositories/index.ts';
+import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
+import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import {
   PLAYER_GAME_ID,
   newGameSnapshot,
@@ -64,10 +60,8 @@ describe('game moves route', () => {
   });
 
   it("lists a game's moves newest first, solves and purchases together", async () => {
-    vi.mocked(adAttemptRepository.mugloar.createOne).mockResolvedValue(
-      solvedAdResponse({ gold: 60 }),
-    );
-    vi.mocked(purchaseRepository.mugloar.createOne).mockResolvedValue({
+    vi.mocked(mugloarRepository.solveAd).mockResolvedValue(solvedAdResponse({ gold: 60 }));
+    vi.mocked(mugloarRepository.buyItem).mockResolvedValue({
       status: 'ok',
       value: { success: true, gold: 10, lives: 4, level: 0, turn: 2 },
     });
@@ -89,11 +83,11 @@ describe('game moves route', () => {
   });
 
   it('orders interleaved solves and purchases by turn, newest first', async () => {
-    await adAttemptRepository.db.createOne({
+    await adAttemptRepository.createOne({
       db: app.db,
       attempt: attemptOf({ gameRunId: runId, turn: 1 }),
     });
-    await purchaseRepository.db.createOne({
+    await purchaseRepository.createOne({
       db: app.db,
       purchase: {
         gameRunId: runId,
@@ -106,7 +100,7 @@ describe('game moves route', () => {
         createdAt: CREATED_AT,
       },
     });
-    await adAttemptRepository.db.createOne({
+    await adAttemptRepository.createOne({
       db: app.db,
       attempt: attemptOf({ gameRunId: runId, turn: 3 }),
     });
@@ -121,11 +115,11 @@ describe('game moves route', () => {
   });
 
   it('answers a legacy move with a null rule', async () => {
-    await adAttemptRepository.db.createOne({
+    await adAttemptRepository.createOne({
       db: app.db,
       attempt: { ...attemptOf({ gameRunId: runId, turn: 1 }), rule: null },
     });
-    await purchaseRepository.db.createOne({
+    await purchaseRepository.createOne({
       db: app.db,
       purchase: {
         gameRunId: runId,
@@ -148,12 +142,10 @@ describe('game moves route', () => {
   });
 
   it("lists a bot game's moves, which the player routes refuse", async () => {
-    vi.mocked(gameRunRepository.mugloar.createOne).mockResolvedValueOnce(
-      newGameSnapshot('bot-moves'),
-    );
+    vi.mocked(mugloarRepository.startGame).mockResolvedValueOnce(newGameSnapshot('bot-moves'));
     const { run } = await startGameRun({ db: app.db, strategy: 'calibrated' });
 
-    await adAttemptRepository.db.createOne({
+    await adAttemptRepository.createOne({
       db: app.db,
       attempt: attemptOf({ gameRunId: run.id, turn: 1 }),
     });
@@ -180,9 +172,9 @@ describe('game moves route', () => {
   it('answers from the database alone', async () => {
     await app.inject({ url: MOVES_URL });
 
-    expect(adRepository.mugloar.findMany).not.toHaveBeenCalled();
-    expect(shopItemRepository.mugloar.findMany).not.toHaveBeenCalled();
-    expect(adAttemptRepository.mugloar.createOne).not.toHaveBeenCalled();
-    expect(purchaseRepository.mugloar.createOne).not.toHaveBeenCalled();
+    expect(mugloarRepository.findAds).not.toHaveBeenCalled();
+    expect(mugloarRepository.findShopItems).not.toHaveBeenCalled();
+    expect(mugloarRepository.solveAd).not.toHaveBeenCalled();
+    expect(mugloarRepository.buyItem).not.toHaveBeenCalled();
   });
 });

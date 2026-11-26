@@ -1,7 +1,7 @@
 import type { GameState } from '@dragons-game/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 import type { GameRun } from '../../src/entities/game-run.ts';
 import {
   AdExpiredError,
@@ -14,14 +14,10 @@ import {
   finishRun,
   solvePlayerAd,
   startGameRun,
-} from '../../src/managers/game-manager/index.ts';
+} from '../../src/managers/game-manager.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import {
-  adAttemptRepository,
-  adRepository,
-  gameRunRepository,
-  purchaseRepository,
-} from '../../src/repositories/index.ts';
+import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import { useMigratedDatabase } from '../support/integration-db.ts';
 import {
   PLAYER_GAME_ID,
@@ -71,23 +67,23 @@ describe('player moves', () => {
     await expect(
       solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'vanished', logger: SILENT_LOGGER }),
     ).rejects.toBeInstanceOf(AdExpiredError);
-    expect(adAttemptRepository.mugloar.createOne).not.toHaveBeenCalled();
+    expect(mugloarRepository.solveAd).not.toHaveBeenCalled();
   });
 
   it('refuses a purchase the stored gold cannot cover, without burning a turn', async () => {
     await expect(
       buyPlayerItem({ db, gameId: PLAYER_GAME_ID, itemId: 'hpot', logger: SILENT_LOGGER }),
     ).rejects.toBeInstanceOf(InsufficientGoldError);
-    expect(purchaseRepository.mugloar.createOne).not.toHaveBeenCalled();
-    expect(await gameRunRepository.db.findOne({ db, gameId: PLAYER_GAME_ID })).toMatchObject({
+    expect(mugloarRepository.buyItem).not.toHaveBeenCalled();
+    expect(await gameRunRepository.findOne({ db, gameId: PLAYER_GAME_ID })).toMatchObject({
       turn: 0,
       gold: 0,
     });
   });
 
   it('buys an affordable item and reports the outcome', async () => {
-    await gameRunRepository.db.updateOne({ db, id: run.id, patch: { gold: 60 } });
-    vi.mocked(purchaseRepository.mugloar.createOne).mockResolvedValue({
+    await gameRunRepository.updateOne({ db, id: run.id, patch: { gold: 60 } });
+    vi.mocked(mugloarRepository.buyItem).mockResolvedValue({
       status: 'ok',
       value: { success: true, gold: 10, lives: 4, level: 0, turn: 1 },
     });
@@ -112,14 +108,14 @@ describe('player moves', () => {
   });
 
   it('ends the run when a solve takes the last life', async () => {
-    vi.mocked(adAttemptRepository.mugloar.createOne).mockResolvedValue(
+    vi.mocked(mugloarRepository.solveAd).mockResolvedValue(
       solvedAdResponse({ success: false, lives: 0, gold: 0, score: 0, message: 'defeated' }),
     );
 
     expect(
       await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT_LOGGER }),
     ).toMatchObject({ status: 'ok', value: { status: 'game_over' } });
-    expect(await gameRunRepository.db.findOne({ db, gameId: PLAYER_GAME_ID })).toMatchObject({
+    expect(await gameRunRepository.findOne({ db, gameId: PLAYER_GAME_ID })).toMatchObject({
       status: 'game_over',
       endedAt: expect.any(Date) as Date,
     });
@@ -127,18 +123,18 @@ describe('player moves', () => {
 
   it('answers a finished run with game over and no upstream call', async () => {
     await finishRun({ db, run, state, status: 'game_over' });
-    vi.mocked(adRepository.mugloar.findMany).mockClear();
+    vi.mocked(mugloarRepository.findAds).mockClear();
 
     expect(
       await solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'sure1', logger: SILENT_LOGGER }),
     ).toEqual({
       status: 'game_over',
     });
-    expect(adRepository.mugloar.findMany).not.toHaveBeenCalled();
+    expect(mugloarRepository.findAds).not.toHaveBeenCalled();
   });
 
   it('refuses to play a bot run', async () => {
-    vi.mocked(gameRunRepository.mugloar.createOne).mockResolvedValue(newGameSnapshot('bot-game'));
+    vi.mocked(mugloarRepository.startGame).mockResolvedValue(newGameSnapshot('bot-game'));
     await startGameRun({ db, strategy: 'calibrated' });
 
     await expect(
@@ -150,7 +146,7 @@ describe('player moves', () => {
     let inFlight = 0;
     let maxInFlight = 0;
 
-    vi.mocked(adAttemptRepository.mugloar.createOne).mockImplementation(async () => {
+    vi.mocked(mugloarRepository.solveAd).mockImplementation(async () => {
       inFlight += 1;
       maxInFlight = Math.max(maxInFlight, inFlight);
       await new Promise((resolve) => setTimeout(resolve, 10));

@@ -1,6 +1,6 @@
 import type { StrategyName } from '@dragons-game/contracts';
 
-import type { BotRunResult } from './types.ts';
+import type { BotRunResult } from '../managers/bot-manager.ts';
 
 const PERCENT = 100;
 const percentOf = ({ rate }: { rate: number }) => `${Math.round(rate * PERCENT)}%`;

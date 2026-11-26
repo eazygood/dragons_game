@@ -38,7 +38,7 @@ Entry points are `routes/` (HTTP) and `cli/` (bot, bench); both call mediators
 or managers only, and `app.ts` and `cli/live-runtime.ts` are the composition
 roots. `eslint.boundaries.mjs` enforces the boundaries.
 
-The **decision engine** (`apps/api/src/domain/engine/`) is **pure** — no I/O, no
+The **decision engine** (`apps/api/src/engine/`) is **pure** — no I/O, no
 clock, no randomness. This is load-bearing, not stylistic: it is why the headless
 bot and the human player's advisor cannot disagree, and why the strategy is
 testable without a network or a database.
@@ -68,7 +68,8 @@ The bot executes the `Decision`. The UI renders it. Same function.
 - **Guard clauses** over `else if` — return early.
 - **Let errors bubble** to the registered Fastify handler; routes never catch.
 - **No magic numbers** — strategy thresholds live in one typed `StrategyConfig`.
-- Files ≤ 200 lines, preferably ≤ 150. Functions well under 150.
+- Files ≤ 200 lines, preferably ≤ 150, except `apps/api/src/managers/*.ts`: one
+  file per manager holds its entity's whole workflow. Functions well under 150.
 - Run `pnpm lint && pnpm format && pnpm typecheck && pnpm test` before asking for
   approval to commit.
 

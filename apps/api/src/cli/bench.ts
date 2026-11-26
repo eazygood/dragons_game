@@ -2,11 +2,10 @@ import { parseArgs } from 'node:util';
 
 import { z } from 'zod';
 
-import { DEFAULT_CONCURRENCY, runBenchmark } from './benchmark.ts';
 import { formatSummary } from './benchmark-report.ts';
 import { consoleLogger, createLiveRuntime } from './live-runtime.ts';
-import { applyStrategyOverride } from './strategy-override.ts';
-import { BotStrategySchema } from './types.ts';
+import { DEFAULT_CONCURRENCY, applyStrategyOverride, runBenchmark } from './run-benchmark.ts';
+import { BotStrategySchema } from '../managers/bot-manager.ts';
 
 const DEFAULT_RUNS = 20;
 

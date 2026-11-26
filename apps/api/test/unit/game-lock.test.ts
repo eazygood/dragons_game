@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { withGameLock } from '../../src/managers/game-manager/game-lock.ts';
+import { withGameLock } from '../../src/managers/game-manager.ts';
 
 const nextMacrotask = () => new Promise((resolve) => setImmediate(resolve));
 

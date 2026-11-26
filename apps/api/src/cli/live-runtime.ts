@@ -1,7 +1,7 @@
 import { configureMugloarApi } from '../adapters/mugloar-api-adapter/index.ts';
 import { createDatabase } from '../adapters/mysql-adapter.ts';
 import { loadConfig } from '../config/index.ts';
-import type { Logger } from '../entities/logger.ts';
+import type { Logger } from '../types.ts';
 
 // What every CLI that plays the live game needs: one config for the database and the upstream.
 export const createLiveRuntime = () => {

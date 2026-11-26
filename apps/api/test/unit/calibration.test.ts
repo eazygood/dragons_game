@@ -1,9 +1,9 @@
 import { PROBABILITY_LABELS } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { buildCalibration, withAttempt } from '../../src/domain/engine/calibration.ts';
-import type { CalibrationAttempt, CalibrationCount } from '../../src/domain/engine/calibration.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { buildCalibration, withAttempt } from '../../src/engine/calibration.ts';
+import type { CalibrationAttempt, CalibrationCount } from '../../src/engine/calibration.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 
 const config = STRATEGY_CONFIG;
 const CHEAP = 50;

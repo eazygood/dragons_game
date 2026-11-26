@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { GameRun } from '../../src/entities/game-run.ts';
-import { adviseTurn } from '../../src/managers/advisor-manager/index.ts';
-import { startGameRun } from '../../src/managers/game-manager/index.ts';
-import { adRepository, gameRunRepository } from '../../src/repositories/index.ts';
+import { adviseTurn } from '../../src/managers/advisor-manager.ts';
+import { startGameRun } from '../../src/managers/game-manager.ts';
+import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import { useMigratedDatabase } from '../support/integration-db.ts';
 import { PLAYER_GAME_ID, SILENT_LOGGER, stubPlayerUpstream } from '../support/player-game.ts';
 import { seedEvidence } from '../support/seed-evidence.ts';
@@ -50,12 +51,12 @@ describe('turn advice', () => {
   });
 
   it('settles the run when the board comes back game over', async () => {
-    vi.mocked(adRepository.mugloar.findMany).mockResolvedValue({ status: 'game_over' });
+    vi.mocked(mugloarRepository.findAds).mockResolvedValue({ status: 'game_over' });
 
     expect(await adviseTurn({ db, gameId: PLAYER_GAME_ID, logger: SILENT_LOGGER })).toEqual({
       status: 'game_over',
     });
-    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
+    expect(await gameRunRepository.findOne({ db, gameId: run.gameId })).toMatchObject({
       status: 'game_over',
     });
   });

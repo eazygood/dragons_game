@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { playTurn } from '../../src/managers/bot-manager/play-turn.ts';
+import { playTurn } from '../../src/managers/bot-manager.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import {
-  adAttemptRepository,
-  gameRunRepository,
-  purchaseRepository,
-} from '../../src/repositories/index.ts';
+import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
+import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';
 import { useBotRunHarness } from '../support/bot-run.ts';
 import { readStoredCalibration, startCalibratedRun } from '../support/bot-turns.ts';
 
@@ -23,7 +21,7 @@ describe('a bot turn when its record cannot be written', () => {
   it('plays on from the upstream state but leaves the lost attempt out of the calibration', async () => {
     const { context, shop, progress } = await startCalibratedRun({ db: harness.db });
 
-    vi.spyOn(adAttemptRepository.db, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
+    vi.spyOn(adAttemptRepository, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
 
     const outcome = await playTurn({ context, shop, progress });
 
@@ -36,12 +34,12 @@ describe('a bot turn when its record cannot be written', () => {
   it('rolls the turn back as a whole, so the stored run still shows the turn before', async () => {
     const { context, shop, progress } = await startCalibratedRun({ db: harness.db });
 
-    vi.spyOn(adAttemptRepository.db, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
+    vi.spyOn(adAttemptRepository, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
     await playTurn({ context, shop, progress });
 
     expect(await countOf({ table: DbTables.AdAttempts })).toBe(0);
     expect(
-      await gameRunRepository.db.findOne({ db: harness.db, gameId: context.run.gameId }),
+      await gameRunRepository.findOne({ db: harness.db, gameId: context.run.gameId }),
     ).toMatchObject({
       turn: 0,
       score: 0,
@@ -65,7 +63,7 @@ describe('a bot turn when its record cannot be written', () => {
       state: { ...progress.state, lives: LIVES_AT_THE_FLOOR, gold: GOLD_FOR_A_POTION },
     };
 
-    vi.spyOn(purchaseRepository.db, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
+    vi.spyOn(purchaseRepository, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
 
     const outcome = await playTurn({ context, shop, progress: atTheFloor });
 
@@ -74,7 +72,7 @@ describe('a bot turn when its record cannot be written', () => {
     expect(outcome.progress.state.turn).toBe(1);
     expect(await countOf({ table: DbTables.Purchases })).toBe(0);
     expect(
-      await gameRunRepository.db.findOne({ db: harness.db, gameId: context.run.gameId }),
+      await gameRunRepository.findOne({ db: harness.db, gameId: context.run.gameId }),
     ).toMatchObject({
       turn: 0,
     });

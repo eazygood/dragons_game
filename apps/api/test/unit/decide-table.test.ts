@@ -3,9 +3,9 @@ import type { Ad, DecisionRule, GameState, ProbabilityLabel } from '@dragons-gam
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { describe, expect, it } from 'vitest';
 
-import { buildCalibration } from '../../src/domain/engine/calibration.ts';
-import { decide } from '../../src/domain/engine/decide.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { buildCalibration } from '../../src/engine/calibration.ts';
+import { decide } from '../../src/engine/decide.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 
 // The regression table for the shipped strategy. The expected rules are written out, not
 // computed, so a retuned prior or floor has to be acknowledged here.

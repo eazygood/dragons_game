@@ -1,12 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { AdExpiredError, GameNotFoundError } from '../../src/errors/errors.ts';
-import {
-  adAttemptRepository,
-  adRepository,
-  gameRunRepository,
-  purchaseRepository,
-} from '../../src/repositories/index.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import {
   findRecording,
   gameIdOf,
@@ -33,7 +28,7 @@ describe('Mugloar API against the recorded moves', () => {
     const recording = find(({ path }) => path.endsWith('/game/start'));
 
     await expect(
-      replayThrough({ recording, call: () => gameRunRepository.mugloar.createOne() }),
+      replayThrough({ recording, call: () => mugloarRepository.startGame() }),
     ).resolves.toEqual(recording.body);
   });
 
@@ -51,7 +46,7 @@ describe('Mugloar API against the recorded moves', () => {
       const { highScore, ...outcome } = recording.body as RecordedSolve;
 
       expect(highScore).toEqual(expect.any(Number));
-      await expect(adAttemptRepository.mugloar.createOne({ gameId, adId })).resolves.toEqual({
+      await expect(mugloarRepository.solveAd({ gameId, adId })).resolves.toEqual({
         status: 'ok',
         value: outcome,
       });
@@ -65,7 +60,7 @@ describe('Mugloar API against the recorded moves', () => {
     await expect(
       replayThrough({
         recording,
-        call: () => adRepository.mugloar.findMany({ gameId: gameIdOf(recording) }),
+        call: () => mugloarRepository.findAds({ gameId: gameIdOf(recording) }),
       }),
     ).rejects.toBeInstanceOf(GameNotFoundError);
   });
@@ -78,7 +73,7 @@ describe('Mugloar API against the recorded moves', () => {
     await expect(
       replayThrough({
         recording,
-        call: () => adAttemptRepository.mugloar.createOne({ gameId, adId }),
+        call: () => mugloarRepository.solveAd({ gameId, adId }),
       }),
     ).rejects.toBeInstanceOf(AdExpiredError);
   });
@@ -92,7 +87,7 @@ describe('Mugloar API against the recorded moves', () => {
     const [gameId = '', , , itemId = ''] = segmentsOf(recording);
     const result = await replayThrough({
       recording,
-      call: () => purchaseRepository.mugloar.createOne({ gameId, itemId }),
+      call: () => mugloarRepository.buyItem({ gameId, itemId }),
     });
 
     expect(result.status === 'ok' && result.value.success).toBe(false);

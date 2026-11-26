@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { runBounded } from '../../src/cli/bounded-pool.ts';
+import { runBounded } from '../../src/cli/run-benchmark.ts';
 
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 

@@ -2,7 +2,7 @@ import { setTimeout as setTimeoutPromise } from 'node:timers/promises';
 
 import type { z } from 'zod';
 
-import type { OrGameOver } from '../../entities/or-game-over.ts';
+import type { OrGameOver } from '../../types.ts';
 import type { AppError } from '../../errors/app-error.ts';
 import { GameNotFoundError, UpstreamUnavailableError } from '../../errors/errors.ts';
 import { mugloarApiRuntime } from './adapter-config.ts';

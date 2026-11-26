@@ -1,8 +1,8 @@
 import type { Ad, ProbabilityLabel } from '@dragons-game/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CALIBRATION_REFRESH_TURNS } from '../../src/managers/bot-manager/play-turn.ts';
-import { adAttemptRepository } from '../../src/repositories/index.ts';
+import { CALIBRATION_REFRESH_TURNS } from '../../src/managers/bot-manager.ts';
+import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
 import { SCRIPTED_TURNS, useBotRunHarness } from '../support/bot-run.ts';
 import { playToTheEnd, readStoredCalibration, startCalibratedRun } from '../support/bot-turns.ts';
 import { seedEvidence } from '../support/seed-evidence.ts';
@@ -91,7 +91,7 @@ describe('calibration carried through a bot game', () => {
   it('keeps what the game learned when a later read fails', async () => {
     const fixture = await startCalibratedRun({ db: harness.db });
 
-    vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts').mockRejectedValue(
+    vi.spyOn(adAttemptRepository, 'findCalibrationCounts').mockRejectedValue(
       new Error('read failed'),
     );
 

@@ -2,13 +2,7 @@ import type { Ad } from '@dragons-game/contracts';
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { vi } from 'vitest';
 
-import {
-  adAttemptRepository,
-  adRepository,
-  gameRunRepository,
-  purchaseRepository,
-  shopItemRepository,
-} from '../../src/repositories/index.ts';
+import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 
 export const SILENT_LOGGER = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
 export const PLAYER_GAME_ID = 'player-game';
@@ -54,17 +48,15 @@ export const solvedAdResponse = (overrides: object = {}) => ({
 
 // Every upstream call a player move can make, answered as a fresh game would.
 export const stubPlayerUpstream = () => {
-  vi.spyOn(gameRunRepository.mugloar, 'createOne').mockResolvedValue(
-    newGameSnapshot(PLAYER_GAME_ID),
-  );
-  vi.spyOn(adRepository.mugloar, 'findMany').mockResolvedValue({
+  vi.spyOn(mugloarRepository, 'startGame').mockResolvedValue(newGameSnapshot(PLAYER_GAME_ID));
+  vi.spyOn(mugloarRepository, 'findAds').mockResolvedValue({
     status: 'ok',
     value: PLAYER_BOARD,
   });
-  vi.spyOn(shopItemRepository.mugloar, 'findMany').mockResolvedValue({
+  vi.spyOn(mugloarRepository, 'findShopItems').mockResolvedValue({
     status: 'ok',
     value: [...RECORDED_SHOP_ITEMS],
   });
-  vi.spyOn(adAttemptRepository.mugloar, 'createOne').mockResolvedValue(solvedAdResponse());
-  vi.spyOn(purchaseRepository.mugloar, 'createOne');
+  vi.spyOn(mugloarRepository, 'solveAd').mockResolvedValue(solvedAdResponse());
+  vi.spyOn(mugloarRepository, 'buyItem');
 };

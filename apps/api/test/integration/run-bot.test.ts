@@ -2,10 +2,10 @@ import { DecisionRuleSchema, HEALING_POTION_ID } from '@dragons-game/contracts';
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { describe, expect, it, vi } from 'vitest';
 
-import { runBot } from '../../src/cli/run-bot.ts';
-import { CALIBRATION_REFRESH_TURNS } from '../../src/managers/bot-manager/play-turn.ts';
+import { CALIBRATION_REFRESH_TURNS, playNewGame } from '../../src/managers/bot-manager.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';
+import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
+import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 import {
   BOT_CONFIG as config,
   SCRIPTED_SCORE,
@@ -26,7 +26,7 @@ const ESTIMATE_PRECISION = 3;
 // One read at the start, then one before every CALIBRATION_REFRESH_TURNS-th turn after it.
 const EXPECTED_CALIBRATION_READS = 1 + Math.floor((SCRIPTED_TURNS - 1) / CALIBRATION_REFRESH_TURNS);
 
-describe('runBot', () => {
+describe('playNewGame', () => {
   const harness = useBotRunHarness();
 
   const attemptsOf = ({ gameId }: { gameId: string }) =>
@@ -41,7 +41,7 @@ describe('runBot', () => {
       );
 
   it('plays a stubbed game to its end and reports the final score', async () => {
-    const result = await runBot({ db: harness.db, strategy: 'calibrated', config });
+    const result = await playNewGame({ db: harness.db, strategy: 'calibrated', config });
 
     expect(result).toMatchObject({
       score: SCRIPTED_SCORE,
@@ -49,12 +49,12 @@ describe('runBot', () => {
       strategy: 'calibrated',
     });
     expect(
-      await gameRunRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
+      await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId }),
     ).toMatchObject({ status: 'game_over', score: SCRIPTED_SCORE });
   });
 
   it('records the estimate, expected value and engine rule of every attempt', async () => {
-    await runBot({ db: harness.db, strategy: 'calibrated', config });
+    await playNewGame({ db: harness.db, strategy: 'calibrated', config });
 
     const attempts = await harness
       .db(DbTables.AdAttempts)
@@ -72,8 +72,8 @@ describe('runBot', () => {
   it('finalises the run when game over arrives on a read, not on a solve', async () => {
     harness.scriptedGame.fetchAds.mockResolvedValueOnce({ status: 'game_over' });
 
-    const result = await runBot({ db: harness.db, strategy: 'baseline', config });
-    const run = await gameRunRepository.db.findOne({ db: harness.db, gameId: result.gameId });
+    const result = await playNewGame({ db: harness.db, strategy: 'baseline', config });
+    const run = await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId });
 
     expect(result.turns).toBe(0);
     expect(run).toMatchObject({ status: 'game_over' });
@@ -86,18 +86,18 @@ describe('runBot', () => {
       value: { success: false, lives: 0, gold: 0, score: 0, turn: 1, message: 'x' },
     });
 
-    const result = await runBot({ db: harness.db, strategy: 'baseline', config });
+    const result = await playNewGame({ db: harness.db, strategy: 'baseline', config });
 
     expect(harness.scriptedGame.fetchAds).toHaveBeenCalledOnce();
     expect(
-      await gameRunRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
+      await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId }),
     ).toMatchObject({ status: 'game_over', lives: 0 });
   });
 
   it('plays the baseline on the prior, however badly the stored history reads', async () => {
     await seedEvidence({ db: harness.db, cells: [...ADVERSE_HISTORY] });
 
-    const { gameId } = await runBot({ db: harness.db, strategy: 'baseline', config });
+    const { gameId } = await playNewGame({ db: harness.db, strategy: 'baseline', config });
     const [first] = await attemptsOf({ gameId });
 
     expect(first).toMatchObject({
@@ -109,7 +109,7 @@ describe('runBot', () => {
   it('prices the calibrated strategy from the stored history, and falls back to the safest ad', async () => {
     await seedEvidence({ db: harness.db, cells: [...ADVERSE_HISTORY] });
 
-    const { gameId, score } = await runBot({ db: harness.db, strategy: 'calibrated', config });
+    const { gameId, score } = await playNewGame({ db: harness.db, strategy: 'calibrated', config });
     const [first] = await attemptsOf({ gameId });
 
     expect(first?.estimated_probability).toBeLessThan(config.minimumProbability);
@@ -118,9 +118,9 @@ describe('runBot', () => {
   });
 
   it('reads the history at the start and every few turns, learning from the game between', async () => {
-    const readHistory = vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts');
+    const readHistory = vi.spyOn(adAttemptRepository, 'findCalibrationCounts');
 
-    const { gameId } = await runBot({ db: harness.db, strategy: 'calibrated', config });
+    const { gameId } = await playNewGame({ db: harness.db, strategy: 'calibrated', config });
     const estimates = (await attemptsOf({ gameId })).map(({ estimated_probability: value }) =>
       Number(value),
     );
@@ -137,7 +137,7 @@ describe('runBot', () => {
     // At the scripted game's starting lives, so the floor holds until the first potion lifts it.
     const floorAtStartingLives = { ...config, livesFloor: 3 };
 
-    const result = await runBot({
+    const result = await playNewGame({
       db: harness.db,
       strategy: 'calibrated',
       config: floorAtStartingLives,
@@ -148,7 +148,7 @@ describe('runBot', () => {
       { item_id: HEALING_POTION_ID, rule: 'survival_floor', success: 1 },
     ]);
     expect(
-      await gameRunRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
+      await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId }),
     ).toMatchObject({ lives: 4, dragonLevel: 0, gold: result.score - (potionCost ?? 0) });
   });
 
@@ -156,12 +156,12 @@ describe('runBot', () => {
     vi.restoreAllMocks();
     const neverEndingGame = scriptGame({ turnsUntilGameOver: Infinity });
 
-    const result = await runBot({ db: harness.db, strategy: 'baseline', config, maxTurns: 5 });
+    const result = await playNewGame({ db: harness.db, strategy: 'baseline', config, maxTurns: 5 });
 
     expect(result.turns).toBe(5);
     expect(neverEndingGame.solveAd).toHaveBeenCalledTimes(5);
     expect(
-      await gameRunRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
+      await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId }),
     ).toMatchObject({ status: 'abandoned' });
   });
 });

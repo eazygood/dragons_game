@@ -9,7 +9,7 @@ import {
 import type { FastifyInstance } from 'fastify';
 
 import type { AppLimits } from '../app-limits.ts';
-import { gameMediator } from '../mediators/index.ts';
+import * as gameMediator from '../mediators/game-mediator.ts';
 import { replyGameOver } from './game-over-reply.ts';
 import { rateLimitConfig } from './rate-limit-config.ts';
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyStrategyOverride } from '../../src/cli/strategy-override.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { applyStrategyOverride } from '../../src/cli/run-benchmark.ts';
+import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 
 describe('applyStrategyOverride', () => {
   it('returns the defaults when no override is given', () => {

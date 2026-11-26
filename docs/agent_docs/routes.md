@@ -10,7 +10,7 @@ routes/
 ├── index.ts              - registration under /api, called from app.ts
 ├── game-routes.ts        - start, state, moves, turn, solve, buy
 ├── game-over-reply.ts    - the only 410 mapping
-├── health-routes.ts      - readiness: 200, or 503 when the database does not answer
+├── health-routes.ts      - liveness: 200 while the process runs
 ├── bot-routes.ts         - start a bot game
 ├── rate-limit-config.ts  - turns an `AppLimits` rate into a route's `config.rateLimit`
 └── error-handlers/       - error-handler.ts, the single registered error handler
@@ -42,7 +42,7 @@ All endpoints are under `/api`.
 
 | Method | Path                              | 2xx              | Other                             |
 | ------ | --------------------------------- | ---------------- | --------------------------------- |
-| GET    | `/health`                         | 200 `{status}`   | 503 `{status}`                    |
+| GET    | `/health`                         | 200 `{status}`   | none                              |
 | POST   | `/games`                          | 201 `GameView`   | 403, 413, 415, 429, 502           |
 | POST   | `/bot-games`                      | 201 `GameView`   | 403, 413, 415, 429, 502, 503      |
 | GET    | `/games/:gameId`                  | 200 `GameView`   | 400, 404 (database only), 429     |
@@ -54,10 +54,9 @@ All endpoints are under `/api`.
 Every `POST` can also answer `413` (a body over `bodyLimitBytes`, 1 KiB) and
 `415` (a non-JSON body); no route reads a body.
 
-`GET /health` runs `select 1` through `healthMediator` and `healthManager`, so it
-answers for the database, not just the process. A failed probe is `503
-{ status: 'unavailable' }`, not the error envelope: the cause stays in the log and
-a load balancer needs only the status code.
+`GET /health` is a liveness probe: it answers `200 { status: 'ok' }` while the
+process runs and never queries MySQL, so it needs no mediator or manager behind
+it. Compose starts the API only after MySQL's own healthcheck passes.
 
 `400` is the schema layer: an id that fails the shape check never reaches a
 manager or the upstream. Every route that takes a path parameter can answer it.
