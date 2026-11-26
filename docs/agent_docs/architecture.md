@@ -402,23 +402,25 @@ count from the next turn without a query per turn.
 1. **Hard filter** — drop `Impossible`; drop ads that have already expired
    (`expiresIn` of 0 or less).
 2. **Estimate** `p̂` from calibration.
-3. **Expected value** — `EV = p̂ · reward − (1 − p̂) · lifeCost`, where
-   `lifeCost` is a healing potion (50 gold) plus the turn it burns. This converts
-   risk into gold so risky-lucrative and safe-cheap ads compare on one axis.
+3. **Expected value** — `EV = p̂ · reward − (1 − p̂) · failedAttemptCost`,
+   where `failedAttemptCost` is a healing potion (50 gold) plus the turn it
+   burns. This converts risk into gold so risky-lucrative and safe-cheap ads
+   compare on one axis.
 4. **Survival override**: lives, not gold, are the binding constraint. At or
    below `livesFloor` the engine buys `hpot` before anything else. The tuned
    floor equals the starting lives (3), so every lost life is bought back as soon
    as gold allows. Lives can rise above the start (observed up to 12), but the
    engine never buys above the floor. **Survival is the strategy**: a game
    scores only while it has lives left.
-5. Take the highest EV clearing `minimumProbability`; else the safest
+5. **Level-up past the target**: once the score reaches `levelUpFromScore`
+   (`TARGET_SCORE`, 1000), buy the cheapest level-up if it leaves
+   `levelUpGoldReserve` (one potion) and an attemptable ad is on the board.
+   Score never falls within a game, so this cannot cost the target; below it,
+   level-ups cost pass rate and stay off. `null` switches the rule off.
+6. Take the highest EV clearing `minimumProbability`; else the safest
    attemptable ad; else stop. Stopping means the board is exhausted (every ad
    `Impossible` or expired, measured from turn ~95). Nothing for sale revives
-   it, so the engine does not spend gold there. The engine never levels up: the
-   benchmark did not show it paying (_Measured findings_), so the rule was
-   removed. The
-   `level_up` rule name stays in the contract only because rows stored by those
-   experiments carry it.
+   it, level-ups included, so the engine does not spend gold there.
 
 All thresholds live in one typed `StrategyConfig`. No magic numbers in the
 engine.
@@ -516,24 +518,26 @@ container, that is cost without benefit.
 
 Recorded as they are established. A documented negative result is a finding.
 
-| Question                                 | Status  | Result                                                                                                                          |
-| ---------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Does `calibrated` beat `baseline`?       | yes     | 90% vs 55% pass over 20 cold runs each, before any tuning                                                                       |
-| Do labels mean the same at every reward? | **no**  | `Sure thing` 47/47 under 100 gold, 1/45 at 160+ — hence reward bands in the calibration key                                     |
-| Does levelling up pay?                   | partly  | proactive (20 runs each): off 100% pass / median 2510, on 95% / 3348, one game apart, so **off**. On an exhausted board: **no** |
-| Does the board run dry?                  | **yes** | by turn ~95 every ad is `Impossible`, and 8–22 level-ups bought there won nothing more; the game is over in all but name        |
-| Can lives exceed the starting 3?         | yes     | observed up to 12 from repeated potions                                                                                         |
-| Is `encrypted: 2` ROT13?                 | yes     | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)                                                |
-| Do encrypted ads behave differently?     | no      | 0.73 vs 0.72 success; `was_encrypted` column dropped                                                                            |
-| Does reputation affect anything?         | skip    | **each call burns a turn**; values move but nothing uses them                                                                   |
-| Is there upstream rate limiting?         | no      | no `429` across every benchmark at 8 req/s, 3 concurrent games                                                                  |
+| Question                                            | Status  | Result                                                                                                                                                    |
+| --------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Does `calibrated` beat `baseline`?                  | yes     | 90% vs 55% pass over 20 cold runs each, before any tuning                                                                                                 |
+| Do labels mean the same at every reward?            | **no**  | `Sure thing` 47/47 under 100 gold, 1/45 at 160+ — hence reward bands in the calibration key                                                               |
+| Does levelling up pay?                              | partly  | from the start: on 95% pass, off 100%, so **off** below 1000. Past 1000: median 2620.5 → 3579.5, pass unchanged, so **on**. On an exhausted board: **no** |
+| Does the board run dry?                             | **yes** | by turn ~95 every ad is `Impossible`, and 8–22 level-ups bought there won nothing more; the game is over in all but name                                  |
+| Can lives exceed the starting 3?                    | yes     | observed up to 12 from repeated potions                                                                                                                   |
+| Is `encrypted: 2` ROT13?                            | yes     | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)                                                                          |
+| Do encrypted ads behave differently?                | no      | 0.73 vs 0.72 success; `was_encrypted` column dropped                                                                                                      |
+| Does reputation affect anything?                    | skip    | **each call burns a turn**; values move but nothing uses them                                                                                             |
+| Is there upstream rate limiting?                    | no      | no `429` across every benchmark at 8 req/s, 3 concurrent games                                                                                            |
+| Is the billion-point leaderboard reachable by play? | no      | best game 5169, longest 172 turns, largest reward offered 811; even 172 × 811 is 139,492                                                                  |
 
 The `pnpm bench` pass rates (20 cold runs each) are tabulated once, in
-[`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md) §6 and §8. _Cold_ means
+[`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md) §6, §8 and §11. _Cold_ means
 calibration reads only that benchmark's own games: the first starts from the
 priors alone, and the 20 games share evidence as they go.
 
 The acceptance run's endings (16 of 20 stopped on an exhausted board), the
-reverted exhausted-board level-up rule and the full threshold sweep are in
+reverted exhausted-board level-up rule, the full threshold sweep, the level-up
+comparison and the leaderboard ceiling are in
 [`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md). The tuned
 values themselves live in `STRATEGY_CONFIG` (`engine/strategy-config.ts`).

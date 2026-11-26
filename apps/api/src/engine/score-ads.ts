@@ -10,11 +10,11 @@ export const isAttemptable = ({ ad }: { ad: Ad }) =>
   ad.probability !== IMPOSSIBLE_LABEL && ad.expiresIn > 0;
 
 // Pricing a lost life in gold puts risky-lucrative and safe-cheap ads on one axis.
-const lifeCost = ({ config }: { config: StrategyConfig }) =>
+const failedAttemptCost = ({ config }: { config: StrategyConfig }) =>
   config.lifeCostInGold + config.turnCostInGold;
 
 // Code-point order, not localeCompare, so the tiebreak cannot vary with the runtime locale.
-const compareCodePoints = ({ left, right }: { left: string; right: string }) =>
+export const compareCodePoints = ({ left, right }: { left: string; right: string }) =>
   left < right ? -1 : Number(left > right);
 
 const byExpectedValueThenAdId = (left: ScoredAd, right: ScoredAd) =>
@@ -30,16 +30,16 @@ type ScoreInput = {
 export const scoreAd = ({ ad, state, calibration, config }: ScoreInput & { ad: Ad }): ScoredAd => {
   const estimatedProbability = calibration.estimate({
     label: ad.probability,
-    level: state.dragonLevel,
+    dragonLevel: state.dragonLevel,
     reward: ad.reward,
   });
   const expectedValue =
-    estimatedProbability * ad.reward - (1 - estimatedProbability) * lifeCost({ config });
+    estimatedProbability * ad.reward - (1 - estimatedProbability) * failedAttemptCost({ config });
 
   return { ad, estimatedProbability, expectedValue };
 };
 
-export const scoreAds = ({ board, ...input }: ScoreInput & { board: Ad[] }): ScoredAd[] =>
+export const rankAttemptableAds = ({ board, ...input }: ScoreInput & { board: Ad[] }): ScoredAd[] =>
   board
     .filter((ad) => isAttemptable({ ad }))
     .map((ad) => scoreAd({ ad, ...input }))

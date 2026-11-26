@@ -33,7 +33,14 @@ export default defineConfig({
     rolldownOptions: { output: { strictExecutionOrder: true } },
   },
   server: {
-    proxy: { '/api': `http://127.0.0.1:${process.env.API_PORT ?? DEFAULT_API_PORT}` },
+    proxy: {
+      // The string shorthand turns changeOrigin on, rewriting Host to the API's address;
+      // the API's cross-site guard then sees Origin and Host differ and refuses every write.
+      '/api': {
+        target: `http://127.0.0.1:${process.env.API_PORT ?? DEFAULT_API_PORT}`,
+        changeOrigin: false,
+      },
+    },
   },
   preview: { headers: { 'Content-Security-Policy': CONTENT_SECURITY_POLICY } },
 });

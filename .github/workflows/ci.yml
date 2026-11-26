@@ -83,3 +83,15 @@ jobs:
           name: playwright-report
           path: apps/web/playwright-report
           retention-days: 7
+
+  # The README's quick start on a clean machine: one compose command, then the app must answer.
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up --build --detach --wait
+      - run: curl --fail --silent http://127.0.0.1:3000/api/health
+      - run: curl --fail --silent --output /dev/null http://127.0.0.1:3000/
+      - if: failure()
+        run: docker compose logs

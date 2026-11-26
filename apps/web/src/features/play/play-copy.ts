@@ -1,4 +1,4 @@
-import { IDENTIFIER_MAX_LENGTH } from '@dragons-game/contracts';
+import { IDENTIFIER_MAX_LENGTH, TARGET_SCORE } from '@dragons-game/contracts';
 import type { AdVerdict, DecisionRule } from '@dragons-game/contracts';
 
 const SINGLE_TURN = 1;
@@ -64,10 +64,12 @@ export const playCopy = {
     finalScore: (score: number) => `Final score: ${score}`,
   },
   rules: {
-    survival_floor: 'Lives are low, so buying a healing potion comes first.',
-    level_up: 'Raising the dragon level makes harder ads winnable.',
+    survival_floor:
+      'Lives end the game and gold left at the end is worth nothing, so spare gold buys an extra life.',
+    level_up: `Past ${TARGET_SCORE} points the target is safe, so spare gold raises the dragon level to make harder, better-paid ads winnable.`,
     best_expected_value: 'This ad has the best expected gold of everything on the board.',
-    safest_available: 'Nothing pays well, so this is the safest ad on the board.',
+    safest_available:
+      "Nothing pays well. Score can't go down, so trying the safest ad left beats stopping.",
     no_viable_option: 'No ad or item is worth the turn right now.',
     player_choice: 'You chose this move.',
   } satisfies Record<DecisionRule, string>,

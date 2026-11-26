@@ -1,3 +1,4 @@
+import { TARGET_SCORE } from '@dragons-game/contracts';
 import type { ProbabilityLabel } from '@dragons-game/contracts';
 
 export interface StrategyConfig {
@@ -13,6 +14,10 @@ export interface StrategyConfig {
   readonly minimumProbability: number;
   readonly lifeCostInGold: number;
   readonly turnCostInGold: number;
+  /** Level-ups start once the score reaches this; null never buys one. */
+  readonly levelUpFromScore: number | null;
+  /** Gold a level-up must leave behind, so a potion stays affordable. */
+  readonly levelUpGoldReserve: number;
 }
 
 // Every strategy threshold lives here and nowhere else.
@@ -37,4 +42,6 @@ export const STRATEGY_CONFIG: StrategyConfig = {
   minimumProbability: 0.45,
   lifeCostInGold: 50,
   turnCostInGold: 20,
+  levelUpFromScore: TARGET_SCORE,
+  levelUpGoldReserve: 50,
 };

@@ -24,11 +24,11 @@ export type CalibrationAttempt = Pick<
 export type Calibration = {
   estimate({
     label,
-    level,
+    dragonLevel,
     reward,
   }: {
     label: ProbabilityLabel;
-    level: number;
+    dragonLevel: number;
     reward: number;
   }): number;
 };
@@ -42,17 +42,22 @@ export type MeasuredCalibration = Calibration & {
   readonly config: StrategyConfig;
 };
 
-const levelBucket = ({ level, config }: { level: number; config: StrategyConfig }) =>
-  config.levelBucketEdges.filter((edge) => level >= edge).length;
+const levelBucket = ({ dragonLevel, config }: { dragonLevel: number; config: StrategyConfig }) =>
+  config.levelBucketEdges.filter((edge) => dragonLevel >= edge).length;
 
 // Measured: the label stops meaning what it says above a reward, so it is a key too.
 const rewardBand = ({ reward, config }: { reward: number; config: StrategyConfig }) =>
   config.rewardBandEdges.filter((edge) => reward >= edge).length;
 
-type CellCoordinates = { label: ProbabilityLabel; level: number; reward: number };
+type CellCoordinates = { label: ProbabilityLabel; dragonLevel: number; reward: number };
 
-const cellKey = ({ label, level, reward, config }: CellCoordinates & { config: StrategyConfig }) =>
-  `${label}:${levelBucket({ level, config })}:${rewardBand({ reward, config })}`;
+const cellKey = ({
+  label,
+  dragonLevel,
+  reward,
+  config,
+}: CellCoordinates & { config: StrategyConfig }) =>
+  `${label}:${levelBucket({ dragonLevel, config })}:${rewardBand({ reward, config })}`;
 
 const accumulate = ({
   evidence,
@@ -71,7 +76,7 @@ const accumulate = ({
   });
 };
 
-const measuredFrom = ({
+const calibrationFromEvidence = ({
   evidence,
   config,
 }: {
@@ -80,14 +85,14 @@ const measuredFrom = ({
 }): MeasuredCalibration => ({
   evidence,
   config,
-  estimate: ({ label, level, reward }) => {
+  estimate: ({ label, dragonLevel, reward }) => {
     // Never estimated: 0/16 in the spike, and one lucky row must not revive it.
     if (label === IMPOSSIBLE_LABEL) {
       return 0;
     }
 
     const prior = config.probabilityPrior[label];
-    const cell = evidence.get(cellKey({ label, level, reward, config }));
+    const cell = evidence.get(cellKey({ label, dragonLevel, reward, config }));
 
     if (!cell) {
       return prior;
@@ -109,12 +114,12 @@ export const buildCalibration = ({
   const evidence = new Map<string, Evidence>();
 
   for (const { probability, dragonLevel, reward, attempts, successes } of counts) {
-    const key = cellKey({ label: probability, level: dragonLevel, reward, config });
+    const key = cellKey({ label: probability, dragonLevel, reward, config });
 
     accumulate({ evidence, key, added: { attempts, successes } });
   }
 
-  return measuredFrom({ evidence, config });
+  return calibrationFromEvidence({ evidence, config });
 };
 
 // Mirrors one more row of the aggregation behind `buildCalibration`, so a calibration
@@ -130,14 +135,14 @@ export const withAttempt = ({
   const evidence = new Map(calibration.evidence);
   const key = cellKey({
     label: attempt.probability,
-    level: attempt.dragonLevel,
+    dragonLevel: attempt.dragonLevel,
     reward: attempt.reward,
     config,
   });
 
   accumulate({ evidence, key, added: { attempts: 1, successes: attempt.success ? 1 : 0 } });
 
-  return measuredFrom({ evidence, config });
+  return calibrationFromEvidence({ evidence, config });
 };
 
 // The baseline is the same estimator with no evidence, so the two strategies

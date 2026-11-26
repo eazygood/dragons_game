@@ -275,7 +275,7 @@ reload. A request for a missing asset therefore gets `200 text/html`, not a 404
 
 ## Running in Docker
 
-The `Dockerfile` has four stages: a shared `base`, production dependencies, the web build (on top of
+The `Dockerfile` has three stages: the API's production dependencies, the web build (on top of
 them, so the two installs never run side by side on a small VM), and a `node:26-slim`
 runtime that runs as `node`, not root. The runtime has no pnpm and no tsx: Node strips
 the types from `apps/api/src` itself, which is why the API uses only erasable

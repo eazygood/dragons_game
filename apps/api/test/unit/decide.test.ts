@@ -68,11 +68,11 @@ describe('decide', () => {
     expect(decision).toMatchObject({ kind: 'stop', reasoning: { rule: 'no_viable_option' } });
   });
 
-  it('stops on an exhausted board with the shipped settings, however much gold is left', () => {
+  it('stops on an exhausted board with the shipped settings, however much gold or score', () => {
     // Measured: from turn ~95 every ad is Impossible, so gold spent there wins nothing.
     const exhausted = [ad({ probability: 'Impossible' }), ad({ probability: 'Impossible' })];
     const decision = decide({
-      state: { ...state, lives: 4, gold: 1400 },
+      state: { ...state, lives: 4, gold: 1400, score: 2500 },
       board: exhausted,
       shop,
       calibration,
