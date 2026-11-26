@@ -1,3 +1,5 @@
+import { discardOutcome } from '../../tools/discard-outcome.ts';
+
 const BYTES_PER_KIB = 1024;
 const MAX_RESPONSE_KIB = 256;
 // The largest real response is a few KiB; the cap only stops a misbehaving host filling memory.
@@ -5,7 +7,7 @@ export const MAX_RESPONSE_BYTES = MAX_RESPONSE_KIB * BYTES_PER_KIB;
 
 // An unread body keeps its connection busy, so a response we stop caring about is cancelled.
 export const discardBody = async ({ response }: { response: Response }): Promise<void> => {
-  await response.body?.cancel().catch(() => undefined);
+  await response.body?.cancel().catch(discardOutcome);
 };
 
 // content-length is only a claim, so the stream is counted too; a throw while iterating

@@ -100,6 +100,9 @@ through; the engine returns `Decision` and `AdvisedAd`.
 the code that produces it: `TurnResult` in `game-manager.ts`, `SolveOutcome`
 and `BuyOutcome` in `mugloar-repository.ts`, `BotStrategy` in `bot-manager.ts`.
 The table names (`DbTables`) live in `repositories/db-tables.ts`.
+`tools/` holds helpers that belong to no layer, such as `discard-outcome.ts`;
+any layer may import them except the engine, which imports nothing from outside
+`engine/`.
 
 ### Routes
 

@@ -29,6 +29,7 @@ import * as adAttemptRepository from '../repositories/ad-attempt-repository.ts';
 import * as gameRunRepository from '../repositories/game-run-repository.ts';
 import * as mugloarRepository from '../repositories/mugloar-repository.ts';
 import * as purchaseRepository from '../repositories/purchase-repository.ts';
+import { discardOutcome } from '../tools/discard-outcome.ts';
 import type { Logger, OrGameOver } from '../types.ts';
 import * as calibrationManager from './calibration-manager.ts';
 
@@ -240,11 +241,7 @@ export const withGameLock = <T>({
 }): Promise<T> => {
   const previousTask = pendingTasksByGame.get(gameId) ?? Promise.resolve();
   const currentTask = previousTask.then(task);
-  // Settles on either outcome, so the next move still runs after this one rejects.
-  const settled = currentTask.then(
-    () => undefined,
-    () => undefined,
-  );
+  const settled = currentTask.then(discardOutcome, discardOutcome);
 
   pendingTasksByGame.set(gameId, settled);
   void settled.then(() => {

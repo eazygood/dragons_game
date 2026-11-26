@@ -1,3 +1,5 @@
+import { discardOutcome } from '../../tools/discard-outcome.ts';
+
 export type Throttle = { acquire({ signal }: { signal: AbortSignal }): Promise<void> };
 
 const MS_PER_SECOND = 1000;
@@ -71,11 +73,7 @@ export const createTokenBucket = ({
     acquire: ({ signal }) => {
       const turn = queue.then(() => take({ signal }));
 
-      // Settles on either outcome, so one aborted waiter does not break the chain for the rest.
-      queue = turn.then(
-        () => undefined,
-        () => undefined,
-      );
+      queue = turn.then(discardOutcome, discardOutcome);
 
       return untilAborted({ pending: turn, signal });
     },
