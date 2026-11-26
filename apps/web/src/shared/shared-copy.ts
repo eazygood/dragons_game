@@ -9,6 +9,7 @@ export const sharedCopy = {
     lives: 'Lives',
     dragonLevel: 'Dragon level',
     turn: 'Turn',
+    gameId: 'Game id',
   },
   unavailableGame: {
     invalid_id: { title: 'Not a game id', body: 'That link does not point to a game.' },

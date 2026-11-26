@@ -4,7 +4,8 @@ import styles from './GameStatusBar.module.css';
 import { RefreshHint } from './RefreshHint.tsx';
 import { sharedCopy } from './shared-copy.ts';
 
-const STATUS_FIELDS = ['score', 'gold', 'lives', 'dragonLevel', 'turn'] as const;
+// The id is shown so a player can resume the game later; the URL is the only other place it appears.
+const STATUS_FIELDS = ['score', 'gold', 'lives', 'dragonLevel', 'turn', 'gameId'] as const;
 
 type GameStatusBarProps = {
   state: GameState;

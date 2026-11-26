@@ -32,7 +32,7 @@ export const adviseTurn = async ({
 
   const run = playableRunResult.value;
   const [boardResult, shopResult] = await Promise.all([
-    gameManager.findAds({ gameId }),
+    gameManager.findAds({ gameId, logger }),
     gameManager.findShopItems({ gameId }),
   ]);
 

@@ -51,7 +51,7 @@ export const stubPlayerUpstream = () => {
   vi.spyOn(mugloarRepository, 'startGame').mockResolvedValue(newGameSnapshot(PLAYER_GAME_ID));
   vi.spyOn(mugloarRepository, 'findAds').mockResolvedValue({
     status: 'ok',
-    value: PLAYER_BOARD,
+    value: { ads: PLAYER_BOARD, droppedCount: 0 },
   });
   vi.spyOn(mugloarRepository, 'findShopItems').mockResolvedValue({
     status: 'ok',

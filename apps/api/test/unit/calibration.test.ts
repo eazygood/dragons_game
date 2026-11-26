@@ -39,16 +39,16 @@ describe('calibration', () => {
     ).toBeLessThan(0.2);
   });
 
+  // Off the 0.5 prior, so the sum differs from either level alone and from no evidence at all.
   it('sums evidence from every level that shares a bucket', () => {
     const calibration = calibratedFrom([
-      { probability: 'Gamble', dragonLevel: 2, reward: CHEAP, attempts: 5, successes: 5 },
-      { probability: 'Gamble', dragonLevel: 3, reward: CHEAP, attempts: 5, successes: 0 },
+      { probability: 'Sure thing', dragonLevel: 2, reward: CHEAP, attempts: 5, successes: 5 },
+      { probability: 'Sure thing', dragonLevel: 3, reward: CHEAP, attempts: 5, successes: 0 },
     ]);
 
-    expect(calibration.estimate({ label: 'Gamble', dragonLevel: 2, reward: CHEAP })).toBeCloseTo(
-      (5 + 5 * 0.5) / 15,
-      5,
-    );
+    expect(
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 2, reward: CHEAP }),
+    ).toBeCloseTo((5 + config.smoothingAlpha * 0.95) / (10 + config.smoothingAlpha), 5);
   });
 
   it('does not leak evidence across labels or buckets', () => {

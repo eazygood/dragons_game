@@ -200,7 +200,7 @@ export const playTurn = async ({
 }): Promise<TurnOutcome> => {
   const { db, run, strategy, config, logger } = context;
   const { state } = progress;
-  const boardResult = await gameManager.findAds({ gameId: run.gameId });
+  const boardResult = await gameManager.findAds({ gameId: run.gameId, logger });
 
   if (boardResult.status === 'game_over') {
     return { status: 'game_over', progress };

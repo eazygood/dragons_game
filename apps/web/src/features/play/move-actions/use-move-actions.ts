@@ -47,6 +47,7 @@ export const useMoveActions = ({
       isPending: submitMove.isPending,
     },
     moveReport: {
+      pendingKind: submitMove.isPending ? submitMove.variables.kind : null,
       lastResult: submitMove.data ?? null,
       notice: submitMove.isError
         ? noticeFor({ error: submitMove.error, kind: submitMove.variables.kind })

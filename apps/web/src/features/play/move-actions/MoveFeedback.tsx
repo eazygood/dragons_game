@@ -4,7 +4,7 @@ import { playCopy } from '../play-copy.ts';
 import type { FeedbackRef, MoveReport } from './move-actions.ts';
 import styles from './MoveFeedback.module.css';
 
-type FeedbackTone = 'success' | 'failure' | 'notice' | 'idle';
+type FeedbackTone = 'pending' | 'success' | 'failure' | 'notice' | 'idle';
 
 const describeMoveResult = ({ result }: { result: MoveResult }) => {
   const resultLabel = result.success ? playCopy.moves.succeeded : playCopy.moves.failed;
@@ -13,9 +13,15 @@ const describeMoveResult = ({ result }: { result: MoveResult }) => {
 };
 
 const feedbackFor = ({
+  pendingKind,
   lastResult,
   notice,
 }: MoveReport): { text: string | null; tone: FeedbackTone } => {
+  // The lock lasts until the board is refetched, so the wait can outlast the move itself.
+  if (pendingKind !== null) {
+    return { text: playCopy.moves.pending[pendingKind], tone: 'pending' };
+  }
+
   if (notice !== null) {
     return { text: notice, tone: 'notice' };
   }
