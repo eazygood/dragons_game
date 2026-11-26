@@ -4,6 +4,10 @@
   overflow-wrap: anywhere;
 }
 
+.feedback[data-tone='pending'] {
+  color: var(--color-muted);
+}
+
 .feedback[data-tone='success'] {
   color: var(--color-success);
 }

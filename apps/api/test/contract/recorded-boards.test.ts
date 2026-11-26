@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import type { OrGameOver } from '../../src/types.ts';
 import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import type { DecodedBoard } from '../../src/repositories/mugloar-repository.ts';
 import { SolveParamsSchema } from '../../src/routes/schemas/game-schemas.ts';
 import { gameIdOf, readRecordedGame, startReplay } from '../support/recorded-game.ts';
 import type { StoredRecording } from '../support/replay-fetch.ts';
@@ -14,7 +15,7 @@ const PLAIN_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const ROT13_ALPHABET = 'nopqrstuvwxyzabcdefghijklmNOPQRSTUVWXYZABCDEFGHIJKLM';
 
 type RawAd = { adId: string; message: string; probability: string; encrypted: number | null };
-type BoardRead = { recording: StoredRecording; raws: RawAd[]; result: OrGameOver<Ad[]> };
+type BoardRead = { recording: StoredRecording; raws: RawAd[]; result: OrGameOver<DecodedBoard> };
 type DecodedPair = { gameId: string; raw: RawAd; decoded: Ad | undefined };
 
 const isLiveBoard = ({ method, path, status }: StoredRecording) =>
@@ -24,7 +25,7 @@ const isLiveBoard = ({ method, path, status }: StoredRecording) =>
 const rot13Of = (value: string) =>
   [...value].map((char) => ROT13_ALPHABET[PLAIN_ALPHABET.indexOf(char)] ?? char).join('');
 
-const adsOf = ({ result }: BoardRead) => (result.status === 'ok' ? result.value : []);
+const adsOf = ({ result }: BoardRead) => (result.status === 'ok' ? result.value.ads : []);
 
 // Ads keep their board order through decoding, so a raw ad pairs with the ad at its index.
 const pairsEncryptedWith = ({ reads, scheme }: { reads: BoardRead[]; scheme: number }) =>

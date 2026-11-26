@@ -44,16 +44,19 @@ export const scriptGame = ({ turnsUntilGameOver }: { turnsUntilGameOver: number 
           ? { status: 'game_over' }
           : {
               status: 'ok',
-              value: [
-                {
-                  adId: `ad-${game.turn}`,
-                  message: 'Escort a wagon',
-                  reward: reward(),
-                  expiresIn: 5,
-                  probability: 'Sure thing',
-                  wasEncrypted: false,
-                },
-              ],
+              value: {
+                droppedCount: 0,
+                ads: [
+                  {
+                    adId: `ad-${game.turn}`,
+                    message: 'Escort a wagon',
+                    reward: reward(),
+                    expiresIn: 5,
+                    probability: 'Sure thing',
+                    wasEncrypted: false,
+                  },
+                ],
+              },
             },
       ),
     ),

@@ -31,16 +31,22 @@ Pin the behaviour the brief cares about, not the implementation. A refactor must
 not break a test. If a test knows which function called which, it is testing the
 wrong thing.
 
-The engine is the exception worth effort, and it has two regression suites:
+The engine is the exception worth effort, and it has four regression suites:
 
-- `test/unit/decide-table.test.ts` — every probability label × a dragon level in
-  each calibration bucket, on plaintext and encrypted boards, with every label
-  measured as a failure in the top bucket only, so the level decides whether the
+- `test/unit/decide-table.test.ts` — five labels from both sides of the minimum
+  probability. Every label is measured as a failure in the top calibration
+  bucket only, and `Sure thing`, `Gamble` and `Impossible` run both on an
+  unmeasured dragon level and in that bucket, so the level decides whether the
   prior or the measurement prices the ad.
-- `test/unit/decide-boundaries.test.ts` — the shipped strategy at its edges: the
-  survival floor and the tie-break between equally safe ads.
+- `test/unit/decide-boundaries.test.ts` — the survival floor and the tie-break
+  between equally safe ads.
+- `test/unit/minimum-probability.test.ts` — an estimate exactly on the minimum
+  probability and one step below it, for both the bot's rule and the advisor's
+  verdict.
+- `test/unit/calibration-edges.test.ts` — evidence on each reward-band and
+  level-bucket edge lands in the cell the edge starts, not the one below it.
 
-A third suite tests the strategy as a whole without the network.
+Another suite tests the strategy as a whole without the network.
 `test/support/simulated-world.ts` is a seeded model of the game: boards follow
 the recorded label mix, rewards are skewed low as the recorded boards are, and
 each label's hidden success rate is the live one, measured from the stored

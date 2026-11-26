@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -36,6 +36,20 @@ describe('GameScreen', () => {
 
     expect(await screen.findAllByRole('article')).toHaveLength(TURN_VIEW.board.length);
     expect(screen.getByText(sharedCopy.status.score)).toBeVisible();
+  });
+
+  it('shows the game id, which the resume form asks for', async () => {
+    stubApi({
+      'GET /api/games/g1': () => jsonResponse({ status: 200, body: GAME_VIEW }),
+      'GET /api/games/g1/turn': () => jsonResponse({ status: 200, body: TURN_VIEW }),
+    });
+
+    renderInRouter(<GameScreen gameId="g1" />);
+
+    const statusBar = await screen.findByRole('group', { name: sharedCopy.status.label });
+
+    expect(within(statusBar).getByText(sharedCopy.status.gameId)).toBeVisible();
+    expect(within(statusBar).getByText(GAME_VIEW.state.gameId)).toBeVisible();
   });
 
   it('says there is no such game, without a retry, when the id is unknown', async () => {

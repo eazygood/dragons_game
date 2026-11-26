@@ -43,6 +43,7 @@ export const playCopy = {
   },
   moves: {
     label: 'Move result',
+    pending: { solve: 'Solving…', buy: 'Buying…' },
     succeeded: 'Success.',
     failed: 'Failed.',
     adExpired: 'That ad expired before you got to it. The board has been refreshed.',

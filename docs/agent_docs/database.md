@@ -162,7 +162,7 @@ else:
 | `bot-manager` `playGame`, on finish                                       | a failed final `finishRun`                                                 | logs `warn`; the row stays `active`                                                           |
 | `bot-mediator` `startBotGame`                                             | the detached game's rejection                                              | logs `error`; the run was already ended `abandoned` where the write allowed                   |
 | `cli/run-benchmark.ts` `runBounded`                                       | one benchmark run's error                                                  | counts it in `failedRuns`; the other runs go on                                               |
-| `wire-schemas.ts` `AdListWireSchema`, `mugloar-repository.ts` `decodeAds` | one ad that does not parse, decodes to an unknown label or to an unsafe id | drops that ad, keeps the board                                                                |
+| `wire-schemas.ts` `AdListWireSchema`, `mugloar-repository.ts` `decodeAds` | one ad that does not parse, decodes to an unknown label or to an unsafe id | drops that ad, keeps the board; `game-manager` `findAds` logs `warn` with the count           |
 
 **The player fallback.** A human's next move rebuilds its state from the
 `game_runs` row, so a lost write would carry a stale dragon level forward for

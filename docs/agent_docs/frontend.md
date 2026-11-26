@@ -38,6 +38,10 @@ Hooks: `useGame`, `useWatchedGame`, `useTurnView`, `useMoveHistory` (queries,
   same key in `onSuccess`.
 - Moves invalidate `gameKeys.all` in `onSettled`, not `onSuccess`: a failed
   move can still have burnt a turn, and the board must be refetched either way.
+  `onSettled` returns the invalidation, so the move stays pending, with every
+  move button disabled, until the refetched board lands: the old board still
+  offers the ad just solved. Meanwhile the move feedback region reads
+  _Solving…_ or _Buying…_.
 - `createQueryClient()` (`src/query-client.ts`) owns the retry policy. Reads
   retry at most twice, and only on `unreachable` or a 5xx. Mutations never
   retry, because `solve` and `buy` are not idempotent. Both run with
@@ -45,7 +49,8 @@ Hooks: `useGame`, `useWatchedGame`, `useTurnView`, `useMoveHistory` (queries,
   offline, which would show "Loading" forever and replay a queued solve or buy
   on reconnect.
 - Every request has a `REQUEST_TIMEOUT_MS` (20 s) timeout in `api/client.ts`,
-  so a hung solve or buy cannot leave the buttons disabled. It stays armed
+  so a hung solve, buy or board refetch cannot leave the buttons disabled for
+  good. It stays armed
   until the body is read. A timeout surfaces as `unreachable`. The client
   builds it from `setTimeout` and its own `AbortController` rather than
   `AbortSignal.timeout` and `AbortSignal.any`, which are newer than the

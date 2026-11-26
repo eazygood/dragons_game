@@ -221,7 +221,9 @@ never is.
 - **Bad ads are dropped, not fatal.** `wire-schemas.ts` parses ad by ad and
   drops one failing `RawAdSchema`; `decodeAds` in `mugloar-repository.ts` drops
   one whose decoded label is unknown or whose decoded id is unsafe in the solve
-  URL. The rest of the board stays playable.
+  URL. The rest of the board stays playable. The repository returns the count it
+  dropped beside the ads, and `game-manager` `findAds` logs a `warn` with it, so
+  an upstream change shows in the log instead of as a quietly smaller board.
 
 ### Engine
 

@@ -40,7 +40,10 @@ describe('calibration carried through a bot game', () => {
       const listing = await scriptedFetch?.(input);
 
       return listing?.status === 'ok'
-        ? { status: 'ok', value: boardOf({ turnId: listing.value[0]?.adId ?? '' }) }
+        ? {
+            status: 'ok',
+            value: { ads: boardOf({ turnId: listing.value.ads[0]?.adId ?? '' }), droppedCount: 0 },
+          }
         : { status: 'game_over' };
     });
     solveAd.mockImplementation(async (input) => {

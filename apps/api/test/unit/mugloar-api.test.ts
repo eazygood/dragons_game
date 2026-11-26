@@ -81,7 +81,7 @@ describe('mugloar api: shapes and errors', () => {
 
     await expect(mugloarRepository.findAds({ gameId: 'g1' })).resolves.toEqual({
       status: 'ok',
-      value: [expect.objectContaining({ adId: LIVE_AD.adId })],
+      value: { ads: [expect.objectContaining({ adId: LIVE_AD.adId })], droppedCount: 1 },
     });
   });
 
@@ -121,7 +121,7 @@ describe('mugloar api: shapes and errors', () => {
       throw new Error('expected a board');
     }
 
-    const [ad] = board.value;
+    const [ad] = board.value.ads;
 
     await mugloarRepository.solveAd({ gameId: 'g1', adId: ad?.adId ?? '' });
 

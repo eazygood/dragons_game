@@ -32,7 +32,7 @@ describe('mugloar api: response size cap', () => {
 
     const result = await mugloarRepository.findAds({ gameId: 'g1' });
 
-    expect(result).toMatchObject({ status: 'ok', value: [{ adId: LIVE_AD.adId }] });
+    expect(result).toMatchObject({ status: 'ok', value: { ads: [{ adId: LIVE_AD.adId }] } });
   });
 
   it('rejects a response whose content-length is over the cap, unread', async () => {

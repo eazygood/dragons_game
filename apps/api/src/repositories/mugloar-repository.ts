@@ -1,5 +1,6 @@
 import { AdSchema } from '@dragons-game/contracts';
 import type { Ad, ShopItem } from '@dragons-game/contracts';
+import { z } from 'zod';
 
 import { mugloarApiAdapter } from '../adapters/mugloar-api-adapter/index.ts';
 import {
@@ -22,6 +23,9 @@ export type SolveOutcome = {
   turn: number;
   message: string;
 };
+
+// A board read: the ads that can be played, and how many the upstream sent that could not.
+export type DecodedBoard = { ads: Ad[]; droppedCount: number };
 
 // What a buy reports back; level only counts when the purchase succeeded.
 export type BuyOutcome = {
@@ -79,7 +83,13 @@ export const decodeAds = ({ raws }: { raws: RawAd[] }): Ad[] =>
     return parsedAd.success ? [parsedAd.data] : [];
   });
 
-const DecodedAdListSchema = AdListWireSchema.transform((raws) => decodeAds({ raws }));
+// Counted against the raw entries, so an ad dropped for its shape and one dropped for its
+// decoded content both show.
+const DecodedBoardSchema = z.array(z.unknown()).transform((entries): DecodedBoard => {
+  const ads = decodeAds({ raws: AdListWireSchema.parse(entries) });
+
+  return { ads, droppedCount: entries.length - ads.length };
+});
 
 // highScore is the server's global record, not this game's; nothing downstream reads it.
 const SolveOutcomeSchema = SolveWireSchema.transform(
@@ -125,12 +135,12 @@ export const startGame = async (): Promise<GameSnapshot> => {
   return result.value;
 };
 
-export const findAds = ({ gameId }: { gameId: string }): Promise<OrGameOver<Ad[]>> =>
+export const findAds = ({ gameId }: { gameId: string }): Promise<OrGameOver<DecodedBoard>> =>
   mugloarApiAdapter.request({
     operation: 'list_ads',
     method: 'GET',
     path: `/${encodeURIComponent(gameId)}/messages`,
-    schema: DecodedAdListSchema,
+    schema: DecodedBoardSchema,
   });
 
 // adId must already be decoded; the encoded one is a 400.

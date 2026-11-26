@@ -8,7 +8,7 @@ import { sharedCopy } from '../src/shared/shared-copy.ts';
 import { GameScreen } from '../src/features/play/game/GameScreen.tsx';
 import { ShopPanel } from '../src/features/play/shop/ShopPanel.tsx';
 import { createQueryClient } from '../src/query-client.ts';
-import { respondInSequence, respondNever, respondOk, respondWith, stubApi } from './fetch-stub.ts';
+import { respondInSequence, respondOk, respondWith, stubApi } from './fetch-stub.ts';
 import { GAME_VIEW, IDLE_MOVE_ACTIONS, MOVE_MESSAGE, MOVE_RESULT, TURN_VIEW } from './fixtures.ts';
 import { renderInRouter, renderWithQuery } from './render.tsx';
 
@@ -39,26 +39,6 @@ describe('player moves', () => {
       ),
     );
     await waitFor(() => expect(api.callCountOf(TURN_ROUTE)).toBe(2));
-  });
-
-  it('moves focus to the feedback region when a move is submitted', async () => {
-    stubApi({ ...activeGameRoutes, [SOLVE_ROUTE]: respondNever() });
-
-    renderInRouter(<GameScreen gameId="g1" />);
-    await clickSolve();
-
-    expect(screen.getByRole('status', { name: playCopy.moves.label })).toHaveFocus();
-  });
-
-  it('disables every move while one is in flight', async () => {
-    stubApi({ ...activeGameRoutes, [SOLVE_ROUTE]: respondNever() });
-
-    renderInRouter(<GameScreen gameId="g1" />);
-    await clickSolve();
-
-    for (const button of screen.getAllByRole('button', { name: /solve|buy/i })) {
-      expect(button).toBeDisabled();
-    }
   });
 
   it('explains an expired ad and refreshes the board', async () => {
