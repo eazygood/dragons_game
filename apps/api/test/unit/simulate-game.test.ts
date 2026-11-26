@@ -134,7 +134,7 @@ describe('strategy regression over seeded games', () => {
   it('prices a lucrative easy ad below an attemptable one once it has been learned', () => {
     const warmed = warmedCalibration();
     const estimateFor = (reward: number) =>
-      warmed.estimate({ label: 'Sure thing', level: 0, reward });
+      warmed.estimate({ label: 'Sure thing', dragonLevel: 0, reward });
 
     expect(estimateFor(170)).toBeLessThan(STRATEGY_CONFIG.minimumProbability);
     expect(estimateFor(50)).toBeGreaterThan(0.9);

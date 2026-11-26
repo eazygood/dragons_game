@@ -12,9 +12,9 @@ const cheapestLevelUp = ({ shop }: { shop: ShopItem[] }) =>
         left.cost - right.cost || compareCodePoints({ left: left.id, right: right.id }),
     )[0];
 
-// Score never falls within a game, so once it reaches the start score a level-up can
-// no longer cost the target; it only spends a turn on making harder ads winnable.
-export const affordableLevelUp = ({
+// Levelling up before 1000 lost games that would otherwise have reached it.
+// Score never goes down, so once 1000 is reached, spending gold on levels can't lose it.
+export const levelUpToBuy = ({
   state,
   shop,
   config,
@@ -27,11 +27,11 @@ export const affordableLevelUp = ({
     return undefined;
   }
 
-  const item = cheapestLevelUp({ shop });
+  const levelUpItem = cheapestLevelUp({ shop });
 
-  if (!item || state.gold - item.cost < config.levelUpGoldReserve) {
+  if (!levelUpItem || state.gold - levelUpItem.cost < config.levelUpGoldReserve) {
     return undefined;
   }
 
-  return item;
+  return levelUpItem;
 };

@@ -9,8 +9,8 @@ import type {
 } from '@dragons-game/contracts';
 
 import type { Calibration } from './calibration.ts';
-import { affordableLevelUp } from './level-up.ts';
-import { scoreAds } from './score-ads.ts';
+import { levelUpToBuy } from './level-up.ts';
+import { rankAttemptableAds } from './score-ads.ts';
 import type { ScoredAd } from './score-ads.ts';
 import type { StrategyConfig } from './strategy-config.ts';
 
@@ -25,84 +25,85 @@ type DecideInput = {
 // A buy or a stop acts on no single ad, so it carries no estimate.
 const unscoredReasoning = ({
   rule,
-  scored,
+  rankedAds,
 }: {
   rule: DecisionRule;
-  scored: ScoredAd[];
+  rankedAds: ScoredAd[];
 }): Reasoning => ({
   rule,
   estimatedProbability: null,
   expectedValue: null,
-  consideredCount: scored.length,
+  consideredCount: rankedAds.length,
 });
 
-const solve = ({
+const solveDecision = ({
   rule,
-  scored,
-  pick,
+  rankedAds,
+  chosenAd,
 }: {
   rule: DecisionRule;
-  scored: ScoredAd[];
-  pick: ScoredAd;
+  rankedAds: ScoredAd[];
+  chosenAd: ScoredAd;
 }): Decision => ({
   kind: 'solve',
-  adId: pick.ad.adId,
+  adId: chosenAd.ad.adId,
   reasoning: {
     rule,
-    estimatedProbability: pick.estimatedProbability,
-    expectedValue: pick.expectedValue,
-    consideredCount: scored.length,
+    estimatedProbability: chosenAd.estimatedProbability,
+    expectedValue: chosenAd.expectedValue,
+    consideredCount: rankedAds.length,
   },
 });
 
-const buy = ({
+const buyDecision = ({
   rule,
-  scored,
+  rankedAds,
   item,
 }: {
   rule: DecisionRule;
-  scored: ScoredAd[];
+  rankedAds: ScoredAd[];
   item: ShopItem;
 }): Decision => ({
   kind: 'buy',
   itemId: item.id,
-  reasoning: unscoredReasoning({ rule, scored }),
+  reasoning: unscoredReasoning({ rule, rankedAds }),
 });
 
-const safest = ({ scored }: { scored: ScoredAd[] }) =>
-  scored.toSorted((left, right) => right.estimatedProbability - left.estimatedProbability)[0];
+const pickSafest = ({ rankedAds }: { rankedAds: ScoredAd[] }) =>
+  rankedAds.toSorted((left, right) => right.estimatedProbability - left.estimatedProbability)[0];
 
 export const decide = ({ state, board, shop, calibration, config }: DecideInput): Decision => {
-  const scored = scoreAds({ board, state, calibration, config });
+  const rankedAds = rankAttemptableAds({ board, state, calibration, config });
   const potion = shop.find((item) => item.id === HEALING_POTION_ID);
 
   // Lives, not gold, end the game, so gold goes to a potion once lives reach the floor.
   if (state.lives <= config.livesFloor && potion && state.gold >= potion.cost) {
-    return buy({ rule: 'survival_floor', scored, item: potion });
+    return buyDecision({ rule: 'survival_floor', rankedAds, item: potion });
   }
 
-  const levelUp = affordableLevelUp({ state, shop, config });
+  const levelUpItem = levelUpToBuy({ state, shop, config });
 
-  // Levelling up never brings an exhausted board back (findings §7), so with no
-  // attemptable ad left the engine stops rather than spend gold there.
-  if (levelUp && scored.length > 0) {
-    return buy({ rule: 'level_up', scored, item: levelUp });
+  if (levelUpItem && rankedAds.length > 0) {
+    return buyDecision({ rule: 'level_up', rankedAds, item: levelUpItem });
   }
 
-  const viableAds = scored.filter(
-    (entry) => entry.estimatedProbability >= config.minimumProbability,
+  const viableAds = rankedAds.filter(
+    (rankedAd) => rankedAd.estimatedProbability >= config.minimumProbability,
   );
-  const best = viableAds[0];
+  const bestViableAd = viableAds[0];
 
-  if (best) {
-    return solve({ rule: 'best_expected_value', scored, pick: best });
+  if (bestViableAd) {
+    return solveDecision({ rule: 'best_expected_value', rankedAds, chosenAd: bestViableAd });
   }
 
-  const fallback = safest({ scored });
+  const safestAd = pickSafest({ rankedAds });
 
-  if (fallback) {
-    return solve({ rule: 'safest_available', scored, pick: fallback });
+  if (safestAd) {
+    return solveDecision({ rule: 'safest_available', rankedAds, chosenAd: safestAd });
   }
 
-  return { kind: 'stop', reasoning: unscoredReasoning({ rule: 'no_viable_option', scored }) };
+  return {
+    kind: 'stop',
+    reasoning: unscoredReasoning({ rule: 'no_viable_option', rankedAds }),
+  };
 };

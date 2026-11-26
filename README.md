@@ -119,9 +119,9 @@ what the advice banner and the move log show.
   starts, folds in each of its own solves as it goes, and re-reads them every 10
   turns to pick up evidence from games running beside it, so a game's own
   failures count from the next turn without a query per turn.
-- **Expected value.** `p · reward − (1 − p) · lifeCost`, with a lost life priced
-  as a healing potion plus the turn it burns. The engine solves the ad with the
-  best expected value among those it rates at 45% or better.
+- **Expected value.** `p · reward − (1 − p) · failedAttemptCost`, with a lost
+  life priced as a healing potion plus the turn it burns. The engine solves the
+  ad with the best expected value among those it rates at 45% or better.
 - **Survival first.** Lives end the game; gold left at the end is worth nothing.
   So whenever lives are at or below 3, the starting count, and gold allows, the
   engine turns spare gold into a healing potion before anything else.

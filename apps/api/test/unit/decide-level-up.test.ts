@@ -28,7 +28,7 @@ const state: GameState = {
   turn: 60,
   score: 1000,
 };
-const goodAd: Ad = {
+const sureThingAd: Ad = {
   adId: 'a1',
   message: 'Help someone',
   reward: 100,
@@ -39,11 +39,11 @@ const goodAd: Ad = {
 
 const decideFor = ({
   overrides = {},
-  settings = config,
-  board = [goodAd],
+  strategyConfig = config,
+  board = [sureThingAd],
 }: {
   overrides?: Partial<GameState>;
-  settings?: StrategyConfig;
+  strategyConfig?: StrategyConfig;
   board?: Ad[];
 }) =>
   decide({
@@ -51,7 +51,7 @@ const decideFor = ({
     board,
     shop,
     calibration,
-    config: settings,
+    config: strategyConfig,
   });
 
 describe('decide, levelling up past the start score', () => {
@@ -81,15 +81,15 @@ describe('decide, levelling up past the start score', () => {
   });
 
   it('never levels up without a start score, however much gold and score there is', () => {
-    const settings = { ...config, levelUpFromScore: null };
+    const strategyConfig = { ...config, levelUpFromScore: null };
 
-    expect(decideFor({ overrides: { gold: 5000, score: 5000 }, settings })).toMatchObject({
+    expect(decideFor({ overrides: { gold: 5000, score: 5000 }, strategyConfig })).toMatchObject({
       kind: 'solve',
     });
   });
 
   it('stops instead of levelling up when no ad on the board can be won', () => {
-    const board: Ad[] = [{ ...goodAd, probability: 'Impossible' }];
+    const board: Ad[] = [{ ...sureThingAd, probability: 'Impossible' }];
 
     expect(decideFor({ overrides: { gold: 5000 }, board })).toMatchObject({
       kind: 'stop',
@@ -98,12 +98,12 @@ describe('decide, levelling up past the start score', () => {
   });
 
   it('starts levelling up at the target score with the shipped settings', () => {
-    const settings = STRATEGY_CONFIG;
+    const strategyConfig = STRATEGY_CONFIG;
 
-    expect(decideFor({ overrides: { score: TARGET_SCORE - 1 }, settings })).toMatchObject({
+    expect(decideFor({ overrides: { score: TARGET_SCORE - 1 }, strategyConfig })).toMatchObject({
       kind: 'solve',
     });
-    expect(decideFor({ overrides: { score: TARGET_SCORE }, settings })).toMatchObject({
+    expect(decideFor({ overrides: { score: TARGET_SCORE }, strategyConfig })).toMatchObject({
       kind: 'buy',
       reasoning: { rule: 'level_up' },
     });

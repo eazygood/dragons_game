@@ -402,9 +402,10 @@ count from the next turn without a query per turn.
 1. **Hard filter** — drop `Impossible`; drop ads that have already expired
    (`expiresIn` of 0 or less).
 2. **Estimate** `p̂` from calibration.
-3. **Expected value** — `EV = p̂ · reward − (1 − p̂) · lifeCost`, where
-   `lifeCost` is a healing potion (50 gold) plus the turn it burns. This converts
-   risk into gold so risky-lucrative and safe-cheap ads compare on one axis.
+3. **Expected value** — `EV = p̂ · reward − (1 − p̂) · failedAttemptCost`,
+   where `failedAttemptCost` is a healing potion (50 gold) plus the turn it
+   burns. This converts risk into gold so risky-lucrative and safe-cheap ads
+   compare on one axis.
 4. **Survival override**: lives, not gold, are the binding constraint. At or
    below `livesFloor` the engine buys `hpot` before anything else. The tuned
    floor equals the starting lives (3), so every lost life is bought back as soon

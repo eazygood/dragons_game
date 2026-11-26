@@ -14,7 +14,7 @@ const calibratedFrom = (counts: CalibrationCount[]) => buildCalibration({ counts
 describe('calibration', () => {
   it('returns the prior when there is no evidence', () => {
     expect(
-      calibratedFrom([]).estimate({ label: 'Sure thing', level: 0, reward: CHEAP }),
+      calibratedFrom([]).estimate({ label: 'Sure thing', dragonLevel: 0, reward: CHEAP }),
     ).toBeCloseTo(0.95);
   });
 
@@ -24,10 +24,9 @@ describe('calibration', () => {
     ]);
 
     // p̂ = (successes + α·prior) / (attempts + α)
-    expect(calibration.estimate({ label: 'Sure thing', level: 6, reward: CHEAP })).toBeCloseTo(
-      (2 + config.smoothingAlpha * 0.95) / (12 + config.smoothingAlpha),
-      5,
-    );
+    expect(
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 6, reward: CHEAP }),
+    ).toBeCloseTo((2 + config.smoothingAlpha * 0.95) / (12 + config.smoothingAlpha), 5);
   });
 
   it('lets measurement overtake the prior as evidence accumulates', () => {
@@ -35,9 +34,9 @@ describe('calibration', () => {
       { probability: 'Sure thing', dragonLevel: 6, reward: CHEAP, attempts: 200, successes: 20 },
     ]);
 
-    expect(calibration.estimate({ label: 'Sure thing', level: 6, reward: CHEAP })).toBeLessThan(
-      0.2,
-    );
+    expect(
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 6, reward: CHEAP }),
+    ).toBeLessThan(0.2);
   });
 
   it('sums evidence from every level that shares a bucket', () => {
@@ -46,7 +45,7 @@ describe('calibration', () => {
       { probability: 'Gamble', dragonLevel: 3, reward: CHEAP, attempts: 5, successes: 0 },
     ]);
 
-    expect(calibration.estimate({ label: 'Gamble', level: 2, reward: CHEAP })).toBeCloseTo(
+    expect(calibration.estimate({ label: 'Gamble', dragonLevel: 2, reward: CHEAP })).toBeCloseTo(
       (5 + 5 * 0.5) / 15,
       5,
     );
@@ -57,12 +56,12 @@ describe('calibration', () => {
       { probability: 'Sure thing', dragonLevel: 6, reward: CHEAP, attempts: 200, successes: 0 },
     ]);
 
-    expect(calibration.estimate({ label: 'Sure thing', level: 0, reward: CHEAP })).toBeCloseTo(
-      0.95,
-    );
-    expect(calibration.estimate({ label: 'Piece of cake', level: 6, reward: CHEAP })).toBeCloseTo(
-      0.9,
-    );
+    expect(
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 0, reward: CHEAP }),
+    ).toBeCloseTo(0.95);
+    expect(
+      calibration.estimate({ label: 'Piece of cake', dragonLevel: 6, reward: CHEAP }),
+    ).toBeCloseTo(0.9);
   });
 
   it('keeps Impossible at zero however the evidence falls', () => {
@@ -70,7 +69,7 @@ describe('calibration', () => {
       { probability: 'Impossible', dragonLevel: 0, reward: CHEAP, attempts: 4, successes: 4 },
     ]);
 
-    expect(calibration.estimate({ label: 'Impossible', level: 0, reward: CHEAP })).toBe(0);
+    expect(calibration.estimate({ label: 'Impossible', dragonLevel: 0, reward: CHEAP })).toBe(0);
   });
 
   it('keeps evidence on lucrative ads apart from cheap ads of the same label', () => {
@@ -79,12 +78,12 @@ describe('calibration', () => {
       { probability: 'Sure thing', dragonLevel: 2, reward: LUCRATIVE, attempts: 20, successes: 0 },
     ]);
 
-    expect(calibration.estimate({ label: 'Sure thing', level: 2, reward: LUCRATIVE })).toBeLessThan(
-      0.2,
-    );
-    expect(calibration.estimate({ label: 'Sure thing', level: 2, reward: CHEAP })).toBeCloseTo(
-      0.95,
-    );
+    expect(
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 2, reward: LUCRATIVE }),
+    ).toBeLessThan(0.2);
+    expect(
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 2, reward: CHEAP }),
+    ).toBeCloseTo(0.95);
   });
 });
 
@@ -166,10 +165,9 @@ describe('withAttempt', () => {
       attempt: attempt({ success: false }),
     });
 
-    expect(calibration.estimate({ label: 'Sure thing', level: 0, reward: CHEAP })).toBeCloseTo(
-      (config.smoothingAlpha * 0.95) / (1 + config.smoothingAlpha),
-      5,
-    );
+    expect(
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 0, reward: CHEAP }),
+    ).toBeCloseTo((config.smoothingAlpha * 0.95) / (1 + config.smoothingAlpha), 5);
   });
 
   it('moves the estimate only for the bucket and band the attempt landed in', () => {
@@ -179,14 +177,14 @@ describe('withAttempt', () => {
     });
 
     expect(
-      calibration.estimate({ label: 'Sure thing', level: 9, reward: LUCRATIVE + 1 }),
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 9, reward: LUCRATIVE + 1 }),
     ).toBeLessThan(0.95);
-    expect(calibration.estimate({ label: 'Sure thing', level: 6, reward: CHEAP })).toBeCloseTo(
-      0.95,
-    );
-    expect(calibration.estimate({ label: 'Sure thing', level: 0, reward: LUCRATIVE })).toBeCloseTo(
-      0.95,
-    );
+    expect(
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 6, reward: CHEAP }),
+    ).toBeCloseTo(0.95);
+    expect(
+      calibration.estimate({ label: 'Sure thing', dragonLevel: 0, reward: LUCRATIVE }),
+    ).toBeCloseTo(0.95);
   });
 
   it('leaves the calibration it was given untouched', () => {
