@@ -107,20 +107,22 @@ const sendOnce = async ({
   signal?: AbortSignal;
 }): Promise<SendOutcome> => {
   const { config, throttle } = runtime;
-  // One budget covers the wait for a token and the request, so a starved caller still fails.
+  // One budget covers the throttle wait and the request, so a starved caller still fails.
   const timeout = AbortSignal.timeout(config.mugloarTimeoutMs);
   const attemptSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
 
   try {
-    await throttle.acquire({ signal: attemptSignal });
-
-    // A redirect would send the request, or follow it, to a host we never configured.
-    const response = await fetch(`${config.mugloarBaseUrl}${path}`, {
-      method,
-      headers: { accept: 'application/json' },
-      redirect: 'error',
-      signal: attemptSignal,
-    });
+    const response = await throttle.add(
+      () =>
+        fetch(`${config.mugloarBaseUrl}${path}`, {
+          method,
+          headers: { accept: 'application/json' },
+          // A redirect would send the request, or follow it, to a host we never configured.
+          redirect: 'error',
+          signal: attemptSignal,
+        }),
+      { signal: attemptSignal },
+    );
 
     return { kind: 'response', response };
   } catch (error) {

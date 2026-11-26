@@ -343,7 +343,7 @@ in `apps/api/src/config/index.ts`.
 - Bot games share the single 8 requests per second outbound limit, so the 3
   allowed at once slow each other down.
 - **One API process.** The bot-game registry, the rate-limit counters, the
-  per-game move lock and the outbound token bucket all live in memory. Two
+  per-game move lock and the outbound throttle all live in memory. Two
   replicas would each allow 3 bot games and their own rate limits, could let two
   moves of one game reach the upstream at once, and would double the outbound
   rate. Scaling out needs those moved to a shared store first.
