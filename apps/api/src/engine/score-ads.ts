@@ -14,7 +14,7 @@ const lifeCost = ({ config }: { config: StrategyConfig }) =>
   config.lifeCostInGold + config.turnCostInGold;
 
 // Code-point order, not localeCompare, so the tiebreak cannot vary with the runtime locale.
-const compareCodePoints = ({ left, right }: { left: string; right: string }) =>
+export const compareCodePoints = ({ left, right }: { left: string; right: string }) =>
   left < right ? -1 : Number(left > right);
 
 const byExpectedValueThenAdId = (left: ScoredAd, right: ScoredAd) =>

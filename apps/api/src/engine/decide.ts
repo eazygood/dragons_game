@@ -9,6 +9,7 @@ import type {
 } from '@dragons-game/contracts';
 
 import type { Calibration } from './calibration.ts';
+import { affordableLevelUp } from './level-up.ts';
 import { scoreAds } from './score-ads.ts';
 import type { ScoredAd } from './score-ads.ts';
 import type { StrategyConfig } from './strategy-config.ts';
@@ -78,6 +79,14 @@ export const decide = ({ state, board, shop, calibration, config }: DecideInput)
   // Lives, not gold, end the game, so gold goes to a potion once lives reach the floor.
   if (state.lives <= config.livesFloor && potion && state.gold >= potion.cost) {
     return buy({ rule: 'survival_floor', scored, item: potion });
+  }
+
+  const levelUp = affordableLevelUp({ state, shop, config });
+
+  // Levelling up never brings an exhausted board back (findings §7), so with no
+  // attemptable ad left the engine stops rather than spend gold there.
+  if (levelUp && scored.length > 0) {
+    return buy({ rule: 'level_up', scored, item: levelUp });
   }
 
   const viableAds = scored.filter(

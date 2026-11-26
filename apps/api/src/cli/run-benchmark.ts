@@ -28,6 +28,8 @@ const StrategyOverrideSchema = z
     minimumProbability: z.number().min(0).max(1),
     lifeCostInGold: z.number().nonnegative(),
     turnCostInGold: z.number().nonnegative(),
+    levelUpFromScore: z.number().int().nonnegative().nullable(),
+    levelUpGoldReserve: z.number().nonnegative(),
   } satisfies Record<keyof StrategyConfig, z.ZodType>)
   .partial()
   .strict();

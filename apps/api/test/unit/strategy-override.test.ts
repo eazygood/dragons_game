@@ -29,6 +29,15 @@ describe('applyStrategyOverride', () => {
     ).toThrow();
   });
 
+  it('switches level-ups on and back off', () => {
+    expect(applyStrategyOverride({ json: '{"levelUpFromScore":1000}' })).toMatchObject({
+      levelUpFromScore: 1000,
+    });
+    expect(applyStrategyOverride({ json: '{"levelUpFromScore":null}' })).toMatchObject({
+      levelUpFromScore: null,
+    });
+  });
+
   it('rejects a probability floor outside 0..1', () => {
     expect(() => applyStrategyOverride({ json: '{"minimumProbability":45}' })).toThrow();
   });
