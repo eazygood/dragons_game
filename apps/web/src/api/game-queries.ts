@@ -4,8 +4,12 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import { isApiError } from './api-error.ts';
 import { apiRequest } from './client.ts';
 import { gamePaths } from './game-paths.ts';
+import { hasActiveStatus } from './game-status.ts';
+import { MOVE_HISTORY_POLL_INTERVAL_MS, WATCH_POLL_INTERVAL_MS } from './poll-intervals.ts';
 
-export const WATCH_POLL_INTERVAL_MS = 1000;
+// Long enough that a view seeded by setQueryData is not refetched the moment its screen
+// mounts. Polling and invalidation ignore it, so /watch and post-move refreshes are unaffected.
+const GAME_VIEW_STALE_TIME_MS = 5000;
 
 export const gameKeys = {
   all: (gameId: string) => ['game', gameId] as const,
@@ -17,6 +21,7 @@ export const gameKeys = {
 const gameQueryOptions = ({ gameId }: { gameId: string }) =>
   queryOptions({
     queryKey: gameKeys.game(gameId),
+    staleTime: GAME_VIEW_STALE_TIME_MS,
     queryFn: async ({ client, signal }) => {
       const game = await apiRequest({
         path: gamePaths.game({ gameId }),
@@ -26,7 +31,7 @@ const gameQueryOptions = ({ gameId }: { gameId: string }) =>
 
       // The game and history polls run on independent timers, so a finished game needs one
       // last history fetch to show the moves made since the previous tick.
-      if (game.status !== 'active') {
+      if (!hasActiveStatus({ game })) {
         void client.invalidateQueries({ queryKey: gameKeys.moveHistory(gameId) });
       }
 
@@ -41,7 +46,7 @@ export const useWatchedGame = ({ gameId }: { gameId: string }) =>
   useQuery({
     ...gameQueryOptions({ gameId }),
     refetchInterval: (query) =>
-      query.state.data?.status === 'active' ? WATCH_POLL_INTERVAL_MS : false,
+      hasActiveStatus({ game: query.state.data }) ? WATCH_POLL_INTERVAL_MS : false,
   });
 
 export const useTurnView = ({ gameId, enabled }: { gameId: string; enabled: boolean }) =>
@@ -68,17 +73,14 @@ export const useTurnView = ({ gameId, enabled }: { gameId: string; enabled: bool
 
 export const useMoveHistory = ({
   gameId,
-  enabled,
   isGameActive,
 }: {
   gameId: string;
-  enabled: boolean;
   isGameActive: boolean;
 }) =>
   useQuery({
     queryKey: gameKeys.moveHistory(gameId),
     queryFn: ({ signal }) =>
       apiRequest({ path: gamePaths.moveHistory({ gameId }), schema: MoveListSchema, signal }),
-    enabled,
-    refetchInterval: isGameActive ? WATCH_POLL_INTERVAL_MS : false,
+    refetchInterval: isGameActive ? MOVE_HISTORY_POLL_INTERVAL_MS : false,
   });

@@ -1,4 +1,3 @@
-import type { TurnResult } from '../entities/turn-result.ts';
 import { AppError } from './app-error.ts';
 
 type ErrorDetail = { message: string; cause?: unknown };
@@ -21,14 +20,11 @@ export class AdExpiredError extends AppError {
   }
 }
 
-// Carries the turn the upstream already played, so a caller can keep playing
-// the real game even though the local record of that turn was lost.
+// A player's next move rebuilds state from the row, so a turn whose state could not be
+// saved is reported rather than claimed as played.
 export class PersistenceFailedError extends AppError {
-  readonly turnResult: TurnResult;
-
-  constructor({ message, cause, turnResult }: ErrorDetail & { turnResult: TurnResult }) {
+  constructor({ message, cause }: ErrorDetail) {
     super({ code: 'internal', message, statusCode: 500, cause });
-    this.turnResult = turnResult;
   }
 }
 

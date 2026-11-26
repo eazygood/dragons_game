@@ -13,8 +13,13 @@ export const isAttemptable = ({ ad }: { ad: Ad }) =>
 const lifeCost = ({ config }: { config: StrategyConfig }) =>
   config.lifeCostInGold + config.turnCostInGold;
 
+// Code-point order, not localeCompare, so the tiebreak cannot vary with the runtime locale.
+const compareCodePoints = ({ left, right }: { left: string; right: string }) =>
+  left < right ? -1 : Number(left > right);
+
 const byExpectedValueThenAdId = (left: ScoredAd, right: ScoredAd) =>
-  right.expectedValue - left.expectedValue || left.ad.adId.localeCompare(right.ad.adId);
+  right.expectedValue - left.expectedValue ||
+  compareCodePoints({ left: left.ad.adId, right: right.ad.adId });
 
 type ScoreInput = {
   state: GameState;

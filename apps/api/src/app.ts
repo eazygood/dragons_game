@@ -1,10 +1,12 @@
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
 
 import { configureMugloarApi } from './adapters/mugloar-api-adapter/index.ts';
+import { API_PREFIX } from './api-prefix.ts';
 import { DEFAULT_APP_LIMITS, type AppLimits } from './app-limits.ts';
 import type { AppConfig } from './config/index.ts';
 import {
   botGamesPlugin,
+  crossSiteGuardPlugin,
   jsonOnlyBodiesPlugin,
   mysqlPlugin,
   notFoundHandler,
@@ -13,7 +15,6 @@ import {
   webAppPlugin,
   zodValidatorCompiler,
 } from './plugins/index.ts';
-import { API_PREFIX } from './routes/api-prefix.ts';
 import { errorHandler } from './routes/error-handlers/error-handler.ts';
 import { registerRoutes } from './routes/index.ts';
 
@@ -28,11 +29,20 @@ export const buildApp = async ({
 }): Promise<FastifyInstance> => {
   configureMugloarApi({ config });
 
-  const app = Fastify({ logger, requestTimeout: limits.requestTimeoutMs });
+  const app = Fastify({
+    logger,
+    requestTimeout: limits.requestTimeoutMs,
+    bodyLimit: limits.bodyLimitBytes,
+    // Refusals before routing (a malformed URL) get the same envelope as everything else.
+    frameworkErrors: (error, request, reply) => {
+      void errorHandler(error, request, reply);
+    },
+  });
 
   await app.register(mysqlPlugin, { config });
   await app.register(botGamesPlugin, { limit: limits.maxBotGames });
   await app.register(securityHeadersPlugin);
+  await app.register(crossSiteGuardPlugin);
   await app.register(rateLimitPlugin);
   await app.register(jsonOnlyBodiesPlugin);
   app.setValidatorCompiler(zodValidatorCompiler);

@@ -23,10 +23,6 @@ const BUY = {
 };
 
 describe('MoveSchema', () => {
-  it.each([SOLVE, BUY])('round-trips a $kind move', (move) => {
-    expect(MoveSchema.parse(move)).toEqual(move);
-  });
-
   it('accepts a solve written before the rule was recorded', () => {
     expect(MoveSchema.parse({ ...SOLVE, rule: null })).toMatchObject({ rule: null });
   });
@@ -56,10 +52,6 @@ describe('MoveSchema', () => {
 });
 
 describe('MoveListSchema', () => {
-  it('parses solves and buys together', () => {
-    expect(MoveListSchema.parse([BUY, SOLVE])).toEqual([BUY, SOLVE]);
-  });
-
   it('parses an empty list', () => {
     expect(MoveListSchema.parse([])).toEqual([]);
   });

@@ -4,7 +4,7 @@ import type { Knex } from 'knex';
 import type { Logger } from '../../entities/logger.ts';
 import type { OrGameOver } from '../../entities/or-game-over.ts';
 import { solvePlayerAd } from '../../managers/game-manager/index.ts';
-import { toMoveResult } from './game-view.ts';
+import { toMoveResult } from './move-result.ts';
 
 export const solveAd = async ({
   db,

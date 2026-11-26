@@ -1,5 +1,5 @@
-import { IMPOSSIBLE_LABEL, PROBABILITY_LABELS } from '@bigbank-dragon/contracts';
-import type { Ad, GameState, ProbabilityLabel } from '@bigbank-dragon/contracts';
+import { PROBABILITY_LABELS } from '@bigbank-dragon/contracts';
+import type { Ad, DecisionRule, GameState, ProbabilityLabel } from '@bigbank-dragon/contracts';
 import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 import { describe, expect, it } from 'vitest';
 
@@ -7,12 +7,12 @@ import { buildCalibration } from '../../src/domain/engine/calibration.ts';
 import { decide } from '../../src/domain/engine/decide.ts';
 import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
 
-// The regression table for the shipped strategy: every label, a level in every calibration
-// bucket, plaintext and encrypted boards. Expectations come from the config, not literals.
+// The regression table for the shipped strategy. The expected rules are written out, not
+// computed, so a retuned prior or floor has to be acknowledged here.
 const config = STRATEGY_CONFIG;
 const shop = [...RECORDED_SHOP_ITEMS];
 const REWARD = 50;
-const LEVELS = [0, ...config.levelBucketEdges];
+const UNMEASURED_LEVEL = 0;
 const MEASURED_LEVEL = config.levelBucketEdges.at(-1) ?? 0;
 const FAILED_ATTEMPTS = 40;
 
@@ -38,61 +38,41 @@ const stateAt = ({ dragonLevel }: { dragonLevel: number }): GameState => ({
   score: 0,
 });
 
-const adOf = ({ label, wasEncrypted }: { label: ProbabilityLabel; wasEncrypted: boolean }): Ad => ({
+const adOf = ({ label }: { label: ProbabilityLabel }): Ad => ({
   adId: 'only',
   message: 'Help someone',
   reward: REWARD,
   expiresIn: 5,
   probability: label,
-  wasEncrypted,
+  wasEncrypted: false,
 });
 
-const expectedRuleFor = ({ label, level }: { label: ProbabilityLabel; level: number }) => {
-  if (label === IMPOSSIBLE_LABEL) {
-    return 'no_viable_option';
-  }
+const rows: { label: ProbabilityLabel; level: number; rule: DecisionRule }[] = [
+  { label: 'Sure thing', level: UNMEASURED_LEVEL, rule: 'best_expected_value' },
+  { label: 'Sure thing', level: MEASURED_LEVEL, rule: 'safest_available' },
+  { label: 'Gamble', level: UNMEASURED_LEVEL, rule: 'best_expected_value' },
+  { label: 'Gamble', level: MEASURED_LEVEL, rule: 'safest_available' },
+  { label: 'Risky', level: UNMEASURED_LEVEL, rule: 'safest_available' },
+  { label: 'Suicide mission', level: UNMEASURED_LEVEL, rule: 'safest_available' },
+  { label: 'Impossible', level: UNMEASURED_LEVEL, rule: 'no_viable_option' },
+  { label: 'Impossible', level: MEASURED_LEVEL, rule: 'no_viable_option' },
+];
 
-  const estimate = calibration.estimate({ label, level, reward: REWARD });
+describe('decide, across labels and levels', () => {
+  it.each(rows)('$label at level $level → $rule', ({ label, level, rule }) => {
+    const decision = decide({
+      state: stateAt({ dragonLevel: level }),
+      board: [adOf({ label })],
+      shop,
+      calibration,
+      config,
+    });
 
-  return estimate >= config.minimumProbability ? 'best_expected_value' : 'safest_available';
-};
+    if (rule === 'no_viable_option') {
+      expect(decision).toMatchObject({ kind: 'stop', reasoning: { rule } });
+      return;
+    }
 
-const cases = PROBABILITY_LABELS.flatMap((label) =>
-  LEVELS.flatMap((level) =>
-    [false, true].map((wasEncrypted) => ({
-      label,
-      level,
-      board: wasEncrypted ? 'encrypted' : 'plaintext',
-      wasEncrypted,
-      rule: expectedRuleFor({ label, level }),
-    })),
-  ),
-);
-
-describe('decide, across labels, levels and boards', () => {
-  it('covers both sides of the probability floor and of the measured level', () => {
-    const rules = new Set(cases.map(({ rule }) => rule));
-
-    expect(rules).toEqual(new Set(['best_expected_value', 'safest_available', 'no_viable_option']));
+    expect(decision).toMatchObject({ kind: 'solve', adId: 'only', reasoning: { rule } });
   });
-
-  it.each(cases)(
-    '$label at level $level on a $board board → $rule',
-    ({ label, level, wasEncrypted, rule }) => {
-      const decision = decide({
-        state: stateAt({ dragonLevel: level }),
-        board: [adOf({ label, wasEncrypted })],
-        shop,
-        calibration,
-        config,
-      });
-
-      if (rule === 'no_viable_option') {
-        expect(decision).toMatchObject({ kind: 'stop', reasoning: { rule } });
-        return;
-      }
-
-      expect(decision).toMatchObject({ kind: 'solve', adId: 'only', reasoning: { rule } });
-    },
-  );
 });

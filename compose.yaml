@@ -2,7 +2,7 @@ name: bigbank-dragon
 
 services:
   mysql:
-    image: mysql:8.4
+    image: mysql:8.4@sha256:a81d043930e51745522bd5c430961cf8286f0a23f0a9a2a6e0108f7ea71b0902
     environment:
       MYSQL_DATABASE: dragon
       MYSQL_USER: dragon
@@ -14,7 +14,8 @@ services:
       - mysql-data:/var/lib/mysql
       - ./docker/mysql:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-udragon', '-pdragon']
+      # The password goes through the environment, not argv, where `ps` would show it.
+      test: ['CMD-SHELL', 'MYSQL_PWD=$$MYSQL_PASSWORD mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -42,6 +43,17 @@ services:
     init: true
     # `exec` makes node, not the shell, receive the stop signal.
     command: sh -c 'node apps/api/src/migrate.ts && exec node apps/api/src/server.ts'
+    # The slim image has no curl; node's own fetch does the probe. start_period covers the migration.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1), () => process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
 
 volumes:
   mysql-data:

@@ -1,55 +1,39 @@
-import type { Ad, GameState, ScoredReasoning } from '@bigbank-dragon/contracts';
-import type { Knex } from 'knex';
+import type { Ad, ScoredReasoning } from '@bigbank-dragon/contracts';
 
-import type { GameRun } from '../../entities/game-run.ts';
 import type { OrGameOver } from '../../entities/or-game-over.ts';
-import type { TurnResult } from '../../entities/turn-result.ts';
+import type { SavedTurn } from '../../entities/turn-result.ts';
 import { adAttemptRepository } from '../../repositories/index.ts';
-import { saveStateWithRecord } from './save-state-with-record.ts';
+import { playMove } from './play-move.ts';
+import type { MoveContext } from './play-move.ts';
 
-export const playSolveTurn = async ({
-  db,
-  run,
-  state,
+export const playSolveTurn = ({
+  context,
   ad,
   reasoning,
 }: {
-  db: Knex;
-  run: GameRun;
-  state: GameState;
+  context: MoveContext;
   ad: Ad;
   reasoning: ScoredReasoning;
-}): Promise<OrGameOver<TurnResult>> => {
-  const solveResult = await adAttemptRepository.mugloar.createOne({
-    gameId: run.gameId,
-    adId: ad.adId,
-  });
+}): Promise<OrGameOver<SavedTurn>> => {
+  const { run, state } = context;
 
-  if (solveResult.status === 'game_over') {
-    return solveResult;
-  }
-
-  const outcome = solveResult.value;
-  // solve never reports level; it only changes through a purchase.
-  const nextState: GameState = {
-    ...state,
-    lives: outcome.lives,
-    gold: outcome.gold,
-    score: outcome.score,
-    turn: outcome.turn,
-  };
-
-  const turnResult: TurnResult = {
-    state: nextState,
-    success: outcome.success,
-    message: outcome.message,
-  };
-
-  await saveStateWithRecord({
-    db,
-    run,
-    turnResult,
-    writeRecord: (trx) =>
+  return playMove({
+    context,
+    callUpstream: () =>
+      adAttemptRepository.mugloar.createOne({ gameId: run.gameId, adId: ad.adId }),
+    // solve never reports level; it only changes through a purchase.
+    toTurnResult: ({ outcome }) => ({
+      state: {
+        ...state,
+        lives: outcome.lives,
+        gold: outcome.gold,
+        score: outcome.score,
+        turn: outcome.turn,
+      },
+      success: outcome.success,
+      message: outcome.message,
+    }),
+    writeRecord: ({ outcome, trx }) =>
       adAttemptRepository.db.createOne({
         db: trx,
         attempt: {
@@ -67,6 +51,4 @@ export const playSolveTurn = async ({
         },
       }),
   });
-
-  return { status: 'ok', value: turnResult };
 };

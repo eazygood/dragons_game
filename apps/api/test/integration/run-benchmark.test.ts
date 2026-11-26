@@ -1,24 +1,27 @@
 import { TARGET_SCORE } from '@bigbank-dragon/contracts';
-import type { Knex } from 'knex';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
 import { runBenchmark } from '../../src/cli/benchmark.ts';
-import { loadConfig } from '../../src/config/index.ts';
 import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';
+import { useMigratedDatabase } from '../support/integration-db.ts';
 import { scriptGame } from '../support/scripted-game.ts';
 
 const config = STRATEGY_CONFIG;
 const SCRIPTED_TURNS = 3;
 // The scripted game holds one game at a time, so runs must not overlap.
 const SEQUENTIAL = 1;
+// Below the scripted game's starting lives, so every turn is a solve and a run lasts exactly
+// `SCRIPTED_TURNS` solves.
+const SOLVING_CONFIG = { ...STRATEGY_CONFIG, livesFloor: 2 };
 const SEEDED_GAME_ID = 'seeded-before-benchmark';
+const MILLISECONDS_PER_SOLVE = 5000;
+const SECONDS_PER_SCRIPTED_RUN = (SCRIPTED_TURNS * MILLISECONDS_PER_SOLVE) / 1000;
 
 describe('runBenchmark: history scoping and run accounting', () => {
-  let db: Knex;
+  const db = useMigratedDatabase();
   let seededRunId: number;
 
   const countOfAttemptsSeededBefore = async () => {
@@ -29,20 +32,12 @@ describe('runBenchmark: history scoping and run accounting', () => {
     return Number(row?.total);
   };
 
-  beforeAll(async () => {
-    db = createDatabase({ config: loadConfig({ env: process.env }) });
-    await db.migrate.rollback(undefined, true);
-    await db.migrate.latest();
-  });
-
-  afterAll(() => db.destroy());
-
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
   beforeEach(async () => {
-    await db(DbTables.GameRuns).delete();
     seededRunId = await gameRunRepository.db.createOne({
       db,
       gameRun: {
@@ -153,5 +148,46 @@ describe('runBenchmark: history scoping and run accounting', () => {
     });
 
     expect(summary).toMatchObject({ runs: 3, failedRuns: 1 });
+  });
+
+  // Only the clock is faked, so the database still answers in real time.
+  it('reports the mean duration from the stored start and end of each run', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-25T10:00:00.000Z'));
+
+    const scriptedSolve = scriptedGame.solveAd.getMockImplementation();
+
+    scriptedGame.solveAd.mockImplementation((input) => {
+      vi.setSystemTime(Date.now() + MILLISECONDS_PER_SOLVE);
+
+      return scriptedSolve ? scriptedSolve(input) : Promise.reject(new Error('no scripted solve'));
+    });
+
+    const summary = await runBenchmark({
+      db,
+      strategy: 'baseline',
+      runs: 2,
+      readsAllHistory: false,
+      concurrency: SEQUENTIAL,
+      config: SOLVING_CONFIG,
+    });
+
+    expect(summary.meanDurationInSeconds).toBe(SECONDS_PER_SCRIPTED_RUN);
+  });
+
+  it('leaves a run that never ended out of the mean duration', async () => {
+    scriptedGame.solveAd.mockRejectedValue(new Error('upstream exploded'));
+    vi.spyOn(gameRunRepository.db, 'updateOne').mockRejectedValue(new Error('db went away'));
+
+    const summary = await runBenchmark({
+      db,
+      strategy: 'baseline',
+      runs: 1,
+      readsAllHistory: false,
+      concurrency: SEQUENTIAL,
+      config,
+    });
+
+    expect(summary).toMatchObject({ failedRuns: 1, meanDurationInSeconds: 0 });
   });
 });

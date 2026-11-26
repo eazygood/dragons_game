@@ -4,10 +4,17 @@ import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { GameNotFoundError, UpstreamUnavailableError } from '../../src/errors/errors.ts';
+import {
+  AdExpiredError,
+  GameNotFoundError,
+  UpstreamUnavailableError,
+} from '../../src/errors/errors.ts';
+import { ServiceUnavailableError } from '../../src/errors/service-unavailable-error.ts';
+import { TooManyRequestsError } from '../../src/errors/too-many-requests-error.ts';
 import { errorHandler } from '../../src/routes/error-handlers/error-handler.ts';
 
 const PINO_WARN_LEVEL = 40;
+const RETRY_AFTER_SECONDS = 30;
 const UPSTREAM_DETAIL = 'list_ads (GET /secret-game/messages) → 503: <html>busy</html>';
 
 describe('errorHandler', () => {
@@ -30,8 +37,23 @@ describe('errorHandler', () => {
         cause: new Error(UPSTREAM_DETAIL),
       });
     });
+    app.get('/shutting-down', () => {
+      throw new ServiceUnavailableError({ message: 'Registry closing, 2 games in flight' });
+    });
     app.get('/unknown-game', () => {
       throw new GameNotFoundError({ message: 'Game g1 not found' });
+    });
+    app.get('/expired-ad', () => {
+      throw new AdExpiredError({ message: 'Ad a1 has expired' });
+    });
+    app.get('/busy', () => {
+      throw new TooManyRequestsError({
+        message: 'Too many bot games',
+        retryAfterSeconds: RETRY_AFTER_SECONDS,
+      });
+    });
+    app.get('/busy-no-hint', () => {
+      throw new TooManyRequestsError({ message: 'Too many bot games' });
     });
     await app.ready();
   });
@@ -52,6 +74,15 @@ describe('errorHandler', () => {
     expect(response.body).not.toMatch(/secret-game|html|503/);
   });
 
+  it('answers a 503 with its own fixed text, not the generic one', async () => {
+    const response = await app.inject({ url: '/shutting-down' });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({
+      error: { code: 'service_unavailable', message: 'The server is shutting down' },
+    });
+  });
+
   it('logs a 5xx app error at warn, with its cause', async () => {
     await app.inject({ url: '/upstream-down' });
 
@@ -62,11 +93,30 @@ describe('errorHandler', () => {
     expect(JSON.stringify(logged?.err)).toContain('secret-game/messages');
   });
 
-  it('passes a 4xx app error through with its own message, unlogged', async () => {
-    const response = await app.inject({ url: '/unknown-game' });
+  it.each([
+    { url: '/unknown-game', statusCode: 404, code: 'not_found', message: 'Game g1 not found' },
+    { url: '/expired-ad', statusCode: 409, code: 'conflict', message: 'Ad a1 has expired' },
+  ])(
+    'passes a 4xx app error through with its status, code and message, unlogged: $url',
+    async ({ url, statusCode, code, message }) => {
+      const response = await app.inject({ url });
 
-    expect(response.statusCode).toBe(404);
-    expect(response.json()).toEqual({ error: { code: 'not_found', message: 'Game g1 not found' } });
-    expect(logLines.filter((line) => line.includes('"err"'))).toEqual([]);
+      expect(response.statusCode).toBe(statusCode);
+      expect(response.json()).toEqual({ error: { code, message } });
+      expect(logLines.filter((line) => line.includes('"err"'))).toEqual([]);
+    },
+  );
+
+  it('tells a client when to retry a 429 our own code raised', async () => {
+    const response = await app.inject({ url: '/busy' });
+
+    expect(response.statusCode).toBe(429);
+    expect(response.headers['retry-after']).toBe(String(RETRY_AFTER_SECONDS));
+  });
+
+  it('sends no Retry-After when the 429 carries no hint', async () => {
+    const response = await app.inject({ url: '/busy-no-hint' });
+
+    expect(response.headers['retry-after']).toBeUndefined();
   });
 });

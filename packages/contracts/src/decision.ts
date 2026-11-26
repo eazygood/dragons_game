@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const DecisionRuleSchema = z.enum([
   'survival_floor',
+  // No longer chosen by the engine, but rows stored by earlier experiments still carry it.
   'level_up',
   'best_expected_value',
   'safest_available',

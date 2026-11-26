@@ -8,6 +8,7 @@ export const ApiErrorCodeSchema = z.enum([
   'internal',
   'game_over',
   'too_many_requests',
+  'service_unavailable',
 ]);
 
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;

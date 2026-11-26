@@ -97,6 +97,20 @@ const findOne = async ({
   return row ? reverseTransform({ row }) : null;
 };
 
+const findMany = async ({
+  db,
+  benchmarkId,
+}: {
+  db: DbExecutor;
+  benchmarkId: string;
+}): Promise<GameRun[]> => {
+  const rows = await db<GameRunRow>(DbTables.GameRuns)
+    .where({ benchmark_id: benchmarkId })
+    .orderBy('id');
+
+  return rows.map((row) => reverseTransform({ row }));
+};
+
 const updateOne = async ({
   db,
   id,
@@ -109,4 +123,4 @@ const updateOne = async ({
   await db(DbTables.GameRuns).where({ id }).update(transformPatch({ patch }));
 };
 
-export const dbRepository = { createOne, findOne, updateOne };
+export const dbRepository = { createOne, findOne, findMany, updateOne };

@@ -1,11 +1,13 @@
 import { TARGET_SCORE } from '@bigbank-dragon/contracts';
 import type { GameView } from '@bigbank-dragon/contracts';
 
+import { hasActiveStatus } from '../../api/game-status.ts';
+
 export type WatchOutcomeKind = 'in_progress' | 'reached_target' | 'finished_below_target';
 
 // An abandoned run (the engine stopped) and a game over are both just "finished".
 export const watchOutcome = ({ game }: { game: GameView }): WatchOutcomeKind => {
-  if (game.status === 'active') {
+  if (hasActiveStatus({ game })) {
     return 'in_progress';
   }
 

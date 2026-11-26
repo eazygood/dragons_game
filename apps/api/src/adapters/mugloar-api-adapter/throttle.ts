@@ -1,8 +1,8 @@
+import { discardOutcome } from '../../entities/discard-outcome.ts';
+
 export type Throttle = { acquire({ signal }: { signal: AbortSignal }): Promise<void> };
 
 const MS_PER_SECOND = 1000;
-
-const discardOutcome = () => undefined;
 
 // Settles with `pending`, or rejects with the abort reason as soon as `signal` fires.
 const untilAborted = ({

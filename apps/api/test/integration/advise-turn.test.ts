@@ -1,37 +1,34 @@
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
-import type { Knex } from 'knex';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
-import { loadConfig } from '../../src/config/index.ts';
-import { priorCalibration } from '../../src/domain/engine/calibration.ts';
-import { decide } from '../../src/domain/engine/decide.ts';
-import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
 import type { GameRun } from '../../src/entities/game-run.ts';
 import { adviseTurn } from '../../src/managers/advisor-manager/index.ts';
-import { startGameRun, stateFromRun } from '../../src/managers/game-manager/index.ts';
-import { DbTables } from '../../src/repositories/db-tables.ts';
-import {
-  PLAYER_BOARD,
-  PLAYER_GAME_ID,
-  SILENT_LOGGER,
-  stubPlayerUpstream,
-} from '../support/player-game.ts';
+import { startGameRun } from '../../src/managers/game-manager/index.ts';
+import { adRepository, gameRunRepository } from '../../src/repositories/index.ts';
+import { useMigratedDatabase } from '../support/integration-db.ts';
+import { PLAYER_GAME_ID, SILENT_LOGGER, stubPlayerUpstream } from '../support/player-game.ts';
+import { seedEvidence } from '../support/seed-evidence.ts';
+
+const SURE_AD_ID = 'sure1';
+const ADVERSE_HISTORY = [
+  { label: 'Sure thing', level: 0, reward: 30, attempts: 100, successes: 0 },
+] as const;
+const PRIOR_ESTIMATE = 0.95;
 
 describe('turn advice', () => {
-  let db: Knex;
+  const db = useMigratedDatabase();
   let run: GameRun;
 
-  beforeAll(async () => {
-    db = createDatabase({ config: loadConfig({ env: process.env }) });
-    await db.migrate.rollback(undefined, true);
-    await db.migrate.latest();
-  });
+  const adviceFor = async ({ adId }: { adId: string }) => {
+    const turn = await adviseTurn({ db, gameId: PLAYER_GAME_ID, logger: SILENT_LOGGER });
 
-  afterAll(() => db.destroy());
+    if (turn.status === 'game_over') {
+      throw new Error('the stubbed game is not over');
+    }
+
+    return turn.value.board.find((ad) => ad.adId === adId)?.advice;
+  };
 
   beforeEach(async () => {
-    await db(DbTables.GameRuns).delete();
     stubPlayerUpstream();
     ({ run } = await startGameRun({ db, strategy: 'manual' }));
   });
@@ -40,17 +37,26 @@ describe('turn advice', () => {
     vi.restoreAllMocks();
   });
 
-  it('advises exactly what decide() would do', async () => {
-    const turn = await adviseTurn({ db, gameId: PLAYER_GAME_ID, logger: SILENT_LOGGER });
-    const calibration = priorCalibration({ config: STRATEGY_CONFIG });
-    const expected = decide({
-      state: stateFromRun({ run }),
-      board: PLAYER_BOARD,
-      shop: [...RECORDED_SHOP_ITEMS],
-      calibration,
-      config: STRATEGY_CONFIG,
-    });
+  it('grades the board on the prior while there is no history', async () => {
+    expect((await adviceFor({ adId: SURE_AD_ID }))?.estimatedProbability).toBe(PRIOR_ESTIMATE);
+  });
 
-    expect(turn).toMatchObject({ status: 'ok', value: { recommendation: expected } });
+  it('grades the board on every game the table holds, not only this one', async () => {
+    await seedEvidence({ db, cells: [...ADVERSE_HISTORY] });
+
+    expect((await adviceFor({ adId: SURE_AD_ID }))?.estimatedProbability).toBeLessThan(
+      PRIOR_ESTIMATE,
+    );
+  });
+
+  it('settles the run when the board comes back game over', async () => {
+    vi.mocked(adRepository.mugloar.findMany).mockResolvedValue({ status: 'game_over' });
+
+    expect(await adviseTurn({ db, gameId: PLAYER_GAME_ID, logger: SILENT_LOGGER })).toEqual({
+      status: 'game_over',
+    });
+    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
+      status: 'game_over',
+    });
   });
 });

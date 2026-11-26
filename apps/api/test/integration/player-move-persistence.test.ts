@@ -1,8 +1,5 @@
-import type { Knex } from 'knex';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
-import { loadConfig } from '../../src/config/index.ts';
 import type { GameRun } from '../../src/entities/game-run.ts';
 import { PersistenceFailedError } from '../../src/errors/errors.ts';
 import {
@@ -10,28 +7,19 @@ import {
   solvePlayerAd,
   startGameRun,
 } from '../../src/managers/game-manager/index.ts';
-import { DbTables } from '../../src/repositories/db-tables.ts';
 import {
   adAttemptRepository,
   gameRunRepository,
   purchaseRepository,
 } from '../../src/repositories/index.ts';
+import { useMigratedDatabase } from '../support/integration-db.ts';
 import { PLAYER_GAME_ID, SILENT_LOGGER, stubPlayerUpstream } from '../support/player-game.ts';
 
 describe('player move persistence when a write fails', () => {
-  let db: Knex;
+  const db = useMigratedDatabase();
   let run: GameRun;
 
-  beforeAll(async () => {
-    db = createDatabase({ config: loadConfig({ env: process.env }) });
-    await db.migrate.rollback(undefined, true);
-    await db.migrate.latest();
-  });
-
-  afterAll(() => db.destroy());
-
   beforeEach(async () => {
-    await db(DbTables.GameRuns).delete();
     stubPlayerUpstream();
     ({ run } = await startGameRun({ db, strategy: 'manual' }));
   });

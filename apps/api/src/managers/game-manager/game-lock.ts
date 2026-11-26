@@ -1,8 +1,8 @@
+import { discardOutcome } from '../../entities/discard-outcome.ts';
+
 // One move per game at a time: a double click must not reach the upstream twice
 // concurrently, and the second move must see the state the first one left.
 const pendingTasksByGame = new Map<string, Promise<void>>();
-
-const discardOutcome = () => undefined;
 
 export const withGameLock = <T>({
   gameId,

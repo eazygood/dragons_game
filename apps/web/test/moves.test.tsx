@@ -9,7 +9,7 @@ import { GameScreen } from '../src/features/play/game/GameScreen.tsx';
 import { ShopPanel } from '../src/features/play/shop/ShopPanel.tsx';
 import { createQueryClient } from '../src/query-client.ts';
 import { respondInSequence, respondNever, respondOk, respondWith, stubApi } from './fetch-stub.ts';
-import { GAME_VIEW, IDLE_MOVE_ACTIONS, MOVE_RESULT, TURN_VIEW } from './fixtures.ts';
+import { GAME_VIEW, IDLE_MOVE_ACTIONS, MOVE_MESSAGE, MOVE_RESULT, TURN_VIEW } from './fixtures.ts';
 import { renderInRouter, renderWithQuery } from './render.tsx';
 
 const GAME_ROUTE = 'GET /api/games/g1';
@@ -33,7 +33,11 @@ describe('player moves', () => {
     renderInRouter(<GameScreen gameId="g1" />);
     await clickSolve();
 
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(MOVE_RESULT.message!));
+    await waitFor(() =>
+      expect(screen.getByRole('status', { name: playCopy.moves.label })).toHaveTextContent(
+        MOVE_MESSAGE,
+      ),
+    );
     await waitFor(() => expect(api.callCountOf(TURN_ROUTE)).toBe(2));
   });
 
@@ -43,10 +47,9 @@ describe('player moves', () => {
     renderInRouter(<GameScreen gameId="g1" />);
     await clickSolve();
 
-    expect(screen.getByRole('status')).toHaveFocus();
+    expect(screen.getByRole('status', { name: playCopy.moves.label })).toHaveFocus();
   });
 
-  // Review Focus #1 (client half)
   it('disables every move while one is in flight', async () => {
     stubApi({ ...activeGameRoutes, [SOLVE_ROUTE]: respondNever() });
 
@@ -58,7 +61,6 @@ describe('player moves', () => {
     }
   });
 
-  // Review Focus #2 (client half)
   it('explains an expired ad and refreshes the board', async () => {
     const api = stubApi({
       ...activeGameRoutes,
@@ -91,7 +93,6 @@ describe('player moves', () => {
     expect(api.callCountOf(SOLVE_ROUTE)).toBe(1);
   });
 
-  // Review Focus #3 (client half)
   it('disables a purchase the player cannot afford and says why', () => {
     renderWithQuery(
       <ShopPanel shop={[...RECORDED_SHOP_ITEMS]} gold={40} moveActions={IDLE_MOVE_ACTIONS} />,
@@ -110,7 +111,6 @@ describe('player moves', () => {
     expect(screen.getByText(playCopy.shop.empty)).toBeVisible();
   });
 
-  // Review Focus #5 (client half)
   it('shows the game over screen when a move ends the game', async () => {
     stubApi({
       [GAME_ROUTE]: respondInSequence({
@@ -167,22 +167,22 @@ describe('player moves', () => {
     expect(await screen.findByRole('heading', { name: playCopy.gameOver.title })).toBeVisible();
   });
 
-  it('offers a retry when the game cannot be loaded', async () => {
-    stubApi({
-      [GAME_ROUTE]: respondInSequence({
-        responders: [
-          respondWith({
-            status: 502,
-            body: { error: { code: 'upstream_unavailable', message: 'down' } },
-          }),
-          respondOk({ body: FINISHED_GAME }),
-        ],
+  it('tells the player to wait when a move is rate limited, and keeps the board', async () => {
+    const api = stubApi({
+      ...activeGameRoutes,
+      [SOLVE_ROUTE]: respondWith({
+        status: 429,
+        body: { error: { code: 'too_many_requests', message: 'slow down' } },
       }),
     });
 
-    renderInRouter(<GameScreen gameId="g1" />);
-    await userEvent.click(await screen.findByRole('button', { name: sharedCopy.errors.retry }));
+    renderInRouter(<GameScreen gameId="g1" />, { queryClient: createQueryClient() });
+    await clickSolve();
 
-    expect(await screen.findByRole('heading', { name: playCopy.gameOver.title })).toBeVisible();
+    expect(await screen.findByRole('status', { name: playCopy.moves.label })).toHaveTextContent(
+      sharedCopy.errors.tooManyRequests,
+    );
+    expect(screen.getAllByRole('article')).toHaveLength(TURN_VIEW.board.length);
+    expect(api.callCountOf(SOLVE_ROUTE)).toBe(1);
   });
 });

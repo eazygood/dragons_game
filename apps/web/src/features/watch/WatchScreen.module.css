@@ -1,6 +1,12 @@
 .watch {
   display: grid;
   gap: var(--space-3);
+  max-width: var(--max-width-watch);
+}
+
+/* Panel caps itself at the narrow panel width; on this screen it must fill the shared column. */
+.watch > section {
+  max-width: none;
 }
 
 .watch h2 {

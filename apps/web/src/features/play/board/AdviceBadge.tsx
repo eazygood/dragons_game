@@ -1,6 +1,6 @@
 import type { AdAdvice } from '@bigbank-dragon/contracts';
 
-import { formatGold, formatPercent } from '../../../shared/format.ts';
+import { formatChance, formatGold } from '../../../shared/format.ts';
 import { playCopy } from '../play-copy.ts';
 import styles from './AdviceBadge.module.css';
 
@@ -12,7 +12,7 @@ export const AdviceBadge = ({ advice }: { advice: AdAdvice }) => (
     </div>
     <div>
       <dt>{playCopy.board.estimate}</dt>
-      <dd>{formatPercent({ probability: advice.estimatedProbability })}</dd>
+      <dd>{formatChance({ winChance: advice.estimatedProbability })}</dd>
     </div>
     <div>
       <dt>{playCopy.board.expectedValue}</dt>

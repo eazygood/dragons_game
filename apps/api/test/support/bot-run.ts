@@ -1,10 +1,8 @@
 import type { Knex } from 'knex';
-import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi } from 'vitest';
 
-import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
-import { loadConfig } from '../../src/config/index.ts';
 import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
-import { DbTables } from '../../src/repositories/db-tables.ts';
+import { useMigratedDatabase } from './integration-db.ts';
 import { scriptGame } from './scripted-game.ts';
 
 // Below the scripted game's starting lives, so the engine solves every turn.
@@ -20,18 +18,9 @@ type BotRunHarness = { db: Knex; scriptedGame: ReturnType<typeof scriptGame> };
 // Registers the hooks of a runBot suite: a migrated database emptied before each
 // test, and a freshly scripted game behind the upstream repositories.
 export const useBotRunHarness = (): BotRunHarness => {
-  const harness = {} as BotRunHarness;
+  const harness = { db: useMigratedDatabase() } as BotRunHarness;
 
-  beforeAll(async () => {
-    harness.db = createDatabase({ config: loadConfig({ env: process.env }) });
-    await harness.db.migrate.rollback(undefined, true);
-    await harness.db.migrate.latest();
-  });
-
-  afterAll(() => harness.db.destroy());
-
-  beforeEach(async () => {
-    await harness.db(DbTables.GameRuns).delete();
+  beforeEach(() => {
     harness.scriptedGame = scriptGame({ turnsUntilGameOver: SCRIPTED_TURNS });
   });
 

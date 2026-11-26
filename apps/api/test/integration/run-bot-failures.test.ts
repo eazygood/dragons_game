@@ -15,7 +15,6 @@ import {
 describe('runBot when something fails mid-game', () => {
   const harness = useBotRunHarness();
 
-  // Review Focus #5
   it('keeps playing when a persistence write fails', async () => {
     vi.spyOn(adAttemptRepository.db, 'createOne').mockRejectedValue(new Error('insert failed'));
 
@@ -50,7 +49,7 @@ describe('runBot when something fails mid-game', () => {
     expect(run?.ended_at).not.toBeNull();
   });
 
-  it('falls back to the prior calibration when the calibration read fails', async () => {
+  it('plays on when every calibration read fails', async () => {
     vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts').mockRejectedValue(
       new Error('read failed'),
     );
@@ -58,7 +57,10 @@ describe('runBot when something fails mid-game', () => {
     const result = await runBot({ db: harness.db, strategy: 'calibrated', config, logger });
 
     expect(result.score).toBe(SCRIPTED_SCORE);
-    expect(logger.warn).toHaveBeenCalledTimes(SCRIPTED_TURNS);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: expect.any(Error) as Error }),
+      'calibration read failed; playing on the last one',
+    );
   });
 
   it('still reports the finished game and logs it when the final run write fails', async () => {

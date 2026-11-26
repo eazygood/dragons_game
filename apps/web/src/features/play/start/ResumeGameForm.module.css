@@ -1,5 +1,8 @@
+/* An implicit auto column cannot shrink below the input's intrinsic width (size=20), so the row
+   spilled out of the card, worst in Firefox; `min-width: 0` on the input alone does not stop it. */
 .form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
 }
 
@@ -11,9 +14,4 @@
 .row input {
   flex: 1;
   min-width: 0;
-}
-
-.error {
-  margin: 0;
-  color: var(--color-danger);
 }

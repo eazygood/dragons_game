@@ -8,26 +8,26 @@ import { watchCopy } from './watch-copy.ts';
 import { watchOutcome } from './watch-outcome.ts';
 import type { WatchOutcomeKind } from './watch-outcome.ts';
 
-const statusText = ({ outcome, score }: { outcome: WatchOutcomeKind; score: number }) => {
-  if (outcome === 'in_progress') {
+const statusText = ({ outcomeKind, score }: { outcomeKind: WatchOutcomeKind; score: number }) => {
+  if (outcomeKind === 'in_progress') {
     return watchCopy.inProgress;
   }
 
-  return outcome === 'reached_target'
+  return outcomeKind === 'reached_target'
     ? watchCopy.reachedTarget(score)
     : watchCopy.finishedBelowTarget(score);
 };
 
 export const WatchOutcome = ({ game }: { game: GameView }) => {
-  const outcome = watchOutcome({ game });
+  const outcomeKind = watchOutcome({ game });
 
   return (
     <Panel>
-      <p role="status" className={outcome === 'reached_target' ? styles.reached : undefined}>
-        {statusText({ outcome, score: game.state.score })}
+      <p role="status" className={outcomeKind === 'reached_target' ? styles.reached : undefined}>
+        {statusText({ outcomeKind, score: game.state.score })}
       </p>
       <p className={styles.target}>{watchCopy.target}</p>
-      {outcome !== 'in_progress' && (
+      {outcomeKind !== 'in_progress' && (
         <div className={styles.links}>
           <Link to="/play">{watchCopy.playYourself}</Link>
           <RunBotAgainButton />

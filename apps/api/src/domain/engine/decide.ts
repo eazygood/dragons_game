@@ -68,40 +68,14 @@ const buy = ({
   reasoning: unscoredReasoning({ rule, scored }),
 });
 
-// Lowest id among equal costs keeps benchmark runs reproducible.
-const cheapestLevelUp = ({ shop }: { shop: ShopItem[] }) =>
-  shop
-    .filter((item) => item.id !== HEALING_POTION_ID)
-    .toSorted((left, right) => left.cost - right.cost || left.id.localeCompare(right.id))[0];
-
 const safest = ({ scored }: { scored: ScoredAd[] }) =>
   scored.toSorted((left, right) => right.estimatedProbability - left.estimatedProbability)[0];
-
-// Experiment code, off by default (levelUpEnabled: false): kept so a bench run can sweep
-// level buying against the plain expected-value rule with `pnpm bench --override`.
-const shouldLevelUp = ({
-  state,
-  item,
-  hasViableAd,
-  config,
-}: {
-  state: GameState;
-  item: ShopItem;
-  hasViableAd: boolean;
-  config: StrategyConfig;
-}) => {
-  if (!config.levelUpEnabled || state.gold < item.cost) {
-    return false;
-  }
-
-  return !hasViableAd || state.gold - item.cost >= config.levelUpGoldReserve;
-};
 
 export const decide = ({ state, board, shop, calibration, config }: DecideInput): Decision => {
   const scored = scoreAds({ board, state, calibration, config });
   const potion = shop.find((item) => item.id === HEALING_POTION_ID);
 
-  // Lives, not gold, end the game: a measured long run scored 6840, a short one 467.
+  // Lives, not gold, end the game, so gold goes to a potion once lives reach the floor.
   if (state.lives <= config.livesFloor && potion && state.gold >= potion.cost) {
     return buy({ rule: 'survival_floor', scored, item: potion });
   }
@@ -109,15 +83,6 @@ export const decide = ({ state, board, shop, calibration, config }: DecideInput)
   const viableAds = scored.filter(
     (entry) => entry.estimatedProbability >= config.minimumProbability,
   );
-  const levelUp = cheapestLevelUp({ shop });
-
-  if (
-    levelUp &&
-    shouldLevelUp({ state, item: levelUp, hasViableAd: viableAds.length > 0, config })
-  ) {
-    return buy({ rule: 'level_up', scored, item: levelUp });
-  }
-
   const best = viableAds[0];
 
   if (best) {

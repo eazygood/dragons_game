@@ -16,8 +16,8 @@ pnpm lint               # eslint, zero warnings tolerated
 pnpm format             # prettier (format:check is read-only)
 pnpm typecheck          # tsc --noEmit, all workspaces
 pnpm test               # contracts, api unit + contract, web component
-pnpm test:integration   # needs MySQL (docker compose up -d mysql)
-pnpm test:e2e           # Playwright, 3 browsers x 2 widths, /api intercepted
+pnpm test:integration   # needs MySQL (docker compose up -d --wait mysql)
+pnpm test:e2e           # Playwright, 3 browsers x 3 widths, /api intercepted
 pnpm build
 
 pnpm db:migrate         # apps/api/src/migrate.ts: knex latest
@@ -36,7 +36,7 @@ Docker runtime is Colima. If containers fail, check `colima status`.
 Dependencies move downward only. Never skip a layer, never call upward.
 Entry points are `routes/` (HTTP) and `cli/` (bot, bench); both call mediators
 or managers only, and `app.ts` and `cli/live-runtime.ts` are the composition
-roots. `eslint.config.mjs` enforces the boundaries.
+roots. `eslint.boundaries.mjs` enforces the boundaries.
 
 The **decision engine** (`apps/api/src/domain/engine/`) is **pure** — no I/O, no
 clock, no randomness. This is load-bearing, not stylistic: it is why the headless

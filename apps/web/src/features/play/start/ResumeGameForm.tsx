@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { playCopy } from '../play-copy.ts';
+import errorStyles from '../../../shared/inline-error.module.css';
 import styles from './ResumeGameForm.module.css';
 
 // UX only: the API re-validates the id, this just keeps a typo out of the URL.
@@ -39,7 +40,7 @@ export const ResumeGameForm = ({ onResume }: { onResume: (gameId: string) => voi
         </button>
       </div>
       {shouldShowError && (
-        <p id={errorId} className={styles.error}>
+        <p id={errorId} className={errorStyles.error}>
           {playCopy.start.invalidGameId}
         </p>
       )}

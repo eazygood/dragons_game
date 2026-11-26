@@ -6,7 +6,7 @@ import { STRATEGY_CONFIG } from '../../domain/engine/strategy-config.ts';
 import type { GameRun } from '../../entities/game-run.ts';
 import type { Logger } from '../../entities/logger.ts';
 import type { OrGameOver } from '../../entities/or-game-over.ts';
-import { loadCalibration } from '../calibration-manager/index.ts';
+import { loadPlayerCalibration } from '../calibration-manager/index.ts';
 import {
   recordGameOver,
   findAds,
@@ -22,7 +22,6 @@ type PlayerTurn = {
   recommendation: Decision;
 };
 
-// The advisor reads all history (benchmarkId null): a human game has no benchmark scope.
 export const adviseTurn = async ({
   db,
   gameId,
@@ -49,20 +48,13 @@ export const adviseTurn = async ({
     return { status: 'game_over' };
   }
 
-  const config = STRATEGY_CONFIG;
-  const calibration = await loadCalibration({
-    db,
-    strategy: 'calibrated',
-    config,
-    logger,
-    benchmarkId: null,
-  });
+  const calibration = await loadPlayerCalibration({ db, logger });
   const { recommendation, ads } = adviseBoard({
     state: stateFromRun({ run }),
     board: boardResult.value,
     shop: shopResult.value,
     calibration,
-    config,
+    config: STRATEGY_CONFIG,
   });
 
   return { status: 'ok', value: { run, board: ads, shop: shopResult.value, recommendation } };

@@ -2,24 +2,70 @@ import type { Knex } from 'knex';
 
 import { withTransaction } from '../../adapters/mysql-adapter.ts';
 import type { GameRun } from '../../entities/game-run.ts';
-import type { TurnResult } from '../../entities/turn-result.ts';
+import type { Logger } from '../../entities/logger.ts';
+import type { SavedTurn, TurnResult } from '../../entities/turn-result.ts';
 import { PersistenceFailedError } from '../../errors/errors.ts';
 import { gameRunRepository } from '../../repositories/index.ts';
 import { statePatch } from './run-state.ts';
 
-// One transaction for the run's live state and the turn's record (ad attempt or
-// purchase), so a failed record write rolls the state back and the two never disagree.
-export const saveStateWithRecord = async ({
-  db,
-  run,
-  turnResult,
-  writeRecord,
-}: {
+// What a lost record means depends on who plays. A bot carries its state in memory, so it
+// logs and plays on. A player's next move rebuilds state from the row, so a lost write would
+// carry a stale dragon level forward for good: the record may go, but the state must land.
+export type OnPersistFailure = 'keep_playing' | 'save_state_only';
+
+type SaveInput = {
   db: Knex;
   run: GameRun;
   turnResult: TurnResult;
+  logger: Logger;
+};
+
+const settleLostRecord = async ({
+  db,
+  run,
+  turnResult,
+  logger,
+  cause,
+  onPersistFailure,
+}: SaveInput & { cause: unknown; onPersistFailure: OnPersistFailure }): Promise<SavedTurn> => {
+  const { turn } = turnResult.state;
+  const lostRecord: SavedTurn = { turn: turnResult, persisted: false };
+
+  if (onPersistFailure === 'keep_playing') {
+    logger.warn({ err: cause, turn }, 'turn not persisted; playing on');
+    return lostRecord;
+  }
+
+  logger.warn({ err: cause, turn }, 'turn record not persisted; saving state only');
+
+  try {
+    await gameRunRepository.db.updateOne({
+      db,
+      id: run.id,
+      patch: statePatch({ state: turnResult.state }),
+    });
+  } catch (fallbackError) {
+    throw new PersistenceFailedError({
+      message: `Could not save the state after turn ${turn} of game ${run.gameId}`,
+      cause: fallbackError,
+    });
+  }
+
+  return lostRecord;
+};
+
+// One transaction for the run's live state and the turn's record (ad attempt or
+// purchase), so a failed record write rolls the state back and the two never disagree.
+export const saveStateWithRecord = async ({
+  writeRecord,
+  onPersistFailure,
+  ...input
+}: SaveInput & {
   writeRecord: (trx: Knex.Transaction) => Promise<unknown>;
-}): Promise<void> => {
+  onPersistFailure: OnPersistFailure;
+}): Promise<SavedTurn> => {
+  const { db, run, turnResult } = input;
+
   try {
     await withTransaction({
       db,
@@ -33,10 +79,8 @@ export const saveStateWithRecord = async ({
       },
     });
   } catch (cause) {
-    throw new PersistenceFailedError({
-      message: `Could not record turn ${turnResult.state.turn} of game ${run.gameId}`,
-      cause,
-      turnResult,
-    });
+    return settleLostRecord({ ...input, cause, onPersistFailure });
   }
+
+  return { turn: turnResult, persisted: true };
 };

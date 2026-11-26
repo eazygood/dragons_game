@@ -9,15 +9,24 @@ describe('applyStrategyOverride', () => {
   });
 
   it('replaces only the named thresholds', () => {
-    expect(applyStrategyOverride({ json: '{"livesFloor":1,"levelUpEnabled":false}' })).toEqual({
+    const probabilityPrior = { ...STRATEGY_CONFIG.probabilityPrior, 'Sure thing': 0.9 };
+    const json = JSON.stringify({ livesFloor: 1, probabilityPrior });
+
+    expect(applyStrategyOverride({ json })).toEqual({
       ...STRATEGY_CONFIG,
       livesFloor: 1,
-      levelUpEnabled: false,
+      probabilityPrior,
     });
   });
 
   it('rejects a misspelt key instead of silently benchmarking the defaults', () => {
     expect(() => applyStrategyOverride({ json: '{"liveFloor":1}' })).toThrow();
+  });
+
+  it('rejects a prior that leaves a label out, so no label silently falls back to zero', () => {
+    expect(() =>
+      applyStrategyOverride({ json: '{"probabilityPrior":{"Sure thing":0.9}}' }),
+    ).toThrow();
   });
 
   it('rejects a probability floor outside 0..1', () => {

@@ -2,6 +2,7 @@ import type { ApiErrorBody, ApiErrorCode } from '@bigbank-dragon/contracts';
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
 import { AppError } from '../../errors/app-error.ts';
+import { TooManyRequestsError } from '../../errors/too-many-requests-error.ts';
 
 const HTTP_BAD_REQUEST = 400;
 const HTTP_INTERNAL_SERVER_ERROR = 500;
@@ -9,12 +10,28 @@ const INTERNAL_ERROR_MESSAGE = 'Internal server error';
 // A 5xx answers with fixed text per code; what went wrong is in the error's cause, logged.
 const SERVER_ERROR_MESSAGES: Partial<Record<ApiErrorCode, string>> = {
   upstream_unavailable: 'The Mugloar server is unavailable',
+  service_unavailable: 'The server is shutting down',
 };
 
 const isClientError = (statusCode: number | undefined): statusCode is number =>
   statusCode !== undefined &&
   statusCode >= HTTP_BAD_REQUEST &&
   statusCode < HTTP_INTERNAL_SERVER_ERROR;
+
+const RETRY_AFTER_HEADER = 'retry-after';
+
+// @fastify/rate-limit sets its own header; a 429 raised by our code says when to come back here.
+const withRetryAfter = ({ error, reply }: { error: AppError; reply: FastifyReply }) => {
+  if (!(error instanceof TooManyRequestsError) || error.retryAfterSeconds === undefined) {
+    return reply;
+  }
+
+  if (reply.hasHeader(RETRY_AFTER_HEADER)) {
+    return reply;
+  }
+
+  return reply.header(RETRY_AFTER_HEADER, String(error.retryAfterSeconds));
+};
 
 const errorBody = ({ code, message }: ApiErrorBody['error']): ApiErrorBody => ({
   error: { code, message },
@@ -26,7 +43,7 @@ export const errorHandler = (
   reply: FastifyReply,
 ) => {
   if (error instanceof AppError && error.statusCode < HTTP_INTERNAL_SERVER_ERROR) {
-    return reply.status(error.statusCode).send(errorBody(error));
+    return withRetryAfter({ error, reply }).status(error.statusCode).send(errorBody(error));
   }
 
   if (error instanceof AppError) {

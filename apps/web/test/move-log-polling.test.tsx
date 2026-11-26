@@ -3,7 +3,12 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { WATCH_POLL_INTERVAL_MS, gameKeys } from '../src/api/game-queries.ts';
+import { gameKeys } from '../src/api/game-queries.ts';
+import {
+  MOVE_HISTORY_POLL_INTERVAL_MS,
+  WATCH_POLL_INTERVAL_MS,
+} from '../src/api/poll-intervals.ts';
+import { sharedCopy } from '../src/shared/shared-copy.ts';
 import { WatchScreen } from '../src/features/watch/WatchScreen.tsx';
 import { createQueryClient } from '../src/query-client.ts';
 import { respondInSequence, respondOk, respondWith, stubApi } from './fetch-stub.ts';
@@ -49,19 +54,34 @@ describe('the bot move log while the game runs', () => {
     renderInRouter(<WatchScreen gameId={GAME_ID} />);
     await showMoves();
     await screen.findByRole('list');
-    await vi.advanceTimersByTimeAsync(WATCH_POLL_INTERVAL_MS * 2);
+    await vi.advanceTimersByTimeAsync(MOVE_HISTORY_POLL_INTERVAL_MS);
 
     expect(api.callCountOf(MOVES_ROUTE)).toBeGreaterThan(1);
 
     await vi.advanceTimersByTimeAsync(WATCH_POLL_INTERVAL_MS);
     await screen.findByText(/^Reached/);
     // A tick already due when the game finished may still land; later ones must not.
-    await vi.advanceTimersByTimeAsync(WATCH_POLL_INTERVAL_MS);
+    await vi.advanceTimersByTimeAsync(MOVE_HISTORY_POLL_INTERVAL_MS);
     const callsWhenSettled = api.callCountOf(MOVES_ROUTE);
 
-    await vi.advanceTimersByTimeAsync(WATCH_POLL_INTERVAL_MS * INTERVALS_AFTER_FINISH);
+    await vi.advanceTimersByTimeAsync(MOVE_HISTORY_POLL_INTERVAL_MS * INTERVALS_AFTER_FINISH);
 
     expect(api.callCountOf(MOVES_ROUTE)).toBe(callsWhenSettled);
+  });
+
+  it('polls the moves less often than the game status', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const api = stubApi({
+      [GAME_ROUTE]: respondOk({ body: GAME_VIEW }),
+      [MOVES_ROUTE]: respondOk({ body: [SOLVE_MOVE] }),
+    });
+
+    renderInRouter(<WatchScreen gameId={GAME_ID} />);
+    await showMoves();
+    await screen.findByRole('list');
+    await vi.advanceTimersByTimeAsync(MOVE_HISTORY_POLL_INTERVAL_MS);
+
+    expect(api.callCountOf(MOVES_ROUTE)).toBeLessThan(api.callCountOf(GAME_ROUTE));
   });
 
   it('shows the moves made just before the game finished', async () => {
@@ -88,7 +108,7 @@ describe('the bot move log while the game runs', () => {
     expect(await screen.findByText(/^Turn 5 · Bought/)).toBeVisible();
   });
 
-  it('keeps the last loaded moves when a refresh fails', async () => {
+  it('keeps the last loaded moves and says the refresh failed when a poll fails', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     stubApi({
       [GAME_ROUTE]: respondOk({ body: GAME_VIEW }),
@@ -107,12 +127,13 @@ describe('the bot move log while the game runs', () => {
 
     await showMoves();
     await screen.findByRole('list');
-    await vi.advanceTimersByTimeAsync(WATCH_POLL_INTERVAL_MS);
+    await vi.advanceTimersByTimeAsync(MOVE_HISTORY_POLL_INTERVAL_MS);
     await waitFor(() =>
       expect(queryClient.getQueryState(gameKeys.moveHistory(GAME_ID))?.status).toBe('error'),
     );
 
     expect(screen.getByRole('list')).toBeVisible();
+    expect(screen.getByText(sharedCopy.errors.refreshFailed)).toBeVisible();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });

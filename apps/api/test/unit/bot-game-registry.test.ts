@@ -87,4 +87,19 @@ describe('bot game registry', () => {
 
     expect(registry.reserve()).toBeNull();
   });
+
+  it('tells a closing registry apart from a full one', async () => {
+    const registry = createBotGameRegistry({ limit: 1 });
+
+    const held = registry.reserve();
+
+    expect(registry.isClosing()).toBe(false);
+
+    const shutdown = registry.shutdown();
+
+    expect(registry.isClosing()).toBe(true);
+
+    held?.release();
+    await shutdown;
+  });
 });

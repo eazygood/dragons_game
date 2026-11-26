@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { buildApp } from '../../src/app.ts';
+import { DEFAULT_APP_LIMITS } from '../../src/app-limits.ts';
 import { loadConfig } from '../../src/config/index.ts';
 
 const ECHO_URL = '/api/test/echo';
@@ -51,27 +52,23 @@ describe('security hardening', () => {
     expect(headers['strict-transport-security']).toBeUndefined();
   });
 
-  it('refuses a text/plain body, which a cross-site form sends with no preflight', async () => {
-    const response = await app.inject({
-      method: 'POST',
-      url: ECHO_URL,
-      headers: { 'content-type': 'text/plain' },
-      payload: 'hello',
-    });
+  it.each([
+    { description: 'with a body', payload: 'hello' },
+    { description: 'with no body', payload: undefined },
+  ])(
+    'refuses a text/plain POST $description, which a cross-site form sends with no preflight',
+    async ({ payload }) => {
+      const response = await app.inject({
+        method: 'POST',
+        url: ECHO_URL,
+        headers: { 'content-type': 'text/plain' },
+        payload,
+      });
 
-    expect(response.statusCode).toBe(415);
-    expect(response.json()).toMatchObject({ error: { code: 'invalid_request' } });
-  });
-
-  it('refuses a text/plain POST even when the body is empty', async () => {
-    const response = await app.inject({
-      method: 'POST',
-      url: ECHO_URL,
-      headers: { 'content-type': 'text/plain' },
-    });
-
-    expect(response.statusCode).toBe(415);
-  });
+      expect(response.statusCode).toBe(415);
+      expect(response.json()).toMatchObject({ error: { code: 'invalid_request' } });
+    },
+  );
 
   it('still accepts a POST without a body, as the web client sends it', async () => {
     const response = await app.inject({ method: 'POST', url: ECHO_URL });
@@ -79,12 +76,24 @@ describe('security hardening', () => {
     expect(response.statusCode).toBe(200);
   });
 
-  it('still accepts a JSON body', async () => {
+  it('refuses a body over the limit with the error envelope, before parsing it', async () => {
     const response = await app.inject({
       method: 'POST',
       url: ECHO_URL,
       headers: { 'content-type': 'application/json' },
-      payload: '{}',
+      payload: JSON.stringify({ padding: 'x'.repeat(DEFAULT_APP_LIMITS.bodyLimitBytes) }),
+    });
+
+    expect(response.statusCode).toBe(413);
+    expect(response.json()).toMatchObject({ error: { code: 'invalid_request' } });
+  });
+
+  it('accepts a body just inside the limit', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: ECHO_URL,
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({ padding: 'x'.repeat(DEFAULT_APP_LIMITS.bodyLimitBytes / 2) }),
     });
 
     expect(response.statusCode).toBe(200);

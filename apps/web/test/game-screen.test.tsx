@@ -1,4 +1,5 @@
 import { act, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
 import { playCopy } from '../src/features/play/play-copy.ts';
@@ -19,7 +20,7 @@ describe('GameScreen', () => {
     renderInRouter(<GameScreen gameId="g1" />);
 
     expect(await screen.findByRole('heading', { name: playCopy.gameOver.title })).toBeVisible();
-    expect(screen.getByRole('link', { name: playCopy.gameOver.newGame })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: playCopy.start.newGame })).toHaveAttribute(
       'href',
       '/play',
     );
@@ -48,7 +49,7 @@ describe('GameScreen', () => {
     expect(
       await screen.findByRole('heading', { name: sharedCopy.unavailableGame.not_found.title }),
     ).toBeVisible();
-    expect(screen.getByRole('link', { name: sharedCopy.unavailableGame.back })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: sharedCopy.backToStart })).toHaveAttribute(
       'href',
       '/play',
     );
@@ -118,5 +119,66 @@ describe('GameScreen', () => {
     await screen.findAllByRole('article');
 
     expect(screen.queryByText(sharedCopy.errors.refreshFailed)).toBeNull();
+  });
+
+  it('moves focus to the game heading once the board is shown', async () => {
+    stubApi({
+      'GET /api/games/g1': respondOk({ body: GAME_VIEW }),
+      'GET /api/games/g1/turn': respondOk({ body: TURN_VIEW }),
+    });
+
+    renderInRouter(<GameScreen gameId="g1" />);
+
+    expect(await screen.findByRole('heading', { name: playCopy.game.title })).toHaveFocus();
+  });
+
+  it('offers a retry when the game cannot be loaded', async () => {
+    stubApi({
+      'GET /api/games/g1': respondInSequence({
+        responders: [
+          respondWith({
+            status: 502,
+            body: { error: { code: 'upstream_unavailable', message: 'down' } },
+          }),
+          respondOk({ body: { ...GAME_VIEW, status: 'game_over' } }),
+        ],
+      }),
+    });
+
+    renderInRouter(<GameScreen gameId="g1" />);
+    await userEvent.click(await screen.findByRole('button', { name: sharedCopy.errors.retry }));
+
+    expect(await screen.findByRole('heading', { name: playCopy.gameOver.title })).toBeVisible();
+  });
+
+  it('shows an error with a game retry, not a loading line, when the refetch after a 410 fails', async () => {
+    const api = stubApi({
+      'GET /api/games/g1': respondInSequence({
+        responders: [
+          respondOk({ body: GAME_VIEW }),
+          respondWith({
+            status: 502,
+            body: { error: { code: 'upstream_unavailable', message: 'down' } },
+          }),
+          respondOk({ body: { ...GAME_VIEW, status: 'game_over' } }),
+        ],
+      }),
+      'GET /api/games/g1/turn': respondWith({
+        status: 410,
+        body: { error: { code: 'game_over', message: 'Game over' } },
+      }),
+    });
+
+    renderInRouter(<GameScreen gameId="g1" />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      sharedCopy.errors.upstreamUnavailable,
+    );
+    expect(screen.queryByText(playCopy.game.loadingTurn)).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: sharedCopy.errors.retry }));
+
+    expect(await screen.findByRole('heading', { name: playCopy.gameOver.title })).toBeVisible();
+    expect(api.callCountOf('GET /api/games/g1')).toBe(3);
   });
 });

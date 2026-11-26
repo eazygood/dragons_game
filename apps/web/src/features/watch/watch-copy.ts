@@ -9,7 +9,6 @@ export const watchCopy = {
   target: `Target ${TARGET_SCORE}`,
   playYourself: 'Play a game yourself',
   runAgain: 'Run the bot again',
-  runAgainStarting: 'Starting the bot…',
   showMoves: 'Show moves',
   loadingMoves: 'Loading moves…',
   noMovesYet: 'No moves yet.',
@@ -17,12 +16,16 @@ export const watchCopy = {
   move: {
     separator: ' · ',
     turn: ({ turn }: { turn: number }) => `Turn ${turn}`,
-    solved: ({ probability, reward }: { probability: ProbabilityLabel; reward: number }) =>
-      `Solved a “${probability}” ad for ${reward} gold`,
+    solved: ({ adRating, reward }: { adRating: ProbabilityLabel; reward: number }) =>
+      `Solved a “${adRating}” ad for ${reward} gold`,
+    solveAttempted: ({ adRating, reward }: { adRating: ProbabilityLabel; reward: number }) =>
+      `Attempted a “${adRating}” ad for ${reward} gold`,
     solveReason: ({ rule, percent, gold }: { rule: string; percent: string; gold: string }) =>
       `${rule}, est. ${percent}, EV ${gold}`,
     bought: ({ itemName }: { itemName: string }) => `Bought ${itemName}`,
+    buyAttempted: ({ itemName }: { itemName: string }) => `Attempted to buy ${itemName}`,
     boughtUnnamedItem: 'Bought an item',
+    buyAttemptedUnnamedItem: 'Attempted to buy an item',
     succeeded: { mark: '✓', label: 'succeeded' },
     failed: { mark: '✗', label: 'failed' },
   },

@@ -1,10 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
 import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
+import { useMigratedDatabase } from '../support/integration-db.ts';
 import { isPending } from '../support/is-pending.ts';
 import { scriptGame } from '../support/scripted-game.ts';
 
@@ -14,22 +14,18 @@ const TURNS_PLAYED_BEFORE_ABORT = 2;
 
 describe('shutdown with a bot game in flight', () => {
   const config = loadConfig({ env: process.env });
-  const verifierDb = createDatabase({ config });
+  const verifierDb = useMigratedDatabase();
   let app: FastifyInstance;
   let scriptedGame: ReturnType<typeof scriptGame>;
 
   beforeEach(async () => {
     app = await buildApp({ config, logger: false });
-    await app.db.migrate.latest();
-    await app.db(DbTables.GameRuns).delete();
     scriptedGame = scriptGame({ turnsUntilGameOver: LONG_GAME_TURNS });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
-
-  afterAll(() => verifierDb.destroy());
 
   it('aborts the game, lets its turn finish, and only then closes the pool', async () => {
     const defaultSolve = scriptedGame.solveAd.getMockImplementation();

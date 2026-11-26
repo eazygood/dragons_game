@@ -1,43 +1,51 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  ApiErrorBodySchema,
+  AdSchema,
   DecisionSchema,
   GameIdSchema,
+  GameStateSchema,
   IDENTIFIER_MAX_LENGTH,
-  TurnViewSchema,
+  RawAdSchema,
+  ShopItemSchema,
 } from '../src/index.ts';
-import type { TurnView } from '../src/index.ts';
-import { RECORDED_SHOP_ITEMS } from './support/shop-items.ts';
 
-const SAMPLE_TURN_VIEW: TurnView = {
-  game: {
-    state: { gameId: 'xuRILCk8', lives: 3, gold: 0, dragonLevel: 0, turn: 0, score: 0 },
-    status: 'active',
-  },
-  board: [
-    {
+const RAW_AD = {
+  adId: 'cVlmaFlnRnQ=',
+  message: 'SGVscCBhIGZhcm1lcg==',
+  reward: 30,
+  expiresIn: 5,
+  encrypted: 1,
+  probability: 'R2FtYmxl',
+};
+
+const ID_BEARERS = [
+  {
+    schema: AdSchema,
+    field: 'adId',
+    valid: {
       adId: 'qYfhYgFt',
       message: 'Help a farmer',
       reward: 30,
       expiresIn: 5,
-      probability: 'Sure thing',
-      wasEncrypted: false,
-      advice: { verdict: 'recommended', estimatedProbability: 0.95, expectedValue: 25 },
-    },
-  ],
-  shop: [...RECORDED_SHOP_ITEMS],
-  recommendation: {
-    kind: 'solve',
-    adId: 'qYfhYgFt',
-    reasoning: {
-      rule: 'best_expected_value',
-      estimatedProbability: 0.95,
-      expectedValue: 25,
-      consideredCount: 1,
+      probability: 'Gamble',
+      wasEncrypted: true,
     },
   },
-};
+  {
+    schema: ShopItemSchema,
+    field: 'id',
+    valid: { id: 'hpot', name: 'Healing potion', cost: 50 },
+  },
+  {
+    schema: GameStateSchema,
+    field: 'gameId',
+    valid: { gameId: 'xuRILCk8', lives: 3, gold: 0, dragonLevel: 0, turn: 0, score: 0 },
+  },
+];
+
+// These ids end up in upstream URL paths, so none may carry a separator or leftover base64.
+const UNSAFE_IDS = ['../shop/buy/hpot', 'a/b', 'cVlmaFlnRnQ=', ''];
 
 describe('identifiers', () => {
   it.each(['xuRILCk8', 'qYfhYgFt', 'wingpotmax', 'a'.repeat(IDENTIFIER_MAX_LENGTH)])(
@@ -101,16 +109,22 @@ describe('DecisionSchema', () => {
   });
 });
 
-describe('TurnViewSchema', () => {
-  it('round-trips a turn view', () => {
-    expect(TurnViewSchema.parse(SAMPLE_TURN_VIEW)).toEqual(SAMPLE_TURN_VIEW);
+describe.each(ID_BEARERS)('the $field of a decoded schema', ({ schema, field, valid }) => {
+  it('accepts a recorded id', () => {
+    expect(schema.safeParse(valid).success).toBe(true);
+  });
+
+  it.each(UNSAFE_IDS)('refuses %j', (unsafeId) => {
+    expect(schema.safeParse({ ...valid, [field]: unsafeId }).success).toBe(false);
   });
 });
 
-describe('ApiErrorBodySchema', () => {
-  it('accepts game_over as an error code', () => {
-    const body = { error: { code: 'game_over', message: 'Game over' } };
+describe('RawAdSchema', () => {
+  it('keeps an encoded adId, which only becomes an identifier once decoded', () => {
+    expect(RawAdSchema.safeParse(RAW_AD).success).toBe(true);
+  });
 
-    expect(ApiErrorBodySchema.parse(body).error.code).toBe('game_over');
+  it('refuses an empty adId', () => {
+    expect(RawAdSchema.safeParse({ ...RAW_AD, adId: '' }).success).toBe(false);
   });
 });

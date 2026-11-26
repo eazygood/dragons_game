@@ -3,10 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta
+      name="description"
+      content="Play Dragons of Mugloar with an engine's advice on every turn, or watch a bot play it."
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Dragons of Mugloar</title>
+    <!-- No <title> here: the router renders one per route, and a second would duplicate it. -->
   </head>
   <body>
+    <noscript>Dragons of Mugloar needs JavaScript. Enable it in your browser and reload.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

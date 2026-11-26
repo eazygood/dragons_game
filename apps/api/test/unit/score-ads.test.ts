@@ -1,7 +1,7 @@
 import type { Ad, GameState } from '@bigbank-dragon/contracts';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { priorCalibration } from '../../src/domain/engine/calibration.ts';
+import { buildCalibration, priorCalibration } from '../../src/domain/engine/calibration.ts';
 import type { Calibration } from '../../src/domain/engine/calibration.ts';
 import { scoreAds } from '../../src/domain/engine/score-ads.ts';
 import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
@@ -33,7 +33,9 @@ describe('scoreAds', () => {
     });
 
     expect(scored?.estimatedProbability).toBe(0.5);
-    expect(scored?.expectedValue).toBeCloseTo(0.5 * 100 - 0.5 * 70);
+    expect(scored?.expectedValue).toBeCloseTo(
+      0.5 * 100 - 0.5 * (config.lifeCostInGold + config.turnCostInGold),
+    );
   });
 
   it('drops Impossible outright rather than scoring it', () => {
@@ -58,21 +60,34 @@ describe('scoreAds', () => {
     ]);
   });
 
-  it("estimates at the current dragon level and the ad's own reward", () => {
-    const spy = { estimate: vi.fn().mockReturnValue(0.5) };
+  it("prices an ad with the evidence for the dragon's level and the ad's reward", () => {
+    const measured = buildCalibration({
+      counts: [
+        { probability: 'Piece of cake', dragonLevel: 6, reward: 20, attempts: 100, successes: 10 },
+      ],
+      config,
+    });
+    const board = [ad({})];
+    const [atMeasuredLevel] = scoreAds({
+      board,
+      state: { ...state, dragonLevel: 6 },
+      calibration: measured,
+      config,
+    });
+    const [atFreshLevel] = scoreAds({ board, state, calibration: measured, config });
 
-    scoreAds({ board: [ad({})], state: { ...state, dragonLevel: 6 }, calibration: spy, config });
-
-    expect(spy.estimate).toHaveBeenCalledWith({ label: 'Piece of cake', level: 6, reward: 20 });
+    expect(atMeasuredLevel?.estimatedProbability).toBeLessThan(0.2);
+    expect(atFreshLevel?.estimatedProbability).toBeCloseTo(
+      config.probabilityPrior['Piece of cake'],
+    );
   });
 
-  it('breaks expected-value ties by adId so the ranking is reproducible', () => {
-    const board = [ad({ adId: 'b' }), ad({ adId: 'c' }), ad({ adId: 'a' })];
+  // A locale-aware compare would put "a" before "B"; code points put "B" (66) first everywhere.
+  it('breaks an expected-value tie by adId code points, the same in every locale', () => {
+    const board = [ad({ adId: 'a' }), ad({ adId: 'B' })];
 
-    expect(scoreAds({ board, state, calibration, config }).map(({ ad }) => ad.adId)).toEqual([
-      'a',
-      'b',
-      'c',
-    ]);
+    const ranked = scoreAds({ board, state, calibration, config }).map((scored) => scored.ad.adId);
+
+    expect(ranked).toEqual(['B', 'a']);
   });
 });

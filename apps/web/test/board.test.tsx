@@ -10,6 +10,7 @@ import {
   BUY_POTION,
   IDLE_MOVE_ACTIONS,
   STOP,
+  SURE_AD_MESSAGE,
   TURN_VIEW,
   buildAdvisedAd,
   withVerdict,
@@ -94,11 +95,11 @@ describe('ad board', () => {
   });
 
   it.each([
-    ['solve', TURN_VIEW.recommendation, TURN_VIEW.board[0]!.message],
-    ['buy', BUY_POTION, playCopy.rules.survival_floor],
-    ['buy', BUY_POTION, playCopy.advice.buy('Healing potion')],
-    ['stop', STOP, playCopy.rules.no_viable_option],
-  ])('explains a %s recommendation', (_kind, recommendation, text) => {
+    { name: 'solve ad', recommendation: TURN_VIEW.recommendation, text: SURE_AD_MESSAGE },
+    { name: 'buy reason', recommendation: BUY_POTION, text: playCopy.rules.survival_floor },
+    { name: 'buy item', recommendation: BUY_POTION, text: playCopy.advice.buy('Healing potion') },
+    { name: 'stop reason', recommendation: STOP, text: playCopy.rules.no_viable_option },
+  ])('explains the $name of a recommendation', ({ recommendation, text }) => {
     renderWithQuery(<RecommendationBanner turnView={{ ...TURN_VIEW, recommendation }} />);
 
     expect(screen.getByText(text, { exact: false })).toBeVisible();

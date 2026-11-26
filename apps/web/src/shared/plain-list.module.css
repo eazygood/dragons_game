@@ -1,0 +1,7 @@
+/* The reset every list of cards shares; each list sets its own gap. */
+.plain-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

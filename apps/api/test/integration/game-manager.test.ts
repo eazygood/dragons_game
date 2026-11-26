@@ -1,95 +1,16 @@
-import type { Ad, GameState, Reasoning, ShopItem } from '@bigbank-dragon/contracts';
-import type { Knex } from 'knex';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { GameState } from '@bigbank-dragon/contracts';
+import { describe, expect, it, vi } from 'vitest';
 
-import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
-import { loadConfig } from '../../src/config/index.ts';
-import type { GameRun } from '../../src/entities/game-run.ts';
-import { PersistenceFailedError } from '../../src/errors/errors.ts';
-import {
-  finishRun,
-  playBuyTurn,
-  playSolveTurn,
-  startGameRun,
-} from '../../src/managers/game-manager/index.ts';
+import { finishRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import {
-  adAttemptRepository,
-  gameRunRepository,
-  purchaseRepository,
-} from '../../src/repositories/index.ts';
-
-const CLAW_HONING: ShopItem = { id: 'ch', name: 'Claw Honing', cost: 300 };
-
-const AD: Ad = {
-  adId: 'a1',
-  message: 'Help someone',
-  reward: 20,
-  expiresIn: 5,
-  probability: 'Quite likely',
-  wasEncrypted: false,
-};
-
-const REASONING = {
-  rule: 'best_expected_value',
-  estimatedProbability: 0.8,
-  expectedValue: 12.5,
-  consideredCount: 4,
-} as const;
-
-const PURCHASE_REASONING: Reasoning = {
-  rule: 'level_up',
-  estimatedProbability: null,
-  expectedValue: null,
-  consideredCount: 11,
-};
+import { adAttemptRepository } from '../../src/repositories/index.ts';
+import { useManagedGame } from '../support/managed-game.ts';
 
 describe('game manager', () => {
-  let db: Knex;
-  let run: GameRun;
-  let state: GameState;
-  const solveTheAd = () => playSolveTurn({ db, run, state, ad: AD, reasoning: REASONING });
-  const buyClawHoning = () =>
-    playBuyTurn({ db, run, state, item: CLAW_HONING, reasoning: PURCHASE_REASONING });
-
-  beforeAll(async () => {
-    db = createDatabase({ config: loadConfig({ env: process.env }) });
-    await db.migrate.rollback(undefined, true);
-    await db.migrate.latest();
-  });
-
-  afterAll(() => db.destroy());
-
-  beforeEach(async () => {
-    await db(DbTables.GameRuns).delete();
-    vi.spyOn(gameRunRepository.mugloar, 'createOne').mockResolvedValue({
-      gameId: 'mgr-game',
-      lives: 3,
-      gold: 0,
-      level: 0,
-      score: 0,
-      highScore: 0,
-      turn: 0,
-    });
-    vi.spyOn(adAttemptRepository.mugloar, 'createOne').mockResolvedValue({
-      status: 'ok',
-      value: { success: true, lives: 3, gold: 20, score: 20, turn: 1, message: 'ok' },
-    });
-    vi.spyOn(purchaseRepository.mugloar, 'createOne').mockResolvedValue({
-      status: 'ok',
-      value: { success: true, gold: 0, lives: 3, level: 2, turn: 5 },
-    });
-
-    ({ run, state } = await startGameRun({ db, strategy: 'calibrated' }));
-    state = { ...state, gold: 300, turn: 4 };
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  const { db, current, solveTheAd, storedRun, countOf } = useManagedGame();
 
   it('persists a new run in its starting state', async () => {
-    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
+    expect(await storedRun()).toMatchObject({
       lives: 3,
       gold: 0,
       dragonLevel: 0,
@@ -100,13 +21,16 @@ describe('game manager', () => {
     });
   });
 
-  it('returns the solve outcome with the new state', async () => {
+  it('returns the solve outcome with the new state, marked as persisted', async () => {
     expect(await solveTheAd()).toEqual({
       status: 'ok',
       value: {
-        state: expect.objectContaining({ gold: 20, score: 20, turn: 1 }) as GameState,
-        success: true,
-        message: 'ok',
+        turn: {
+          state: expect.objectContaining({ gold: 20, score: 20, turn: 1 }) as GameState,
+          success: true,
+          message: 'ok',
+        },
+        persisted: true,
       },
     });
   });
@@ -123,75 +47,22 @@ describe('game manager', () => {
       rule: 'best_expected_value',
       success: 1,
     });
-    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
-      gold: 20,
-      score: 20,
-      turn: 1,
-    });
-  });
-
-  it('raises the dragon level and the purchase row in one transaction', async () => {
-    await buyClawHoning();
-
-    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
-      dragonLevel: 2,
-    });
-    expect(await db(DbTables.Purchases).first()).toMatchObject({
-      item_id: 'ch',
-      item_name: 'Claw Honing',
-      rule: 'level_up',
-      success: 1,
-    });
-  });
-
-  it('leaves no purchase row and no level change when the transaction fails', async () => {
-    vi.spyOn(purchaseRepository.db, 'createOne').mockRejectedValueOnce(new Error('insert failed'));
-
-    const attempt = buyClawHoning();
-
-    await expect(attempt).rejects.toBeInstanceOf(PersistenceFailedError);
-    await expect(attempt).rejects.toMatchObject({
-      turnResult: { state: { dragonLevel: 2, turn: 5 }, success: true, message: null },
-    });
-    expect(await gameRunRepository.db.findOne({ db, gameId: run.gameId })).toMatchObject({
-      dragonLevel: 0,
-    });
-    expect(await db(DbTables.Purchases).count({ count: '*' })).toEqual([{ count: 0 }]);
-  });
-
-  // Review Focus #4
-  it('advances the turn but not the level when a purchase fails', async () => {
-    vi.mocked(purchaseRepository.mugloar.createOne).mockResolvedValue({
-      status: 'ok',
-      value: { success: false, gold: 10, lives: 3, level: 0, turn: 6 },
-    });
-
-    const result = await buyClawHoning();
-
-    expect(result).toMatchObject({
-      status: 'ok',
-      value: { success: false, message: null, state: { turn: 6, dragonLevel: 0 } },
-    });
-    expect(await db(DbTables.Purchases).first()).toMatchObject({
-      item_id: 'ch',
-      success: 0,
-      turn: 6,
-    });
+    expect(await storedRun()).toMatchObject({ gold: 20, score: 20, turn: 1 });
   });
 
   it('reports game over from the manager rather than throwing', async () => {
     vi.mocked(adAttemptRepository.mugloar.createOne).mockResolvedValue({ status: 'game_over' });
 
-    await expect(solveTheAd()).resolves.toEqual({
-      status: 'game_over',
-    });
-    expect(await db(DbTables.AdAttempts).count({ count: '*' })).toEqual([{ count: 0 }]);
+    await expect(solveTheAd()).resolves.toEqual({ status: 'game_over' });
+    expect(await countOf({ table: DbTables.AdAttempts })).toEqual([{ count: 0 }]);
   });
 
   it('closes a run when it finishes', async () => {
+    const { run, state } = current();
+
     await finishRun({ db, run, state: { ...state, score: 1234 }, status: 'game_over' });
 
-    const finished = await gameRunRepository.db.findOne({ db, gameId: run.gameId });
+    const finished = await storedRun();
 
     expect(finished).toMatchObject({ status: 'game_over', score: 1234 });
     expect(finished?.endedAt).toBeInstanceOf(Date);

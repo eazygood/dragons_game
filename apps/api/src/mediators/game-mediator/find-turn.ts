@@ -4,7 +4,7 @@ import type { Knex } from 'knex';
 import type { Logger } from '../../entities/logger.ts';
 import type { OrGameOver } from '../../entities/or-game-over.ts';
 import { adviseTurn } from '../../managers/advisor-manager/index.ts';
-import { toGameView } from './game-view.ts';
+import { toGameView } from '../shared/game-view.ts';
 
 export const findTurn = async ({
   db,

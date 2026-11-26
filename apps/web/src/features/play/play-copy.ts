@@ -9,7 +9,6 @@ export const playCopy = {
     newGame: 'New game',
     starting: 'Starting…',
     botPlay: 'Let the bot play',
-    botStarting: 'Starting the bot…',
     resumeLabel: 'Resume a game by id',
     resume: 'Resume',
     invalidGameId: `A game id is 1–${IDENTIFIER_MAX_LENGTH} letters, digits, "-" or "_".`,
@@ -43,6 +42,7 @@ export const playCopy = {
     needMoreGold: (missingGold: number) => `Needs ${missingGold} more gold`,
   },
   moves: {
+    label: 'Move result',
     succeeded: 'Success.',
     failed: 'Failed.',
     adExpired: 'That ad expired before you got to it. The board has been refreshed.',
@@ -56,12 +56,12 @@ export const playCopy = {
       `Win chance ${percent}, expected ${gold}.`,
   },
   game: {
+    title: 'Your game',
     loadingTurn: 'Loading the board…',
   },
   gameOver: {
     title: 'Game over',
     finalScore: (score: number) => `Final score: ${score}`,
-    newGame: 'New game',
   },
   rules: {
     survival_floor: 'Lives are low, so buying a healing potion comes first.',

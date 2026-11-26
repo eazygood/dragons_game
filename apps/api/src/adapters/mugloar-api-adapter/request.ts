@@ -1,10 +1,13 @@
+import { setTimeout as setTimeoutPromise } from 'node:timers/promises';
+
 import type { z } from 'zod';
 
 import type { OrGameOver } from '../../entities/or-game-over.ts';
 import type { AppError } from '../../errors/app-error.ts';
 import { GameNotFoundError, UpstreamUnavailableError } from '../../errors/errors.ts';
-import { mugloarApiRuntime, mugloarThrottle } from './adapter-config.ts';
-import type { MugloarApiConfig } from './adapter-config.ts';
+import { mugloarApiRuntime } from './adapter-config.ts';
+import type { MugloarApiRuntime } from './adapter-config.ts';
+import { discardBody, readBoundedText } from './response-body.ts';
 
 const GAME_OVER_STATUS = 410;
 const NOT_FOUND_STATUS = 404;
@@ -20,7 +23,7 @@ const UPSTREAM_GAME_NOT_FOUND_MESSAGE = 'The Mugloar server does not know this g
 
 type Method = 'GET' | 'POST';
 
-export type BadRequestError = ({ cause }: { cause: Error }) => AppError;
+type BadRequestError = ({ cause }: { cause: Error }) => AppError;
 
 type RequestOptions<T> = {
   operation: string;
@@ -29,16 +32,20 @@ type RequestOptions<T> = {
   schema: z.ZodType<T>;
   // Only the endpoint knows what a 400 means; without this it is an upstream failure.
   badRequestError?: BadRequestError;
+  // Ends the throttle wait, the call and the retry backoff early; every attempt also has its own timeout.
+  signal?: AbortSignal;
 };
 
-type Attempt = { kind: 'response'; response: Response } | { kind: 'unreachable'; error: unknown };
+type SendOutcome =
+  { kind: 'response'; response: Response } | { kind: 'unreachable'; error: unknown };
 
-const isRetryable = (attempt: Attempt) =>
-  attempt.kind === 'unreachable' || attempt.response.status >= SERVER_ERROR_STATUS;
+const isRetryable = (outcome: SendOutcome) =>
+  outcome.kind === 'unreachable' || outcome.response.status >= SERVER_ERROR_STATUS;
 
-const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const sleep = ({ ms, signal }: { ms: number; signal?: AbortSignal }) =>
+  setTimeoutPromise(ms, undefined, { signal });
 
-const unavailable = ({ cause }: { cause: Error }) =>
+const upstreamUnavailable = ({ cause }: { cause: Error }) =>
   new UpstreamUnavailableError({ message: UPSTREAM_UNAVAILABLE_MESSAGE, cause });
 
 // Error bodies are HTML, not JSON, so a non-2xx body is read as text and only quoted.
@@ -51,7 +58,7 @@ const failureFor = async ({
   label: string;
   badRequestError?: BadRequestError;
 }) => {
-  const responseText = await response.text().catch(() => '');
+  const responseText = await readBoundedText({ response }).catch(() => '');
   const cause = new Error(
     `${label} → ${response.status}: ${responseText.slice(0, ERROR_BODY_EXCERPT_LENGTH)}`,
   );
@@ -64,7 +71,7 @@ const failureFor = async ({
     return badRequestError({ cause });
   }
 
-  return unavailable({ cause });
+  return upstreamUnavailable({ cause });
 };
 
 const parseBody = async <T>({
@@ -77,41 +84,65 @@ const parseBody = async <T>({
   label: string;
 }): Promise<T> => {
   try {
-    return schema.parse(JSON.parse(await response.text()));
+    return schema.parse(JSON.parse(await readBoundedText({ response })));
   } catch (parseError) {
-    throw unavailable({
+    throw upstreamUnavailable({
       cause: new Error(`${label} returned an unexpected body`, { cause: parseError }),
     });
   }
 };
 
-const retriesFor = ({ method, config }: { method: Method; config: MugloarApiConfig }) =>
-  method === 'GET' ? config.mugloarReadRetries : NO_RETRIES;
+const retriesFor = ({ method, runtime }: { method: Method; runtime: MugloarApiRuntime }) =>
+  method === 'GET' ? runtime.config.mugloarReadRetries : NO_RETRIES;
 
-const send = async ({
-  config,
+const sendOnce = async ({
+  runtime,
   method,
   path,
+  signal,
 }: {
-  config: MugloarApiConfig;
+  runtime: MugloarApiRuntime;
   method: Method;
   path: string;
-}): Promise<Attempt> => {
+  signal?: AbortSignal;
+}): Promise<SendOutcome> => {
+  const { config, throttle } = runtime;
   // One budget covers the wait for a token and the request, so a starved caller still fails.
-  const signal = AbortSignal.timeout(config.mugloarTimeoutMs);
+  const timeout = AbortSignal.timeout(config.mugloarTimeoutMs);
+  const attemptSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
 
   try {
-    await mugloarThrottle.acquire({ signal });
+    await throttle.acquire({ signal: attemptSignal });
 
+    // A redirect would send the request, or follow it, to a host we never configured.
     const response = await fetch(`${config.mugloarBaseUrl}${path}`, {
       method,
       headers: { accept: 'application/json' },
-      signal,
+      redirect: 'error',
+      signal: attemptSignal,
     });
 
     return { kind: 'response', response };
   } catch (error) {
     return { kind: 'unreachable', error };
+  }
+};
+
+const backOff = async ({
+  ms,
+  signal,
+  label,
+}: {
+  ms: number;
+  signal?: AbortSignal;
+  label: string;
+}) => {
+  try {
+    await sleep({ ms, signal });
+  } catch (abortError) {
+    throw upstreamUnavailable({
+      cause: new Error(`${label} aborted while backing off`, { cause: abortError }),
+    });
   }
 };
 
@@ -121,25 +152,32 @@ export const request = async <T>({
   path,
   schema,
   badRequestError,
+  signal,
 }: RequestOptions<T>): Promise<OrGameOver<T>> => {
-  const { config } = mugloarApiRuntime();
+  const runtime = mugloarApiRuntime();
   const label = `${operation} (${method} ${path})`;
-  const retries = retriesFor({ method, config });
-  let attempt = await send({ config, method, path });
+  const retries = retriesFor({ method, runtime });
+  let lastOutcome = await sendOnce({ runtime, method, path, signal });
 
-  for (let retry = 0; retry < retries && isRetryable(attempt); retry += 1) {
-    await delay(config.mugloarRetryBaseDelayMs * 2 ** retry);
-    attempt = await send({ config, method, path });
+  for (let retry = 0; retry < retries && isRetryable(lastOutcome); retry += 1) {
+    if (lastOutcome.kind === 'response') {
+      await discardBody({ response: lastOutcome.response });
+    }
+
+    await backOff({ ms: runtime.config.mugloarRetryBaseDelayMs * 2 ** retry, signal, label });
+    lastOutcome = await sendOnce({ runtime, method, path, signal });
   }
 
-  if (attempt.kind === 'unreachable') {
-    throw unavailable({ cause: new Error(`${label} unreachable`, { cause: attempt.error }) });
+  if (lastOutcome.kind === 'unreachable') {
+    throw upstreamUnavailable({
+      cause: new Error(`${label} unreachable`, { cause: lastOutcome.error }),
+    });
   }
 
-  const { response } = attempt;
+  const { response } = lastOutcome;
 
   if (response.status === GAME_OVER_STATUS) {
-    await response.body?.cancel();
+    await discardBody({ response });
 
     return { status: 'game_over' };
   }

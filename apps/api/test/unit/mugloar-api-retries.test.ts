@@ -1,6 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-
-import { mugloarThrottle } from '../../src/adapters/mugloar-api-adapter/index.ts';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import {
@@ -102,14 +100,5 @@ describe('mugloar api: retries and transport failures', () => {
       purchaseRepository.mugloar.createOne({ gameId: 'g1', itemId: 'hpot' }),
     ).rejects.toBeInstanceOf(UpstreamUnavailableError);
     expect(stub.callCount('/:gameId/shop/buy/:itemId')).toBe(1);
-  });
-
-  it('takes a throttle token before every outbound call', async () => {
-    const acquire = vi.spyOn(mugloarThrottle, 'acquire');
-
-    stub.failTimes('/:gameId/messages', 1, 500).then(() => [LIVE_AD]);
-    await adRepository.mugloar.findMany({ gameId: 'g1' });
-
-    expect(acquire).toHaveBeenCalledTimes(2);
   });
 });

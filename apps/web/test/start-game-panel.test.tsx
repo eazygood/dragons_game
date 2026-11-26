@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { playCopy } from '../src/features/play/play-copy.ts';
 import { sharedCopy } from '../src/shared/shared-copy.ts';
 import { StartGamePanel } from '../src/features/play/start/StartGamePanel.tsx';
-import { jsonResponse, respondNever, stubApi } from './fetch-stub.ts';
+import { jsonResponse, respondNever, respondWith, stubApi } from './fetch-stub.ts';
 import { GAME_VIEW } from './fixtures.ts';
 import { renderWithQuery } from './render.tsx';
 
@@ -20,7 +20,6 @@ describe('StartGamePanel', () => {
     await waitFor(() => expect(onGameReady).toHaveBeenCalledWith(GAME_VIEW.state.gameId));
   });
 
-  // Review Focus #4 (client half)
   it.each(['../x', 'cVlmaFlnRnQ=', 'a'.repeat(65)])('blocks resuming %j', async (value) => {
     renderWithQuery(<StartGamePanel onGameReady={vi.fn()} onBotGameReady={vi.fn()} />);
     await userEvent.type(screen.getByLabelText(playCopy.start.resumeLabel), value);
@@ -63,6 +62,30 @@ describe('StartGamePanel', () => {
     expect(await screen.findByText(sharedCopy.errors.upstreamUnavailable)).toBeVisible();
   });
 
+  it.each([
+    { start: 'POST /api/games', button: playCopy.start.newGame },
+    { start: 'POST /api/bot-games', button: playCopy.start.botPlay },
+  ])('tells the player to wait when $start is rate limited', async ({ start, button }) => {
+    stubApi({
+      [start]: respondWith({
+        status: 429,
+        body: { error: { code: 'too_many_requests', message: 'slow down' } },
+      }),
+    });
+
+    renderWithQuery(<StartGamePanel onGameReady={vi.fn()} onBotGameReady={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: button }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(sharedCopy.errors.tooManyRequests);
+    expect(screen.getByRole('button', { name: button })).toBeEnabled();
+  });
+
+  it('moves focus to the start heading when the page opens', () => {
+    renderWithQuery(<StartGamePanel onGameReady={vi.fn()} onBotGameReady={vi.fn()} />);
+
+    expect(screen.getByRole('heading', { name: playCopy.start.title })).toHaveFocus();
+  });
+
   it('starts a bot game and hands over its id', async () => {
     stubApi({ 'POST /api/bot-games': () => jsonResponse({ status: 201, body: GAME_VIEW }) });
     const onGameReady = vi.fn();
@@ -81,7 +104,7 @@ describe('StartGamePanel', () => {
     renderWithQuery(<StartGamePanel onGameReady={vi.fn()} onBotGameReady={vi.fn()} />);
     await userEvent.click(screen.getByRole('button', { name: playCopy.start.botPlay }));
 
-    expect(await screen.findByRole('button', { name: playCopy.start.botStarting })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: sharedCopy.botStarting })).toBeDisabled();
     expect(screen.getByRole('button', { name: playCopy.start.newGame })).toBeDisabled();
   });
 
@@ -101,7 +124,7 @@ describe('StartGamePanel', () => {
     renderWithQuery(<StartGamePanel onGameReady={vi.fn()} onBotGameReady={vi.fn()} />);
     await userEvent.dblClick(screen.getByRole('button', { name: playCopy.start.botPlay }));
 
-    expect(await screen.findByRole('button', { name: playCopy.start.botStarting })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: sharedCopy.botStarting })).toBeDisabled();
     expect(fetchStub.callCountOf('POST /api/bot-games')).toBe(1);
   });
 

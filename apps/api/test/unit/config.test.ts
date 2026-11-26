@@ -28,6 +28,20 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ env: { DATABASE_URL: 'postgres://u:p@host/db' } })).toThrow();
   });
 
+  it.each(['http://127.0.0.1:1', 'https://dragonsofmugloar.com/api/v2'])(
+    'accepts %s as the upstream base URL',
+    (baseUrl) => {
+      expect(loadConfig({ env: { MUGLOAR_BASE_URL: baseUrl } }).mugloarBaseUrl).toBe(baseUrl);
+    },
+  );
+
+  it.each(['file:///etc/passwd', 'ftp://example.com/api', 'gopher://example.com'])(
+    'refuses %s as the upstream base URL, since fetch would not speak http to it',
+    (baseUrl) => {
+      expect(() => loadConfig({ env: { MUGLOAR_BASE_URL: baseUrl } })).toThrow();
+    },
+  );
+
   it.each([
     ['API_PORT', 'abc'],
     ['MUGLOAR_READ_RETRIES', 'many'],

@@ -9,6 +9,8 @@ import type { StoredRecording } from '../support/replay-fetch.ts';
 
 const BASE64 = 1;
 const ROT13 = 2;
+const PLAIN_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const ROT13_ALPHABET = 'nopqrstuvwxyzabcdefghijklmNOPQRSTUVWXYZABCDEFGHIJKLM';
 
 type RawAd = { adId: string; message: string; probability: string; encrypted: number | null };
 type BoardRead = { recording: StoredRecording; raws: RawAd[]; result: OrGameOver<Ad[]> };
@@ -16,6 +18,10 @@ type DecodedPair = { gameId: string; raw: RawAd; decoded: Ad | undefined };
 
 const isLiveBoard = ({ method, path, status }: StoredRecording) =>
   method === 'GET' && path.endsWith('/messages') && status !== 404;
+
+// Spelled out as a lookup table, independent of the shift arithmetic under test.
+const rot13Of = (value: string) =>
+  [...value].map((char) => ROT13_ALPHABET[PLAIN_ALPHABET.indexOf(char)] ?? char).join('');
 
 const adsOf = ({ result }: BoardRead) => (result.status === 'ok' ? result.value : []);
 
@@ -82,9 +88,11 @@ describe('Mugloar API against the recorded ad boards', () => {
     expect(pairs.length).toBeGreaterThan(0);
 
     for (const { raw, decoded } of pairs) {
-      expect(decoded?.wasEncrypted).toBe(true);
-      expect(decoded?.adId).not.toBe(raw.adId);
-      expect(decoded?.message).not.toBe(raw.message);
+      expect(decoded).toMatchObject({
+        adId: rot13Of(raw.adId),
+        message: rot13Of(raw.message),
+        wasEncrypted: true,
+      });
       expect(PROBABILITY_LABELS).toContain(decoded?.probability);
     }
   });

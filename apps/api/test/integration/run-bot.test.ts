@@ -1,7 +1,9 @@
-import { DecisionRuleSchema } from '@bigbank-dragon/contracts';
+import { DecisionRuleSchema, HEALING_POTION_ID } from '@bigbank-dragon/contracts';
+import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 import { describe, expect, it, vi } from 'vitest';
 
 import { runBot } from '../../src/cli/run-bot.ts';
+import { CALIBRATION_REFRESH_TURNS } from '../../src/managers/bot-manager/play-turn.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';
 import {
@@ -11,9 +13,32 @@ import {
   useBotRunHarness,
 } from '../support/bot-run.ts';
 import { scriptGame } from '../support/scripted-game.ts';
+import { seedEvidence } from '../support/seed-evidence.ts';
+
+// A hundred failed solves of the one label the scripted game offers, at its level and rewards.
+const ADVERSE_HISTORY = [
+  { label: 'Sure thing', level: 0, reward: 31, attempts: 100, successes: 0 },
+] as const;
+const PRIOR_ESTIMATE = 0.95;
+const ESTIMATES_AFTER_ONE_AND_TWO_SUCCESSES = [0.9667, 0.975];
+const ESTIMATE_PRECISION = 3;
+
+// One read at the start, then one before every CALIBRATION_REFRESH_TURNS-th turn after it.
+const EXPECTED_CALIBRATION_READS = 1 + Math.floor((SCRIPTED_TURNS - 1) / CALIBRATION_REFRESH_TURNS);
 
 describe('runBot', () => {
   const harness = useBotRunHarness();
+
+  const attemptsOf = ({ gameId }: { gameId: string }) =>
+    harness
+      .db(DbTables.AdAttempts)
+      .join(DbTables.GameRuns, `${DbTables.GameRuns}.id`, `${DbTables.AdAttempts}.game_run_id`)
+      .where(`${DbTables.GameRuns}.game_id`, gameId)
+      .orderBy(`${DbTables.AdAttempts}.id`)
+      .select<{ estimated_probability: number; rule: string }[]>(
+        `${DbTables.AdAttempts}.estimated_probability`,
+        `${DbTables.AdAttempts}.rule`,
+      );
 
   it('plays a stubbed game to its end and reports the final score', async () => {
     const result = await runBot({ db: harness.db, strategy: 'calibrated', config });
@@ -44,7 +69,6 @@ describe('runBot', () => {
     expect(attempts.filter(({ rule }) => !DecisionRuleSchema.safeParse(rule).success)).toEqual([]);
   });
 
-  // Review Focus #3
   it('finalises the run when game over arrives on a read, not on a solve', async () => {
     harness.scriptedGame.fetchAds.mockResolvedValueOnce({ status: 'game_over' });
 
@@ -70,21 +94,62 @@ describe('runBot', () => {
     ).toMatchObject({ status: 'game_over', lives: 0 });
   });
 
-  it('ignores stored history entirely in the baseline strategy', async () => {
-    const spy = vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts');
+  it('plays the baseline on the prior, however badly the stored history reads', async () => {
+    await seedEvidence({ db: harness.db, cells: [...ADVERSE_HISTORY] });
 
-    await runBot({ db: harness.db, strategy: 'baseline', config });
+    const { gameId } = await runBot({ db: harness.db, strategy: 'baseline', config });
+    const [first] = await attemptsOf({ gameId });
 
-    expect(spy).not.toHaveBeenCalled();
+    expect(first).toMatchObject({
+      estimated_probability: PRIOR_ESTIMATE,
+      rule: 'best_expected_value',
+    });
   });
 
-  // Concurrent benchmark games share evidence, so a once-per-game read goes stale.
-  it('re-reads stored history before every decision in the calibrated strategy', async () => {
-    const spy = vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts');
+  it('prices the calibrated strategy from the stored history, and falls back to the safest ad', async () => {
+    await seedEvidence({ db: harness.db, cells: [...ADVERSE_HISTORY] });
 
-    await runBot({ db: harness.db, strategy: 'calibrated', config });
+    const { gameId, score } = await runBot({ db: harness.db, strategy: 'calibrated', config });
+    const [first] = await attemptsOf({ gameId });
 
-    expect(spy).toHaveBeenCalledTimes(SCRIPTED_TURNS);
+    expect(first?.estimated_probability).toBeLessThan(config.minimumProbability);
+    expect(first?.rule).toBe('safest_available');
+    expect(score).toBe(SCRIPTED_SCORE);
+  });
+
+  it('reads the history at the start and every few turns, learning from the game between', async () => {
+    const readHistory = vi.spyOn(adAttemptRepository.db, 'findCalibrationCounts');
+
+    const { gameId } = await runBot({ db: harness.db, strategy: 'calibrated', config });
+    const estimates = (await attemptsOf({ gameId })).map(({ estimated_probability: value }) =>
+      Number(value),
+    );
+
+    expect(readHistory).toHaveBeenCalledTimes(EXPECTED_CALIBRATION_READS);
+    expect(estimates[0]).toBe(PRIOR_ESTIMATE);
+    ESTIMATES_AFTER_ONE_AND_TWO_SUCCESSES.forEach((expected, index) =>
+      expect(estimates[index + 1]).toBeCloseTo(expected, ESTIMATE_PRECISION),
+    );
+  });
+
+  it('buys a potion at the floor once gold covers it, and carries the bought life to the end', async () => {
+    const potionCost = RECORDED_SHOP_ITEMS.find(({ id }) => id === HEALING_POTION_ID)?.cost;
+    // At the scripted game's starting lives, so the floor holds until the first potion lifts it.
+    const floorAtStartingLives = { ...config, livesFloor: 3 };
+
+    const result = await runBot({
+      db: harness.db,
+      strategy: 'calibrated',
+      config: floorAtStartingLives,
+    });
+
+    expect(harness.scriptedGame.buyItem).toHaveBeenCalledOnce();
+    expect(await harness.db(DbTables.Purchases).select('item_id', 'rule', 'success')).toEqual([
+      { item_id: HEALING_POTION_ID, rule: 'survival_floor', success: 1 },
+    ]);
+    expect(
+      await gameRunRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
+    ).toMatchObject({ lives: 4, dragonLevel: 0, gold: result.score - (potionCost ?? 0) });
   });
 
   it('stops at the turn ceiling rather than looping forever', async () => {

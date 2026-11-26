@@ -1,16 +1,5 @@
 import { AdSchema } from '@bigbank-dragon/contracts';
-import type { Ad } from '@bigbank-dragon/contracts';
-
-// The ad as the upstream sends it. Declared here because the domain may not import the
-// adapter; the adapter's RawAdSchema produces this shape.
-export type RawAd = {
-  adId: string;
-  message: string;
-  reward: number;
-  expiresIn: number;
-  encrypted: 1 | 2 | null;
-  probability: string;
-};
+import type { Ad, RawAd } from '@bigbank-dragon/contracts';
 
 const ALPHABET_LENGTH = 26;
 const ROT13_SHIFT = 13;
@@ -50,10 +39,8 @@ const decodedFields = ({ raw }: { raw: RawAd }) => {
   };
 };
 
-export const decodeAd = ({ raw }: { raw: RawAd }): Ad => AdSchema.parse(decodedFields({ raw }));
-
-// An ad whose decoded label is unknown is dropped: the engine cannot price it, and the
-// rest of the board is still playable.
+// An ad is dropped when its decoded label is unknown (the engine cannot price it) or its
+// decoded id is unsafe in the solve URL; the rest of the board is still playable.
 export const decodeAds = ({ raws }: { raws: RawAd[] }): Ad[] =>
   raws.flatMap((raw) => {
     const parsedAd = AdSchema.safeParse(decodedFields({ raw }));

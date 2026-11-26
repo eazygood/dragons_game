@@ -6,8 +6,9 @@ import {
   buildGameViewResponse,
   routeApi,
 } from './api-fixtures.ts';
+import { expectDocumentTitle } from './document-head.ts';
 import { expect, test } from './guarded-test.ts';
-import { expectNoHorizontalOverflow } from './layout.ts';
+import { expectNoHorizontalOverflow, expectSameWidth } from './layout.ts';
 
 const BOT_BUTTON = 'Let the bot play';
 const RUN_AGAIN_BUTTON = 'Run the bot again';
@@ -16,6 +17,8 @@ const IN_PROGRESS = 'In progress…';
 const REACHED_TARGET = 'Reached 1000 ✓ — final score 1240';
 const SHOW_MOVES = 'Show moves';
 const MOVE_LIST = 'Moves';
+const STATUS_BAR = 'Game status';
+const WATCH_TITLE = 'Watching a game';
 const SOLVE_LINE = 'Solved a “Sure thing” ad for 30 gold';
 const BUY_LINE = 'Bought Healing potion';
 
@@ -38,23 +41,35 @@ test('lets the bot play and watches it pass the target', async ({ page }) => {
   });
 
   await page.goto('/play');
+  await expectNoHorizontalOverflow({ page });
   await page.getByRole('button', { name: BOT_BUTTON }).click();
 
   await expect(page).toHaveURL(`/watch/${gameId}`);
+  await expectDocumentTitle({ page, routeTitle: WATCH_TITLE });
   await expect(page.getByText(IN_PROGRESS)).toBeVisible();
+  await expectNoHorizontalOverflow({ page });
 
   hasBotFinished = true;
 
   await expect(page.getByText(REACHED_TARGET)).toBeVisible();
+  await expectNoHorizontalOverflow({ page });
 
   await page.getByRole('checkbox', { name: SHOW_MOVES }).check();
 
-  const moveLines = page.getByRole('list', { name: MOVE_LIST }).getByRole('listitem');
+  const moveList = page.getByRole('list', { name: MOVE_LIST });
+  const moveLines = moveList.getByRole('listitem');
 
   await expect(moveLines).toHaveCount(buildBotMoves().length);
   await expect(moveLines.first()).toContainText(SOLVE_LINE);
   await expect(moveLines.last()).toContainText(BUY_LINE);
 
+  await expectSameWidth({
+    locators: [
+      page.getByLabel(STATUS_BAR),
+      page.locator('section').filter({ hasText: REACHED_TARGET }),
+      moveList,
+    ],
+  });
   await expectNoHorizontalOverflow({ page });
 });
 
@@ -77,6 +92,7 @@ test('runs the bot again from a finished game and watches the new one', async ({
 
   await page.goto(`/watch/${BOT_GAME_ID}`);
   await expect(page.getByText(REACHED_TARGET)).toBeVisible();
+  await expectNoHorizontalOverflow({ page });
 
   await page.getByRole('button', { name: RUN_AGAIN_BUTTON }).click();
 

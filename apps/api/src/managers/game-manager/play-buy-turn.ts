@@ -1,51 +1,39 @@
-import type { GameState, Reasoning, ShopItem } from '@bigbank-dragon/contracts';
-import type { Knex } from 'knex';
+import type { Reasoning, ShopItem } from '@bigbank-dragon/contracts';
 
-import type { GameRun } from '../../entities/game-run.ts';
 import type { OrGameOver } from '../../entities/or-game-over.ts';
-import type { TurnResult } from '../../entities/turn-result.ts';
+import type { SavedTurn } from '../../entities/turn-result.ts';
 import { purchaseRepository } from '../../repositories/index.ts';
-import { saveStateWithRecord } from './save-state-with-record.ts';
+import { playMove } from './play-move.ts';
+import type { MoveContext } from './play-move.ts';
 
-export const playBuyTurn = async ({
-  db,
-  run,
-  state,
+export const playBuyTurn = ({
+  context,
   item,
   reasoning,
 }: {
-  db: Knex;
-  run: GameRun;
-  state: GameState;
+  context: MoveContext;
   item: ShopItem;
   reasoning: Reasoning;
-}): Promise<OrGameOver<TurnResult>> => {
-  const buyResult = await purchaseRepository.mugloar.createOne({
-    gameId: run.gameId,
-    itemId: item.id,
-  });
+}): Promise<OrGameOver<SavedTurn>> => {
+  const { run, state } = context;
 
-  if (buyResult.status === 'game_over') {
-    return buyResult;
-  }
-
-  const outcome = buyResult.value;
-  // A failed purchase still burns a turn, but must not move the level.
-  const nextState: GameState = {
-    ...state,
-    lives: outcome.lives,
-    gold: outcome.gold,
-    turn: outcome.turn,
-    dragonLevel: outcome.success ? outcome.level : state.dragonLevel,
-  };
-
-  const turnResult: TurnResult = { state: nextState, success: outcome.success, message: null };
-
-  await saveStateWithRecord({
-    db,
-    run,
-    turnResult,
-    writeRecord: (trx) =>
+  return playMove({
+    context,
+    callUpstream: () =>
+      purchaseRepository.mugloar.createOne({ gameId: run.gameId, itemId: item.id }),
+    // A failed purchase still burns a turn, but must not move the level.
+    toTurnResult: ({ outcome }) => ({
+      state: {
+        ...state,
+        lives: outcome.lives,
+        gold: outcome.gold,
+        turn: outcome.turn,
+        dragonLevel: outcome.success ? outcome.level : state.dragonLevel,
+      },
+      success: outcome.success,
+      message: null,
+    }),
+    writeRecord: ({ outcome, trx }) =>
       purchaseRepository.db.createOne({
         db: trx,
         purchase: {
@@ -60,6 +48,4 @@ export const playBuyTurn = async ({
         },
       }),
   });
-
-  return { status: 'ok', value: turnResult };
 };
