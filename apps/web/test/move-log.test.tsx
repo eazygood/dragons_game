@@ -66,7 +66,7 @@ describe('the bot move log', () => {
 
     expect(textOf({ items })).toEqual([
       'Turn 4 · Solved a “Sure thing” ad for 30 gold · best value, est. 95%, EV +25 gold · ✓',
-      'Turn 3 · Attempted to buy Healing potion · keep lives safe · ✗',
+      'Turn 3 · Attempted to buy Healing potion · bank gold as a life · ✗',
     ]);
     expect(screen.getByRole('img', { name: 'succeeded' })).toHaveTextContent('✓');
     expect(screen.getByRole('img', { name: 'failed' })).toHaveTextContent('✗');
@@ -123,8 +123,8 @@ describe('the bot move log', () => {
 
   it('words every decision rule', async () => {
     const wordings: Record<DecisionRule, string> = {
-      survival_floor: 'keep lives safe',
-      level_up: 'level up',
+      survival_floor: 'bank gold as a life',
+      level_up: 'level up past 1000',
       best_expected_value: 'best value',
       safest_available: 'safest ad left',
       no_viable_option: 'nothing worth doing',

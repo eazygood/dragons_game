@@ -6,6 +6,17 @@ advice beside every ad, and the same engine can play a whole game on its own.
 One Fastify API owns the only client to the game server; the browser never talks
 to it directly.
 
+## The brief at a glance
+
+| Requirement                         | Where it is met                                                                                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web application                     | React 19 app (`apps/web`) served by a Fastify API (`apps/api`): [play with advice, or watch the bot](#what-you-can-do)                               |
+| Responsiveness and cross-browser    | The Playwright suite runs in Chromium, Firefox and WebKit, each at 360, 768 and 1280px; the build targets Chrome 111, Firefox 114 and Safari 16.4    |
+| State management                    | Server state in TanStack Query, the game id in the URL, no client store: [State management](#state-management)                                       |
+| A program that reaches 1000+        | `pnpm bot` / _Let the bot play_; 137 of 140 benchmarked cold games reached 1000: [How it plays](#how-it-plays)                                       |
+| Error handling and input validation | One set of zod schemas on both sides, one error envelope, upstream HTML never leaks: [Error handling and validation](#error-handling-and-validation) |
+| Unit tests                          | `pnpm test` (engine, contracts, API, components), plus integration and E2E suites, all in CI: [Tests](#tests)                                        |
+
 ## Build and run
 
 ### With Docker
@@ -42,7 +53,21 @@ pnpm bot                            # optional: one headless game, prints the sc
 ```
 
 Open <http://localhost:5173>. Configuration is environment variables with local
-defaults, validated at start-up in `apps/api/src/config/index.ts`.
+defaults, validated at start-up in `apps/api/src/config/index.ts`. None is
+needed to run locally:
+
+| Variable                                              | Default                                       | What it sets                                           |
+| ----------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------ |
+| `DATABASE_URL`                                        | `mysql://dragon:dragon@127.0.0.1:3306/dragon` | MySQL connection                                       |
+| `API_HOST`, `API_PORT`                                | `127.0.0.1`, `3000`                           | Where the API listens; Vite proxies `/api` to the port |
+| `WEB_DIST_DIR`                                        | unset                                         | Built web app to serve; unset serves only `/api`       |
+| `LOG_LEVEL`                                           | `info`                                        | pino log level                                         |
+| `MUGLOAR_BASE_URL`                                    | `https://dragonsofmugloar.com/api/v2`         | Game server                                            |
+| `MUGLOAR_RATE_PER_SECOND`, `MUGLOAR_BURST`            | `8`, `8`                                      | Outbound throttle, shared by every game                |
+| `MUGLOAR_TIMEOUT_MS`                                  | `10000`                                       | Per-request timeout                                    |
+| `MUGLOAR_READ_RETRIES`, `MUGLOAR_RETRY_BASE_DELAY_MS` | `2`, `200`                                    | Retries for reads only; `solve` and `buy` never retry  |
+
+Compose reads `APP_PORT` and `MYSQL_PORT` for the published ports.
 
 To run the production build instead of watch mode:
 
@@ -65,10 +90,9 @@ TypeScript itself. With `WEB_DIST_DIR` set, the API serves the app on
    which polls the game once a second and ends on "Reached 1000 ✓" with the final
    score, or "Finished at N" below it. A
    game usually takes a minute or two. Tick _Show moves_ for the move log, with
-   the engine's reason for each move. In the 2026-11-23 acceptance benchmark most
-   bot games ended `abandoned`, not `game_over`: once every ad left is
-   `Impossible`, the engine stops with lives to spare. The page treats both
-   endings as finished.
+   the engine's reason for each move. A game ends `game_over` when its lives run
+   out, or `abandoned` when the engine stops with lives to spare because every
+   ad left is `Impossible`. The page treats both endings as finished.
 3. **Poke the API** with curl or Postman. Examples [below](#error-handling-and-validation).
 
 ## How it plays
@@ -96,9 +120,19 @@ what the advice banner and the move log show.
   turns to pick up evidence from games running beside it, so a game's own
   failures count from the next turn without a query per turn.
 - **Expected value.** `p · reward − (1 − p) · lifeCost`, with a lost life priced
-  as a healing potion plus the turn it burns.
-- **Survival first.** Lives are the binding constraint, so the engine buys a
-  healing potion whenever lives are at or below 3 and gold allows.
+  as a healing potion plus the turn it burns. The engine solves the ad with the
+  best expected value among those it rates at 45% or better.
+- **Survival first.** Lives end the game; gold left at the end is worth nothing.
+  So whenever lives are at or below 3, the starting count, and gold allows, the
+  engine turns spare gold into a healing potion before anything else.
+- **Level-ups once 1000 is safe.** Score never falls within a game, so past 1000
+  a level-up can no longer cost the target. From there, gold beyond one potion
+  buys the cheapest level-up while an ad on the board can still be won, and the
+  higher level makes harder, better-paid ads winnable. Below 1000 level-ups stay
+  off: they cost pass rate.
+- **No stop while an ad can be won.** When nothing reaches 45%, the engine plays
+  the safest ad left. Score never falls within a game, so stopping could only end
+  it sooner; it stops once every ad is `Impossible` or expired.
 
 All thresholds live in one typed `StrategyConfig`.
 
@@ -106,7 +140,15 @@ All thresholds live in one typed `StrategyConfig`.
 against the live game. _Cold_ means calibration reads only that benchmark's own
 games: the first game starts from the priors alone, which is what a first-time
 reviewer with an empty database gets, and the 20 games share evidence as they
-go. The same tuned `StrategyConfig`, measured five times:
+go. The shipped strategy and the same one without level-ups, back to back:
+
+| 2026-11-26                    | Pass rate at ≥ 1000 | Score min · median · max | Mean turns |
+| ----------------------------- | ------------------- | ------------------------ | ---------- |
+| Level-ups past 1000 (shipped) | **100% (20 of 20)** | 1101 · **3579.5** · 4543 | 83.7       |
+| No level-ups                  | **100% (20 of 20)** | 1257 · 2620.5 · 3602     | 102.4      |
+
+Below 1000 the two are the same engine, so the earlier measurements without
+level-ups count toward the pass rate too:
 
 | Date       | Pass rate at ≥ 1000 | Score min · median · max | Mean turns |
 | ---------- | ------------------- | ------------------------ | ---------- |
@@ -116,8 +158,9 @@ go. The same tuned `StrategyConfig`, measured five times:
 | 2026-11-25 | **95% (19 of 20)**  | 41 · 2611 · 3739         | 103.2      |
 | 2026-11-25 | **95% (19 of 20)**  | 938 · 2782.5 · 3678      | 107.1      |
 
-97 of 100 games reached 1000, and no benchmark lost more than one. Five
-measurements, not a guarantee. The tuning history and the threshold sweep are in
+137 of 140 games reached 1000, and no benchmark lost more than one. Seven
+measurements, not a guarantee. The tuning history, the threshold sweep, the
+level-up comparison and why the billion-point leaderboard is not a target are in
 [`phase-1-benchmark.md`](docs/agent_docs/findings/phase-1-benchmark.md).
 
 ## Architecture
@@ -319,18 +362,20 @@ pnpm lint && pnpm format:check && pnpm typecheck
 `--wait` returns once the MySQL healthcheck passes, so the first query does not
 race the server's start-up. The integration tests create their own schema in
 `dragon_test`; the benchmark writes its games to the `dragon` database, so it
-needs the migrations first. The first `pnpm test:e2e` needs the browsers:
-`pnpm --filter @dragons-game/web exec playwright install`. E2E intercepts
-every `/api` request in the browser, so it needs no API, database or game
-server. The web build targets Chrome 111, Firefox 114 and Safari 16.4, the
-oldest browsers supported; E2E runs the current engine of each. `pnpm bench --warm` reads all stored history instead of just the run's
-own. Test levels, recorded fixtures and the E2E setup:
-[`testing.md`](docs/agent_docs/testing.md).
+needs the migrations first. `pnpm bench --warm` reads all stored history instead
+of just the run's own, and `--override '<json>'` benchmarks changed
+`StrategyConfig` values without editing code. The first `pnpm test:e2e` needs
+the browsers: `pnpm --filter @dragons-game/web exec playwright install`. E2E
+intercepts every `/api` request in the browser, so it needs no API, database or
+game server. The web build targets Chrome 111, Firefox 114 and Safari 16.4, the
+oldest browsers supported; E2E runs the current engine of each. Test levels,
+recorded fixtures and the E2E setup: [`testing.md`](docs/agent_docs/testing.md).
 
-CI (`.github/workflows/ci.yml`) runs lint, format, typecheck and the unit suites,
-then the integration tests against a MySQL 8.4 service and the E2E suite, on
-every push and pull request to `master`. The benchmark plays the live game, so it
-stays manual.
+CI (`.github/workflows/ci.yml`) runs four jobs in parallel on every push and
+pull request to `master`: lint, format, typecheck and the unit suites; the
+integration tests against a MySQL 8.4 service; the E2E suite; and the Docker
+quick start, which runs `docker compose up --build` and requires the app to
+answer. The benchmark plays the live game, so it stays manual.
 
 ## Known limits
 
@@ -414,9 +459,7 @@ drifting:
   fixes in the code today, among them the cross-site guard, rate limits on the
   polled reads, in-memory calibration updates and the expired-game screen.
 - **Human decisions.** Strategy and scope were decided by hand: survival first,
-  calibration keyed on reward bands, level-ups off after the benchmark, no stats
+  calibration keyed on reward bands, level-ups only once 1000 is safe, no stats
   pages. Every benchmark figure here was measured, not generated.
-
-_Author's note: to be expanded._
 
 More detail: [`docs/agent_docs/`](docs/agent_docs/README.md).

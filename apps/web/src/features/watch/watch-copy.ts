@@ -30,8 +30,8 @@ export const watchCopy = {
     failed: { mark: '✗', label: 'failed' },
   },
   rules: {
-    survival_floor: 'keep lives safe',
-    level_up: 'level up',
+    survival_floor: 'bank gold as a life',
+    level_up: `level up past ${TARGET_SCORE}`,
     best_expected_value: 'best value',
     safest_available: 'safest ad left',
     no_viable_option: 'nothing worth doing',

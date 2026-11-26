@@ -142,7 +142,7 @@ bot play_ button calls `POST /api/bot-games` and navigates there.
 - **Move log.** Newest first, in the order the API returns them, one line per
   move, for example:
   - `Turn 14 · Solved a “Quite likely” ad for 45 gold · best value, est. 78%, EV +31 gold · ✓`
-  - `Turn 15 · Bought Healing potion · keep lives safe · ✓`
+  - `Turn 15 · Bought Healing potion · bank gold as a life · ✓`
 
   The wording of each `DecisionRule` lives in `watch-copy.ts`
   (`satisfies Record<DecisionRule, string>`, so a new rule fails typecheck until

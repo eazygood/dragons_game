@@ -100,9 +100,8 @@ such as `hpot`). The second migration adds them, additively:
 
 The enum values are `survival_floor`, `level_up`, `best_expected_value`,
 `safest_available`, `no_viable_option` and `player_choice`. A move a human makes
-through `/play` records `player_choice`. The engine no longer chooses
-`level_up`; the value stays in the enum and the contract only so that rows
-stored by the level-up experiments still read.
+through `/play` records `player_choice`. The engine chooses `level_up` only
+once the score has reached 1000.
 
 All three are **nullable**, because rows written before the migration have no
 recorded rule and must stay valid. The API and the web app treat `null` as "no

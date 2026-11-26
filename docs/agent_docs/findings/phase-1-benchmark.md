@@ -1,14 +1,14 @@
 # Phase 1 benchmark — raw numbers
 
 Every number here came from `pnpm bench` against the live API, on 2026-11-23
-(§1–§7) and in later re-measures (§8). **Cold** means calibration reads only the
+(§1–§7) and in later runs through 2026-11-26 (§8–§11). **Cold** means calibration reads only the
 current benchmark's own games: `calibrated` starts from the priors alone and
 learns within the invocation, 3 games in parallel sharing the evidence. It is
 what a first-time reviewer with an empty database gets. `--warm` reads all
 stored history instead.
 
 How "cold" was achieved changed during the day. §1–§6 ran with an earlier
-benchmark that truncated `ad_attempts` before a cold run. Since commit 31e03a6,
+benchmark that truncated `ad_attempts` before a cold run. Since commit ae3625a,
 a cold run instead scopes calibration to its own games (`calibrationBenchmarkId`)
 and deletes nothing; §7 and §8 were measured that way. Both start the engine
 from the same priors.
@@ -65,8 +65,10 @@ Reward bands alone moved `calibrated` from 90% to 95%; its one failure was the
 first wave of a cold start, learning a fresh trap cell at α = 5. Turning
 level-ups off trades the score ceiling for survival: games last about 30 turns
 longer and none fell short. Pass rate is the measure we optimise for, so
-**level-ups are off**, and the rule has since been removed from the engine. A plausible cause, not measured: every level-up moves the
-dragon into a fresh level bucket, where the engine must relearn the traps.
+**level-ups are off** below the target. A plausible cause, not measured then:
+every level-up moves the dragon into a fresh level bucket, where the engine must
+relearn the traps. §11 brings level-ups back only past 1000, and shows that
+cause in one game.
 
 ## 5. Threshold sweep
 
@@ -151,7 +153,8 @@ in all but name. Gold left at that point is not lost score.
 
 Open question: the three proactive level-up benchmarks never stopped. It is not
 known whether levelling up _early_ keeps the board from running dry, or whether
-those games simply died first.
+those games simply died first. §11 does not settle it: its 20 level-up games all
+died, the longest at turn 103, about when the boards here ran dry.
 
 The proactive level-up verdict (§4) rests on 95% vs 100%, which is one run in
 twenty. Treat it as weak evidence.
@@ -215,3 +218,101 @@ game, so it cannot raise the pass rate. It saves turns, which the brief does
 not score, and costs a few points. So it is not shipped. If turns ever cost
 something (wall-clock time on the shared upstream, say), this table is the
 case for it.
+
+## 10. The leaderboard, and why it is not a target
+
+On 2026-11-26 the public leaderboard's top five read 1,019,978,705,
+31,627,908, 26,869,060, 21,785,750 and 8,277,173. The question was whether the
+engine should chase them.
+
+What the local database holds (532 games, 19,932 ad attempts, every config):
+
+| Measure                | Value                                       |
+| ---------------------- | ------------------------------------------- |
+| Best game              | 5169 (level 50, 96 turns, level-ups on, §1) |
+| Longest game           | 172 turns                                   |
+| Highest dragon level   | 51                                          |
+| Largest reward offered | 811                                         |
+| Largest reward won     | 317                                         |
+
+Rewards do grow with dragon level. The attempts of the §11 run (`44f556c5`),
+by the level at the time of the attempt (the high-level attempts of §1–§6 were
+truncated, so this is the only clean sample):
+
+| Level | Attempts | Mean reward | Max reward | Won   | Score per attempt |
+| ----- | -------- | ----------- | ---------- | ----- | ----------------- |
+| 0     | 440      | 62          | 193        | 84.8% | 48.0              |
+| 1–9   | 53       | 167         | 340        | 75.5% | 112.6             |
+| 10–19 | 193      | 205         | 505        | 56.5% | 96.3              |
+| 20–29 | 125      | 214         | 541        | 56.8% | 118.8             |
+| 30–39 | 94       | 291         | 811        | 19.1% | 46.2              |
+| 40+   | 6        | 344         | 407        | 0%    | 0                 |
+
+They stay in the hundreds, and the win rate falls as they rise. The 42 recorded
+level-0 boards in `test/fixtures` (420 ads) top out at 160, `Impossible` ads
+included (154), so no outsized reward hides behind a label either.
+
+A bound that is generous on every axis: the longest game ever seen, winning the
+largest reward ever offered on every turn, scores 172 × 811 = 139,492. First
+place is about 7,300 times that and fifth place about 59 times. At 811 a win,
+fifth place needs some 10,200 wins and first place some 1.26 million. Our games
+end when lives run out or, at level 0, when the board turns all `Impossible`
+(§7), by turn 172 at the latest.
+
+So those scores come from something other than playing the game as measured
+here: an upstream bug, an exploit, or a mechanic that appears only far beyond
+anything we reached. We did not look for which. The brief asks for a program
+that plays to 1000, and an exploit is not a strategy. **Not a target.**
+
+## 11. Level-ups past the target
+
+§4 turned level-ups off because they cost pass rate, and below 1000 that still
+holds. Past 1000 the score cannot fall back below the target, so a rule that
+acts only from there cannot change the pass rate. It only changes what a game
+does with gold it would otherwise end with: about 1400 per stopped game in §7.
+
+The rule, `level_up`, runs right after `survival_floor`. Once the score reaches
+`levelUpFromScore` (1000), it buys the cheapest level-up, provided that leaves
+`levelUpGoldReserve` (50, one potion) and at least one ad on the board is
+attemptable.
+
+Cold, 20 runs each, back to back on 2026-11-26:
+
+| Run                              | Pass ≥ 1000 | Min  | Median     | Max      | Mean turns | Ended                     | Final level   |
+| -------------------------------- | ----------- | ---- | ---------- | -------- | ---------- | ------------------------- | ------------- |
+| no level-ups (`05a010b6`)        | 100%        | 1257 | 2620.5     | 3602     | 102.4      | 13 abandoned, 7 game over | 0             |
+| level-ups past 1000 (`44f556c5`) | 100%        | 1101 | **3579.5** | **4543** | 83.7       | 20 game over              | 8–40, mean 26 |
+
+- Both runs crossed 1000 between turns 22 and 47, and until then they play the
+  same engine.
+- Each level-up game bought its first level-up the turn after crossing, then
+  8–40 in all. None was refused.
+- 19 of the 20 scored 883–3472 more after their first level-up. The median rose
+  by 959, past every earlier median (2503.5–2782.5, §8), to about the maximum of
+  the run without level-ups. Games are shorter because they die instead of
+  stopping on an empty board.
+- The weakest game (1101) is the cost. It crossed at turn 30 and spent turns
+  31–38 on eight level-ups in a row. At level 8 it then lost five ads in a row,
+  `Sure thing` and `Piece of cake` ads paying 229–340 that it estimated at
+  0.95–0.48, and died at turn 44 with nothing added. It was a first-wave game:
+  the whole run held 4 attempts at level 6 or above by then, so its estimates
+  were the priors. That is §4's suspected cause, now seen directly.
+- No game reached an exhausted board. If one did, levels would bring nothing
+  back (§7), so the rule waits for an attemptable ad and the engine stops
+  instead.
+
+**Shipped:** `levelUpFromScore` = `TARGET_SCORE`.
+`pnpm bench --override '{"levelUpFromScore":null}'` reproduces the run without
+level-ups. Below 1000 the two are the same engine, so §6, §8 and both runs here
+add up to **137 of 140** games past 1000.
+
+Open, not measured:
+
+- **Over-levelling.** Score per attempt holds from level 1 to 29 and collapses
+  from 30 (19% won, §10). A level cap, or spacing the level-ups out, might keep
+  games in the range that pays.
+- **Calibration above level 6.** The level buckets end at 6, so levels 6–51
+  share one. Finer buckets might fix estimates like the level-8 ones above, or
+  just spread the evidence thinner.
+- **The gold reserve.** 50 is one potion, not a swept value.
+- **Level-ups before 1000** stay off. §4 is the only evidence, and it is weak.
