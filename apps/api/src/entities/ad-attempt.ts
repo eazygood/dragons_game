@@ -1,4 +1,4 @@
-import type { DecisionRule, ProbabilityLabel } from '@bigbank-dragon/contracts';
+import type { DecisionRule, ProbabilityLabel } from '@dragons-game/contracts';
 
 import type { GameRunId } from './game-run.ts';
 

@@ -1,4 +1,4 @@
-import { HEALING_POTION_ID } from '@bigbank-dragon/contracts';
+import { HEALING_POTION_ID } from '@dragons-game/contracts';
 import type {
   Ad,
   Decision,
@@ -6,7 +6,7 @@ import type {
   GameState,
   Reasoning,
   ShopItem,
-} from '@bigbank-dragon/contracts';
+} from '@dragons-game/contracts';
 
 import type { Calibration } from './calibration.ts';
 import { scoreAds } from './score-ads.ts';

@@ -1,4 +1,4 @@
-import { TARGET_SCORE } from '@bigbank-dragon/contracts';
+import { TARGET_SCORE } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { priorCalibration } from '../../src/domain/engine/calibration.ts';

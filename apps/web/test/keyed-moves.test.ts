@@ -1,4 +1,4 @@
-import type { Move } from '@bigbank-dragon/contracts';
+import type { Move } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { keyedMoves } from '../src/features/watch/keyed-moves.ts';

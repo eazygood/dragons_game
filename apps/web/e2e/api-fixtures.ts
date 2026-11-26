@@ -3,10 +3,10 @@ import {
   GameViewSchema,
   MoveListSchema,
   MoveResultSchema,
-} from '@bigbank-dragon/contracts';
-import type { ApiErrorCode, RunStatus } from '@bigbank-dragon/contracts';
-import { STARTING_PROGRESS } from '@bigbank-dragon/contracts/test-support';
-import type { Progress } from '@bigbank-dragon/contracts/test-support';
+} from '@dragons-game/contracts';
+import type { ApiErrorCode, RunStatus } from '@dragons-game/contracts';
+import { STARTING_PROGRESS } from '@dragons-game/contracts/test-support';
+import type { Progress } from '@dragons-game/contracts/test-support';
 import type { Page, Request } from '@playwright/test';
 
 export {
@@ -14,7 +14,7 @@ export {
   SURE_AD_MESSAGE,
   STARTING_PROGRESS,
   buildTurnView,
-} from '@bigbank-dragon/contracts/test-support';
+} from '@dragons-game/contracts/test-support';
 
 export const PLAYER_GAME_ID = 'e2e-player';
 export const BOT_GAME_ID = 'e2e-bot';

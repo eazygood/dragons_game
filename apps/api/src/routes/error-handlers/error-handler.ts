@@ -1,4 +1,4 @@
-import type { ApiErrorBody, ApiErrorCode } from '@bigbank-dragon/contracts';
+import type { ApiErrorBody, ApiErrorCode } from '@dragons-game/contracts';
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
 import { AppError } from '../../errors/app-error.ts';

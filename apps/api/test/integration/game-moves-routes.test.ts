@@ -1,4 +1,4 @@
-import { MoveListSchema } from '@bigbank-dragon/contracts';
+import { MoveListSchema } from '@dragons-game/contracts';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 

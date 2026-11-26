@@ -1,4 +1,4 @@
-import type { GameState, RunStatus } from '@bigbank-dragon/contracts';
+import type { GameState, RunStatus } from '@dragons-game/contracts';
 
 // `message` is the upstream's solve message; a purchase has none.
 export type TurnResult = { state: GameState; success: boolean; message: string | null };

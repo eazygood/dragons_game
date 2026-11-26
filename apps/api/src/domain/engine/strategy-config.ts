@@ -1,4 +1,4 @@
-import type { ProbabilityLabel } from '@bigbank-dragon/contracts';
+import type { ProbabilityLabel } from '@dragons-game/contracts';
 
 export interface StrategyConfig {
   /** Pseudo-observations of the prior; how much evidence it takes to move it. */

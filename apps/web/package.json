@@ -1,5 +1,5 @@
 {
-  "name": "@bigbank-dragon/web",
+  "name": "@dragons-game/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@bigbank-dragon/contracts": "workspace:*",
+    "@dragons-game/contracts": "workspace:*",
     "@tanstack/react-query": "5.107.1",
     "@tanstack/react-router": "1.170.46",
     "react": "19.3.1",

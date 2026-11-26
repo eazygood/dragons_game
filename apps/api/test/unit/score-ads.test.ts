@@ -1,4 +1,4 @@
-import type { Ad, GameState } from '@bigbank-dragon/contracts';
+import type { Ad, GameState } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { buildCalibration, priorCalibration } from '../../src/domain/engine/calibration.ts';

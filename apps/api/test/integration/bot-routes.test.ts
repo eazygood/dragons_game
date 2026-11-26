@@ -1,5 +1,5 @@
-import { GameViewSchema } from '@bigbank-dragon/contracts';
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import { GameViewSchema } from '@dragons-game/contracts';
+import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 

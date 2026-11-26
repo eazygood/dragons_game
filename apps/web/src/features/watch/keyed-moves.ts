@@ -1,4 +1,4 @@
-import type { Move } from '@bigbank-dragon/contracts';
+import type { Move } from '@dragons-game/contracts';
 
 // A turn is not contractually limited to one move of a kind, so the key counts repeats.
 // New moves arrive at the front; counting from the front would renumber every row.

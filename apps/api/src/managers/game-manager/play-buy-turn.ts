@@ -1,4 +1,4 @@
-import type { Reasoning, ShopItem } from '@bigbank-dragon/contracts';
+import type { Reasoning, ShopItem } from '@dragons-game/contracts';
 
 import type { OrGameOver } from '../../entities/or-game-over.ts';
 import type { SavedTurn } from '../../entities/turn-result.ts';

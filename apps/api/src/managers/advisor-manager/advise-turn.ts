@@ -1,4 +1,4 @@
-import type { AdvisedAd, Decision, ShopItem } from '@bigbank-dragon/contracts';
+import type { AdvisedAd, Decision, ShopItem } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import { adviseBoard } from '../../domain/engine/advise.ts';

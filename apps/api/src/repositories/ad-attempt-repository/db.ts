@@ -1,5 +1,5 @@
-import type { DecisionRule } from '@bigbank-dragon/contracts';
-import { DecisionRuleSchema, ProbabilityLabelSchema } from '@bigbank-dragon/contracts';
+import type { DecisionRule } from '@dragons-game/contracts';
+import { DecisionRuleSchema, ProbabilityLabelSchema } from '@dragons-game/contracts';
 
 import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
 import type { CalibrationCount } from '../../domain/engine/calibration.ts';

@@ -6,7 +6,7 @@ import type {
   GameState,
   ScoredReasoning,
   ShopItem,
-} from '@bigbank-dragon/contracts';
+} from '@dragons-game/contracts';
 
 import type { Calibration } from './calibration.ts';
 import { decide } from './decide.ts';

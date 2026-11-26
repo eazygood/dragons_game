@@ -1,5 +1,5 @@
-import { AdSchema } from '@bigbank-dragon/contracts';
-import type { Ad, RawAd } from '@bigbank-dragon/contracts';
+import { AdSchema } from '@dragons-game/contracts';
+import type { Ad, RawAd } from '@dragons-game/contracts';
 
 const ALPHABET_LENGTH = 26;
 const ROT13_SHIFT = 13;

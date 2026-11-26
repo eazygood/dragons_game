@@ -1,4 +1,4 @@
-import { IdentifierSchema, RawAdSchema, ShopItemSchema } from '@bigbank-dragon/contracts';
+import { IdentifierSchema, RawAdSchema, ShopItemSchema } from '@dragons-game/contracts';
 import { z } from 'zod';
 
 // Shapes as the live API returns them, not as its published docs claim; see

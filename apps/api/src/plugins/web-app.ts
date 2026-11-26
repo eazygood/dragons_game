@@ -1,6 +1,6 @@
 import { relative, resolve, sep } from 'node:path';
 
-import type { ApiErrorBody } from '@bigbank-dragon/contracts';
+import type { ApiErrorBody } from '@dragons-game/contracts';
 import fastifyStatic from '@fastify/static';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';

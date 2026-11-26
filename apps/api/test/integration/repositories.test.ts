@@ -1,4 +1,4 @@
-import type { ProbabilityLabel } from '@bigbank-dragon/contracts';
+import type { ProbabilityLabel } from '@dragons-game/contracts';
 import { describe, expect, it } from 'vitest';
 
 import type { AdAttempt } from '../../src/entities/ad-attempt.ts';

@@ -1,4 +1,4 @@
-import type { AdvisedAd } from '@bigbank-dragon/contracts';
+import type { AdvisedAd } from '@dragons-game/contracts';
 import { useId } from 'react';
 
 import type { MoveActions } from '../move-actions/move-actions.ts';

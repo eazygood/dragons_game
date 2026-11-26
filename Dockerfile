@@ -25,7 +25,7 @@ FROM base AS api-deps
 
 # `...` adds the workspace packages the API depends on, so contracts' own dependencies
 # are installed while the web app's React toolchain is not.
-RUN pnpm install --frozen-lockfile --prod --filter @bigbank-dragon/api...
+RUN pnpm install --frozen-lockfile --prod --filter @dragons-game/api...
 
 
 # Built on api-deps, not base, so the two installs run one after the other: side by side
@@ -36,7 +36,7 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig.base.json ./
 COPY apps/web apps/web
 COPY packages/contracts packages/contracts
-RUN pnpm --filter @bigbank-dragon/web build
+RUN pnpm --filter @dragons-game/web build
 
 
 FROM node:26-slim@sha256:abe7e5a82b61a8ef67b315b85497c9e65173387ccf2f4a029248184b8e020be5 AS runtime

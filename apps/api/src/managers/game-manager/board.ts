@@ -1,4 +1,4 @@
-import type { Ad, ShopItem } from '@bigbank-dragon/contracts';
+import type { Ad, ShopItem } from '@dragons-game/contracts';
 
 import type { OrGameOver } from '../../entities/or-game-over.ts';
 import { adRepository, shopItemRepository } from '../../repositories/index.ts';

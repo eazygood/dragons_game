@@ -1,4 +1,4 @@
-import { TurnViewSchema } from '@bigbank-dragon/contracts';
+import { TurnViewSchema } from '@dragons-game/contracts';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 

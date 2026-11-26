@@ -1,4 +1,4 @@
-import type { GameView } from '@bigbank-dragon/contracts';
+import type { GameView } from '@dragons-game/contracts';
 
 import type { GameRun } from '../../entities/game-run.ts';
 import { stateFromRun } from '../../managers/game-manager/index.ts';

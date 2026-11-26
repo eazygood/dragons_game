@@ -1,5 +1,5 @@
-import { PROBABILITY_LABELS, SolveParamsSchema } from '@bigbank-dragon/contracts';
-import type { Ad } from '@bigbank-dragon/contracts';
+import { PROBABILITY_LABELS, SolveParamsSchema } from '@dragons-game/contracts';
+import type { Ad } from '@dragons-game/contracts';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import type { OrGameOver } from '../../src/entities/or-game-over.ts';

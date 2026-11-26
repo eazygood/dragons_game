@@ -1,5 +1,5 @@
-import type { ShopItem } from '@bigbank-dragon/contracts';
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import type { ShopItem } from '@dragons-game/contracts';
+import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import type { Knex } from 'knex';
 
 import { priorCalibration } from '../../src/domain/engine/calibration.ts';

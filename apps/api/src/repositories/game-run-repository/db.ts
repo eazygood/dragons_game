@@ -1,4 +1,4 @@
-import { StrategyNameSchema } from '@bigbank-dragon/contracts';
+import { StrategyNameSchema } from '@dragons-game/contracts';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../../adapters/mysql-adapter.ts';

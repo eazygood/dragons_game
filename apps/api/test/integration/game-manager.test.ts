@@ -1,4 +1,4 @@
-import type { GameState } from '@bigbank-dragon/contracts';
+import type { GameState } from '@dragons-game/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { finishRun } from '../../src/managers/game-manager/index.ts';

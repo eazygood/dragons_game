@@ -1,4 +1,4 @@
-import { ApiErrorBodySchema } from '@bigbank-dragon/contracts';
+import { ApiErrorBodySchema } from '@dragons-game/contracts';
 import type { z } from 'zod';
 
 import { ApiError, UNREACHABLE_STATUS } from './api-error.ts';

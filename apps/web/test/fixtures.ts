@@ -1,10 +1,10 @@
-import { HEALING_POTION_ID } from '@bigbank-dragon/contracts';
-import type { AdVerdict, Decision, GameView, Move, MoveResult } from '@bigbank-dragon/contracts';
+import { HEALING_POTION_ID } from '@dragons-game/contracts';
+import type { AdVerdict, Decision, GameView, Move, MoveResult } from '@dragons-game/contracts';
 import {
   SURE_AD_MESSAGE,
   buildAdvisedAd,
   buildTurnView,
-} from '@bigbank-dragon/contracts/test-support';
+} from '@dragons-game/contracts/test-support';
 
 import type { MoveActions } from '../src/features/play/move-actions/move-actions.ts';
 

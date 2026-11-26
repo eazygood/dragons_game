@@ -1,4 +1,4 @@
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { shopItemRepository } from '../../src/repositories/index.ts';

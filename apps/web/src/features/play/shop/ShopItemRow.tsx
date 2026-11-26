@@ -1,4 +1,4 @@
-import type { ShopItem } from '@bigbank-dragon/contracts';
+import type { ShopItem } from '@dragons-game/contracts';
 import { useId } from 'react';
 
 import type { MoveActions } from '../move-actions/move-actions.ts';

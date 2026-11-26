@@ -1,4 +1,4 @@
-import type { ProbabilityLabel } from '@bigbank-dragon/contracts';
+import type { ProbabilityLabel } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';

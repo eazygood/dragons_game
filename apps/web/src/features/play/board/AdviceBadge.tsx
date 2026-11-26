@@ -1,4 +1,4 @@
-import type { AdAdvice } from '@bigbank-dragon/contracts';
+import type { AdAdvice } from '@dragons-game/contracts';
 
 import { formatChance, formatGold } from '../../../shared/format.ts';
 import { playCopy } from '../play-copy.ts';

@@ -1,4 +1,4 @@
-import type { StrategyName } from '@bigbank-dragon/contracts';
+import type { StrategyName } from '@dragons-game/contracts';
 
 import type { BotRunResult } from './types.ts';
 

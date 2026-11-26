@@ -1,5 +1,5 @@
-import type { Ad } from '@bigbank-dragon/contracts';
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import type { Ad } from '@dragons-game/contracts';
+import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { vi } from 'vitest';
 
 import {

@@ -1,4 +1,4 @@
-import type { GameView, TurnView } from '@bigbank-dragon/contracts';
+import type { GameView, TurnView } from '@dragons-game/contracts';
 
 import { GameStatusBar } from '../../../shared/GameStatusBar.tsx';
 import { focusOnMount } from '../../../shared/focus-on-mount.ts';

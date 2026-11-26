@@ -1,4 +1,4 @@
-import type { Decision, TurnView } from '@bigbank-dragon/contracts';
+import type { Decision, TurnView } from '@dragons-game/contracts';
 import { useId } from 'react';
 
 import { formatChance, formatGold } from '../../../shared/format.ts';

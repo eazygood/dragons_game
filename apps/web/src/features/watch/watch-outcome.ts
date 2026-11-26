@@ -1,5 +1,5 @@
-import { TARGET_SCORE } from '@bigbank-dragon/contracts';
-import type { GameView } from '@bigbank-dragon/contracts';
+import { TARGET_SCORE } from '@dragons-game/contracts';
+import type { GameView } from '@dragons-game/contracts';
 
 import { hasActiveStatus } from '../../api/game-status.ts';
 
