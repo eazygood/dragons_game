@@ -13,6 +13,7 @@ routes/
 ├── health-routes.ts      - liveness: 200 while the process runs
 ├── bot-routes.ts         - start a bot game
 ├── rate-limit-config.ts  - turns an `AppLimits` rate into a route's `config.rateLimit`
+├── schemas/              - game-schemas.ts, the path params schemas of game-routes.ts
 └── error-handlers/       - error-handler.ts, the single registered error handler
 
 plugins/                  - registered by app.ts, in this order
@@ -22,7 +23,7 @@ plugins/                  - registered by app.ts, in this order
 ├── cross-site-guard.ts   - refuses a cross-site POST/PUT/PATCH/DELETE with 403
 ├── rate-limit.ts         - @fastify/rate-limit, opt-in per route
 ├── json-only-bodies.ts   - removes the text/plain parser
-├── zod-validator.ts      - compiles contract schemas for route validation
+├── zod-validator.ts      - compiles the zod route schemas for validation
 └── web-app.ts            - @fastify/static for the SPA, and `notFoundHandler`
 ```
 
@@ -33,8 +34,11 @@ routes under `/api` and, last, `web-app`. Fastify's `frameworkErrors` also goes
 to the error handler, so a request refused before routing (a malformed URL) gets
 the same envelope.
 
-Request schemas are the zod schemas in `packages/contracts`. There is no local
-`schemas/` folder.
+Request schemas live in `routes/schemas/`: `game-schemas.ts` holds the `gameId`,
+`adId` and `itemId` path params schemas. They are built from the contracts'
+`GameIdSchema` and `IdentifierSchema`, so the web and the server check an id
+with one rule. Only `routes/` imports them; lint refuses the import anywhere
+else. `packages/contracts` holds only what the API and the web exchange.
 
 ## Endpoints
 
@@ -125,10 +129,11 @@ Validate, at minimum:
 - `gameId`, `adId`, `itemId` — shape and length, before they reach a URL.
 - Any numeric body field — range, not just type.
 
-Request and response types come from `packages/contracts`, so the React client
-and the API cannot drift apart.
+Response types come from `packages/contracts`, and the params schemas are
+built from its `IdentifierSchema`, so the React client and the API cannot drift
+apart.
 
-Route schemas are the contract's zod schemas, compiled by
+Route schemas are zod schemas, compiled by
 `plugins/zod-validator.ts`. That compiler stands in for `fastify-type-provider-zod`,
 because that package hard-requires `@fastify/swagger` and `openapi-types` and we
 use neither. The compiler returns zod issues as Fastify validation errors, so the

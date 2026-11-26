@@ -1,8 +1,7 @@
-import { StrategyNameSchema } from '@dragons-game/contracts';
 import { z } from 'zod';
 
 import type { DbExecutor } from '../adapters/mysql-adapter.ts';
-import { RUN_STATUSES } from '../entities/game-run.ts';
+import { RUN_STATUSES, StrategyNameSchema } from '../entities/game-run.ts';
 import type { GameRun, GameRunId, GameRunPatch, NewGameRun } from '../entities/game-run.ts';
 import { DbTables } from './db-tables.ts';
 

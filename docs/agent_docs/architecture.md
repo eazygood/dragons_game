@@ -95,14 +95,24 @@ mediators return; `game-mediator.ts` builds `MoveResult` and `TurnView`;
 through; the engine returns `Decision` and `AdvisedAd`.
 
 `entities/` holds one type per table: `GameRun` (`game_runs`), `AdAttempt`
-(`ad_attempts`) and `Purchase` (`purchases`). The two types every layer needs,
-`Logger` and `OrGameOver`, live in `src/types.ts`. Any other type lives beside
-the code that produces it: `TurnResult` in `game-manager.ts`, `SolveOutcome`
-and `BuyOutcome` in `mugloar-repository.ts`, `BotStrategy` in `bot-manager.ts`.
+(`ad_attempts`) and `Purchase` (`purchases`). `game-run.ts` also owns the values
+of its `strategy` column (`StrategyName`, `StrategyNameSchema`), which the web
+never sees. The two types every layer needs, `Logger` and `OrGameOver`, live in
+`src/types.ts`. Any other type lives beside the code that produces it:
+`TurnResult` in `game-manager.ts`, `RawAd` in the Mugloar adapter's
+`wire-schemas.ts`, `SolveOutcome` and `BuyOutcome` in `mugloar-repository.ts`,
+`BotStrategy` in `bot-manager.ts`.
 The table names (`DbTables`) live in `repositories/db-tables.ts`.
 `tools/` holds helpers that belong to no layer, such as `discard-outcome.ts`;
 any layer may import them except the engine, which imports nothing from outside
 `engine/`.
+
+`packages/contracts` holds only what the API and the web exchange: the response
+and error schemas the web parses, the id schema both sides check, and the pieces
+those are built from. A schema only the API uses lives beside the layer that
+uses it: path params in `routes/schemas/`, `RawAdSchema` in the Mugloar
+adapter's `wire-schemas.ts`, `StrategyName` in `entities/game-run.ts` and
+`IMPOSSIBLE_LABEL` in `engine/calibration.ts`.
 
 ### Routes
 
@@ -216,10 +226,11 @@ never is.
 
 **Pure.** No I/O, no clock, no randomness. Its only import from outside
 `engine/` is `@dragons-game/contracts`, for the shared types and constants
-(`Ad`, `GameState`, `Decision`, `IMPOSSIBLE_LABEL`); lint forbids `node:*`,
-config, entities, adapters, repositories, managers and `cli/`. The engine owns
-its input types: `CalibrationCount` is defined in `calibration.ts`, and the
-repository maps rows into it. `StrategyConfig` and the per-label
+(`Ad`, `GameState`, `Decision`, `HEALING_POTION_ID`); lint forbids `node:*`,
+config, entities, tools, adapters, repositories, managers, mediators, plugins,
+routes and `cli/`. The engine owns its input types: `CalibrationCount` is
+defined in `calibration.ts`, and the repository maps rows into it.
+`IMPOSSIBLE_LABEL`, the one label the engine never attempts, lives there too. `StrategyConfig` and the per-label
 prior (`STRATEGY_CONFIG.probabilityPrior`) live in `strategy-config.ts`.
 
 ---

@@ -1,4 +1,3 @@
-import { StrategyNameSchema } from '@dragons-game/contracts';
 import type { Ad, Decision, GameState, ShopItem } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 import type { z } from 'zod';
@@ -7,6 +6,7 @@ import type { CalibrationAttempt, MeasuredCalibration } from '../engine/calibrat
 import { decide } from '../engine/decide.ts';
 import { STRATEGY_CONFIG } from '../engine/strategy-config.ts';
 import type { StrategyConfig } from '../engine/strategy-config.ts';
+import { StrategyNameSchema } from '../entities/game-run.ts';
 import type { GameRun } from '../entities/game-run.ts';
 import { DecisionInvariantError } from '../errors/decision-invariant-error.ts';
 import { AdExpiredError, UpstreamUnavailableError } from '../errors/errors.ts';

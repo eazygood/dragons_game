@@ -1,3 +1,9 @@
+import type { FastifyInstance } from 'fastify';
+
+import type { AppLimits } from '../app-limits.ts';
+import * as gameMediator from '../mediators/game-mediator.ts';
+import { replyGameOver } from './game-over-reply.ts';
+import { rateLimitConfig } from './rate-limit-config.ts';
 import {
   BuyParamsSchema,
   GameParamsSchema,
@@ -5,13 +11,7 @@ import {
   type BuyParams,
   type GameParams,
   type SolveParams,
-} from '@dragons-game/contracts';
-import type { FastifyInstance } from 'fastify';
-
-import type { AppLimits } from '../app-limits.ts';
-import * as gameMediator from '../mediators/game-mediator.ts';
-import { replyGameOver } from './game-over-reply.ts';
-import { rateLimitConfig } from './rate-limit-config.ts';
+} from './schemas/game-schemas.ts';
 
 const HTTP_CREATED = 201;
 

@@ -1,6 +1,6 @@
-import { IMPOSSIBLE_LABEL } from '@dragons-game/contracts';
 import type { Ad, GameState } from '@dragons-game/contracts';
 
+import { IMPOSSIBLE_LABEL } from './calibration.ts';
 import type { Calibration } from './calibration.ts';
 import type { StrategyConfig } from './strategy-config.ts';
 

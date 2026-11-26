@@ -1,9 +1,10 @@
-import { PROBABILITY_LABELS, SolveParamsSchema } from '@dragons-game/contracts';
+import { PROBABILITY_LABELS } from '@dragons-game/contracts';
 import type { Ad } from '@dragons-game/contracts';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import type { OrGameOver } from '../../src/types.ts';
 import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import { SolveParamsSchema } from '../../src/routes/schemas/game-schemas.ts';
 import { gameIdOf, readRecordedGame, startReplay } from '../support/recorded-game.ts';
 import type { StoredRecording } from '../support/replay-fetch.ts';
 

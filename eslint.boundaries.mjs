@@ -102,7 +102,10 @@ export const layerBoundaries = [
               allowImportNames: ['withTransaction'],
               message: 'Managers call repositories; only withTransaction comes from an adapter.',
             },
-            { group: ['**/cli/**'], message: 'Managers never call upward.' },
+            {
+              group: ['**/mediators/**', '**/routes/**', '**/cli/**'],
+              message: 'Managers never call upward.',
+            },
           ],
         },
       ],
@@ -115,7 +118,10 @@ export const layerBoundaries = [
         'error',
         {
           patterns: [
-            { group: ['**/managers/**', '**/cli/**'], message: 'Repositories never call upward.' },
+            {
+              group: ['**/managers/**', '**/mediators/**', '**/routes/**', '**/cli/**'],
+              message: 'Repositories never call upward.',
+            },
             {
               group: ['./*-repository.ts'],
               message: 'A repository serves one entity; composing two is a manager job.',
@@ -143,7 +149,11 @@ export const layerBoundaries = [
                 '**/config/**',
                 '**/entities/**',
                 '**/managers/**',
+                '**/mediators/**',
+                '**/plugins/**',
                 '**/repositories/**',
+                '**/routes/**',
+                '**/tools/**',
               ],
               message: 'The engine is pure: no I/O and no imports from outside engine/.',
             },

@@ -151,7 +151,7 @@ apps/api/            Fastify API: plugins, routes, mediators, managers, reposito
                      adapters, engine, cli/ (bot, bench), migrations, tests
 apps/web/            React app: api/ (query + mutation functions), features/, routes/,
                      Vitest tests, Playwright specs
-packages/contracts/  zod schemas for every request, response and error, used by both apps
+packages/contracts/  zod schemas the API and the web exchange: responses, errors, ids
 docs/agent_docs/     the detail: architecture, database, routes, frontend, testing
 ```
 

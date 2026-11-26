@@ -1,5 +1,5 @@
 import { AdSchema } from '@dragons-game/contracts';
-import type { Ad, RawAd, ShopItem } from '@dragons-game/contracts';
+import type { Ad, ShopItem } from '@dragons-game/contracts';
 
 import { mugloarApiAdapter } from '../adapters/mugloar-api-adapter/index.ts';
 import {
@@ -9,7 +9,7 @@ import {
   ShopWireSchema,
   SolveWireSchema,
 } from '../adapters/mugloar-api-adapter/wire-schemas.ts';
-import type { GameSnapshot } from '../adapters/mugloar-api-adapter/wire-schemas.ts';
+import type { GameSnapshot, RawAd } from '../adapters/mugloar-api-adapter/wire-schemas.ts';
 import { AdExpiredError, UpstreamUnavailableError } from '../errors/errors.ts';
 import type { OrGameOver } from '../types.ts';
 

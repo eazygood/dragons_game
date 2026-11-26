@@ -7,7 +7,6 @@ import type {
   RunStatus,
   ScoredReasoning,
   ShopItem,
-  StrategyName,
 } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
@@ -15,7 +14,7 @@ import { withTransaction } from '../adapters/mysql-adapter.ts';
 import { playerChoiceReasoning } from '../engine/advise.ts';
 import { STRATEGY_CONFIG } from '../engine/strategy-config.ts';
 import type { AdAttempt } from '../entities/ad-attempt.ts';
-import type { GameRun, GameRunPatch, NewGameRun } from '../entities/game-run.ts';
+import type { GameRun, GameRunPatch, NewGameRun, StrategyName } from '../entities/game-run.ts';
 import type { Purchase } from '../entities/purchase.ts';
 import {
   AdExpiredError,

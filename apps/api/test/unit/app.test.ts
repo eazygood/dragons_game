@@ -1,9 +1,9 @@
-import { GameParamsSchema } from '@dragons-game/contracts';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
+import { GameParamsSchema } from '../../src/routes/schemas/game-schemas.ts';
 
 // Knex pools lazily, so building the app needs no MySQL.
 const buildTestApp = async () => {

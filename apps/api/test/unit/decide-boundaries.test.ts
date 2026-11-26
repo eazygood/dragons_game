@@ -1,9 +1,9 @@
-import { HEALING_POTION_ID, IMPOSSIBLE_LABEL, PROBABILITY_LABELS } from '@dragons-game/contracts';
+import { HEALING_POTION_ID, PROBABILITY_LABELS } from '@dragons-game/contracts';
 import type { Ad, DecisionRule, GameState, ProbabilityLabel } from '@dragons-game/contracts';
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { describe, expect, it } from 'vitest';
 
-import { priorCalibration } from '../../src/engine/calibration.ts';
+import { IMPOSSIBLE_LABEL, priorCalibration } from '../../src/engine/calibration.ts';
 import { decide } from '../../src/engine/decide.ts';
 import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 

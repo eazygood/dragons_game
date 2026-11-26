@@ -186,7 +186,8 @@ Nothing else is typed: the start buttons and the _Show moves_ checkbox carry no
 data.
 
 Validate with the **same zod schemas** from `packages/contracts` that the API
-uses. One definition, both sides — a rule that drifts is worse than no rule.
+builds its route schemas from. One definition, both sides — a rule that drifts
+is worse than no rule.
 
 ### 2. Client → API
 

@@ -1,7 +1,8 @@
-import { IMPOSSIBLE_LABEL } from '@dragons-game/contracts';
 import type { ProbabilityLabel } from '@dragons-game/contracts';
 
 import type { StrategyConfig } from './strategy-config.ts';
+
+export const IMPOSSIBLE_LABEL = 'Impossible' satisfies ProbabilityLabel;
 
 // The engine's input shape; the repository maps stored attempts into it.
 export interface CalibrationCount {

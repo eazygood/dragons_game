@@ -82,7 +82,9 @@ The bot executes the `Decision`. The UI renders it. Same function.
    query function, before it reaches a component.
 
 Use the same zod schemas from `packages/contracts` on both sides. One
-definition. A rule that drifts is worse than no rule. Detail in
+definition. A rule that drifts is worse than no rule. `contracts` holds only
+what the API and the web exchange; a schema only the API uses lives beside its
+layer (route params in `routes/schemas/`). Detail in
 [`frontend.md`](docs/agent_docs/frontend.md).
 
 ## Frontend rules
