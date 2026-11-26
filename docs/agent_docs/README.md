@@ -1,6 +1,6 @@
 # Agent Docs Index
 
-On-demand documentation for `bigbank_dragon`. [`CLAUDE.md`](../../CLAUDE.md) is
+On-demand documentation for `dragons_game`. [`CLAUDE.md`](../../CLAUDE.md) is
 the entry point and stays short; the detail lives here.
 
 | Document                                                         | Content                                                                                                                                          |
@@ -9,7 +9,7 @@ the entry point and stays short; the detail lives here.
 | [`database.md`](database.md)                                     | Schema and ERD, knex patterns, migrations, transaction boundaries, why dragon level is persisted                                                 |
 | [`routes.md`](routes.md)                                         | Route organisation, request/response schemas, validation, error mapping, serving the web app                                                     |
 | [`frontend.md`](frontend.md)                                     | State management, the three validation boundaries, error states, component rules, responsiveness, a11y                                           |
-| [`testing.md`](testing.md)                                       | Test levels, recorded fixtures and replay, the benchmark, E2E with an intercepted `/api`, what may touch the live API                            |
+| [`testing.md`](testing.md)                                       | Test levels, recorded fixtures and replay, the benchmark, E2E with an intercepted `/api`, CI, what may touch the live API                        |
 | [`findings/phase-1-benchmark.md`](findings/phase-1-benchmark.md) | Raw benchmark numbers: baseline vs calibrated, the reward trap, the threshold sweep, acceptance and the re-measure                               |
 
 ## Where to start

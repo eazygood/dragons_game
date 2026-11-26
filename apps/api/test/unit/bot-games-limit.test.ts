@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DEFAULT_APP_LIMITS } from '../../src/app-limits.ts';
 import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
+import { BOT_SLOT_RETRY_AFTER_SECONDS } from '../../src/mediators/bot-mediator/start-bot-game.ts';
 
 const BOT_GAMES_URL = '/api/bot-games';
 const RATE_LIMIT_MAX = 2;
@@ -43,6 +44,7 @@ describe('POST /api/bot-games when the limit is reached', () => {
         message: 'Too many bot games are running; try again when one has finished',
       },
     });
+    expect(response.headers['retry-after']).toBe(String(BOT_SLOT_RETRY_AFTER_SECONDS));
   });
 
   it('rate limits the route itself, with a retry hint', async () => {

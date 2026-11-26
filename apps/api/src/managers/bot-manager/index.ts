@@ -1,1 +1,4 @@
-export { MAX_CONSECUTIVE_FAILED_TURNS, SILENT_LOGGER, playGame } from './play-game.ts';
+export { STRATEGY_CONFIG } from '../../domain/engine/strategy-config.ts';
+export type { StrategyConfig } from '../../domain/engine/strategy-config.ts';
+export { findBenchmarkRuns } from './find-benchmark-runs.ts';
+export { SILENT_LOGGER, playGame } from './play-game.ts';

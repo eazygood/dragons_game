@@ -1,17 +1,24 @@
 import type { Move } from '@bigbank-dragon/contracts';
 
-import { formatGold, formatPercent } from '../../shared/format.ts';
+import { formatChance, formatGold } from '../../shared/format.ts';
 import styles from './MoveLine.module.css';
 import { watchCopy } from './watch-copy.ts';
 
+// A failed move is an attempt: the ✗ mark alone cannot undo a verb that says it happened.
 const describeLoggedAction = ({ move }: { move: Move }) => {
   if (move.kind === 'solve') {
-    return watchCopy.move.solved({ probability: move.probability, reward: move.reward });
+    const describeSolve = move.success ? watchCopy.move.solved : watchCopy.move.solveAttempted;
+
+    return describeSolve({ adRating: move.probability, reward: move.reward });
   }
 
-  return move.itemName === null
-    ? watchCopy.move.boughtUnnamedItem
-    : watchCopy.move.bought({ itemName: move.itemName });
+  if (move.itemName === null) {
+    return move.success ? watchCopy.move.boughtUnnamedItem : watchCopy.move.buyAttemptedUnnamedItem;
+  }
+
+  const describeBuy = move.success ? watchCopy.move.bought : watchCopy.move.buyAttempted;
+
+  return describeBuy({ itemName: move.itemName });
 };
 
 const describeLoggedReason = ({ move }: { move: Move }) => {
@@ -27,7 +34,7 @@ const describeLoggedReason = ({ move }: { move: Move }) => {
 
   return watchCopy.move.solveReason({
     rule: ruleCopy,
-    percent: formatPercent({ probability: move.estimatedProbability }),
+    percent: formatChance({ winChance: move.estimatedProbability }),
     gold: formatGold({ gold: move.expectedValue }),
   });
 };

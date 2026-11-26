@@ -5,14 +5,9 @@ import type { Logger } from '../../entities/logger.ts';
 import type { OrGameOver } from '../../entities/or-game-over.ts';
 import type { PlayerMove } from '../../entities/turn-result.ts';
 import { InsufficientGoldError, ShopItemNotFoundError } from '../../errors/errors.ts';
-import { applyMoveOutcome } from './apply-move-outcome.ts';
-import { findPlayableRun } from './find-run.ts';
-import { findShopItems } from './find-shop-items.ts';
-import { withGameLock } from './game-lock.ts';
-import { saveStateOnPersistenceFailure } from './keep-playing.ts';
+import { findShopItems } from './board.ts';
 import { playBuyTurn } from './play-buy-turn.ts';
-import { recordGameOver } from './record-game-over.ts';
-import { stateFromRun } from './run-state.ts';
+import { withPlayerTurn } from './with-player-turn.ts';
 
 export const buyPlayerItem = ({
   db,
@@ -25,35 +20,24 @@ export const buyPlayerItem = ({
   itemId: string;
   logger: Logger;
 }): Promise<OrGameOver<PlayerMove>> =>
-  withGameLock({
+  withPlayerTurn({
+    db,
     gameId,
-    task: async () => {
-      const playableRunResult = await findPlayableRun({ db, gameId });
-
-      if (playableRunResult.status === 'game_over') {
-        return playableRunResult;
-      }
-
-      const run = playableRunResult.value;
-      const shopResult = await findShopItems({ gameId });
-
-      if (shopResult.status === 'game_over') {
-        await recordGameOver({ db, run, logger });
-        return shopResult;
-      }
-
-      const item = shopResult.value.find((candidate) => candidate.id === itemId);
+    logger,
+    findListing: findShopItems,
+    playTurn: ({ context, listing: shop }) => {
+      const item = shop.find((candidate) => candidate.id === itemId);
 
       if (!item) {
         throw new ShopItemNotFoundError({ message: `Item ${itemId} is not in the shop` });
       }
 
-      const state = stateFromRun({ run });
+      const { gold } = context.state;
 
       // A purchase the upstream refuses still burns a turn, so refuse it here first.
-      if (state.gold < item.cost) {
+      if (gold < item.cost) {
         throw new InsufficientGoldError({
-          message: `${item.name} costs ${item.cost} gold; you have ${state.gold}`,
+          message: `${item.name} costs ${item.cost} gold; you have ${gold}`,
         });
       }
 
@@ -61,11 +45,9 @@ export const buyPlayerItem = ({
         rule: 'player_choice',
         estimatedProbability: null,
         expectedValue: null,
-        consideredCount: shopResult.value.length,
+        consideredCount: shop.length,
       };
-      const pendingTurn = playBuyTurn({ db, run, state, item, reasoning });
-      const playedTurn = await saveStateOnPersistenceFailure({ db, run, pendingTurn, logger });
 
-      return applyMoveOutcome({ db, run, playedTurn, logger });
+      return playBuyTurn({ context, item, reasoning });
     },
   });

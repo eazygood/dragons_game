@@ -100,7 +100,9 @@ such as `hpot`). The second migration adds them, additively:
 
 The enum values are `survival_floor`, `level_up`, `best_expected_value`,
 `safest_available`, `no_viable_option` and `player_choice`. A move a human makes
-through `/play` records `player_choice`.
+through `/play` records `player_choice`. The engine no longer chooses
+`level_up`; the value stays in the enum and the contract only so that rows
+stored by the level-up experiments still read.
 
 All three are **nullable**, because rows written before the migration have no
 recorded rule and must stay valid. The API and the web app treat `null` as "no
@@ -134,7 +136,9 @@ regardless of whether resume is supported.
 ## Why these tables exist at all
 
 `ad_attempts` is the only table the engine reads. It is the evidence behind every
-estimate the advisor shows and every pick the bot makes. Indexed on
+estimate the advisor shows and every pick the bot makes. The advisor reads the
+counts on every `/turn`; a bot reads them at its start and every 10 turns, and
+adds its own saved attempts in memory in between. Indexed on
 `(probability, dragon_level)`, the leading columns of the calibration lookup key
 `(probability, dragon_level, reward)`.
 
@@ -149,18 +153,18 @@ Gameplay does not depend on persistence succeeding where the upstream turn has
 already happened. Every place that catches an error and carries on, and nowhere
 else:
 
-| Where                                                       | Swallows                                        | Then                                                                        |
-| ----------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------- |
-| `calibration-manager` `loadCalibration`                     | a failed counts read                            | logs `warn`, uses the prior                                                 |
-| `game-manager` `keepPlayingOnPersistenceFailure` (bot)      | `PersistenceFailedError` from a turn's write    | logs `warn`, plays on with the state in memory                              |
-| `game-manager` `saveStateOnPersistenceFailure` (player)     | `PersistenceFailedError` from a turn's write    | logs `warn`, writes the state alone; if that fails too, throws (500)        |
-| `game-manager` `recordGameOver`                             | a failed `finishRun` on game over               | logs `warn`; game over is still reported                                    |
-| `bot-manager` `playGame`, per turn                          | `UpstreamUnavailableError`, `AdExpiredError`    | logs `warn`, plays the next turn; the third in a row rethrows               |
-| `bot-manager` `playGame`, on finish                         | a failed final `finishRun`                      | logs `warn`; the row stays `active`                                         |
-| `bot-mediator` `startBotGame`                               | the detached game's rejection                   | logs `error`; the run was already ended `abandoned` where the write allowed |
-| `health-manager` `checkDatabase`                            | a failed `select 1`                             | logs `warn`, answers `503 { status: 'unavailable' }`                        |
-| `cli/bounded-pool.ts` `runBounded`                          | one benchmark run's error                       | counts it in `failedRuns`; the other runs go on                             |
-| `wire-schemas.ts` `AdListWireSchema`, `domain/decode-ad.ts` | one ad that does not parse or decode to a label | drops that ad, keeps the board                                              |
+| Where                                                              | Swallows                                                                   | Then                                                                                          |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `calibration-manager` `loadCalibration`                            | a failed counts read                                                       | logs `warn`; uses the prior at a game's start, the calibration held so far on a bot's re-read |
+| `game-manager` `saveStateWithRecord`, `'keep_playing'` (bot)       | a failed transaction for a turn's state and row                            | logs `warn`, plays on with the state in memory; the attempt is not learned                    |
+| `game-manager` `saveStateWithRecord`, `'save_state_only'` (player) | a failed transaction for a turn's state and row                            | logs `warn`, writes the state alone; if that fails too, throws `PersistenceFailedError` (500) |
+| `game-manager` `recordGameOver`                                    | a failed `finishRun` on game over                                          | logs `warn`; game over is still reported                                                      |
+| `bot-manager` `playGame`, per turn                                 | `UpstreamUnavailableError`, `AdExpiredError`                               | logs `warn`, plays the next turn; the third in a row rethrows                                 |
+| `bot-manager` `playGame`, on finish                                | a failed final `finishRun`                                                 | logs `warn`; the row stays `active`                                                           |
+| `bot-mediator` `startBotGame`                                      | the detached game's rejection                                              | logs `error`; the run was already ended `abandoned` where the write allowed                   |
+| `health-manager` `checkDatabase`                                   | a failed `select 1`                                                        | logs `warn`, answers `503 { status: 'unavailable' }`                                          |
+| `cli/bounded-pool.ts` `runBounded`                                 | one benchmark run's error                                                  | counts it in `failedRuns`; the other runs go on                                               |
+| `wire-schemas.ts` `AdListWireSchema`, `domain/decode-ad.ts`        | one ad that does not parse, decodes to an unknown label or to an unsafe id | drops that ad, keeps the board                                                                |
 
 **The player fallback.** A human's next move rebuilds its state from the
 `game_runs` row, so a lost write would carry a stale dragon level forward for
@@ -168,7 +172,10 @@ good. When a solve or buy's transaction fails after the upstream move, the
 attempt or purchase row is given up, but the state (`lives`, `gold`,
 `dragon_level`, `turn`, `score`) is written on its own; if that fails as well,
 the request answers `500` rather than letting the row drift. The bot keeps its
-state in memory, so it needs no such fallback.
+state in memory, so it needs no such fallback. Either way the result says
+whether the record landed (`persisted`), and a bot folds an attempt into its
+in-memory calibration only when it did, so memory never holds evidence the
+table lacks.
 
 ## Patterns
 
@@ -202,7 +209,7 @@ pnpm db:migrate                      # apply
 ## Local
 
 ```bash
-docker compose up -d mysql
+docker compose up -d --wait mysql   # returns once the healthcheck passes
 pnpm db:migrate
 ```
 

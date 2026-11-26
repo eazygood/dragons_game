@@ -18,3 +18,6 @@ export const stateFromRun = ({ run }: { run: GameRun }): GameState => ({
   turn: run.turn,
   score: run.score,
 });
+
+// A move that takes the last life still returns 200 upstream; the next call would be a 410.
+export const isOutOfLives = ({ state }: { state: GameState }): boolean => state.lives <= 0;

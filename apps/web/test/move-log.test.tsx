@@ -1,7 +1,7 @@
 import type { DecisionRule, Move } from '@bigbank-dragon/contracts';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { sharedCopy } from '../src/shared/shared-copy.ts';
 import { WatchScreen } from '../src/features/watch/WatchScreen.tsx';
@@ -66,7 +66,7 @@ describe('the bot move log', () => {
 
     expect(textOf({ items })).toEqual([
       'Turn 4 · Solved a “Sure thing” ad for 30 gold · best value, est. 95%, EV +25 gold · ✓',
-      'Turn 3 · Bought Healing potion · keep lives safe · ✗',
+      'Turn 3 · Attempted to buy Healing potion · keep lives safe · ✗',
     ]);
     expect(screen.getByRole('img', { name: 'succeeded' })).toHaveTextContent('✓');
     expect(screen.getByRole('img', { name: 'failed' })).toHaveTextContent('✗');
@@ -79,10 +79,47 @@ describe('the bot move log', () => {
     const items = await listedMoves();
 
     expect(textOf({ items })).toEqual([
-      'Turn 2 · Solved a “Sure thing” ad for 30 gold · ✗',
+      'Turn 2 · Attempted a “Sure thing” ad for 30 gold · ✗',
       'Turn 1 · Bought an item · ✓',
     ]);
   });
+
+  it.each([
+    {
+      outcome: 'a solve that worked',
+      move: { ...SOLVE_MOVE, rule: null },
+      line: 'Turn 4 · Solved a “Sure thing” ad for 30 gold · ✓',
+    },
+    {
+      outcome: 'a solve that failed',
+      move: { ...SOLVE_MOVE, success: false, probability: 'Suicide mission', rule: null },
+      line: 'Turn 4 · Attempted a “Suicide mission” ad for 30 gold · ✗',
+    },
+    {
+      outcome: 'a purchase that worked',
+      move: { ...BUY_MOVE, success: true, rule: null },
+      line: 'Turn 3 · Bought Healing potion · ✓',
+    },
+    {
+      outcome: 'a purchase that failed',
+      move: { ...BUY_MOVE, success: false, rule: null },
+      line: 'Turn 3 · Attempted to buy Healing potion · ✗',
+    },
+    {
+      outcome: 'an unnamed purchase that failed',
+      move: { ...BUY_MOVE, success: false, itemName: null, rule: null },
+      line: 'Turn 3 · Attempted to buy an item · ✗',
+    },
+  ] satisfies { outcome: string; move: Move; line: string }[])(
+    'words $outcome so the verb matches the mark',
+    async ({ move, line }) => {
+      await renderWatchedGame({ moves: [move] });
+
+      await showMoves();
+
+      expect(textOf({ items: await listedMoves() })).toEqual([line]);
+    },
+  );
 
   it('words every decision rule', async () => {
     const wordings: Record<DecisionRule, string> = {
@@ -95,12 +132,14 @@ describe('the bot move log', () => {
     };
     const rules = Object.keys(wordings) as DecisionRule[];
 
-    await renderWatchedGame({ moves: rules.map((rule) => ({ ...BUY_MOVE, rule })) });
+    await renderWatchedGame({
+      moves: rules.map((rule) => ({ ...BUY_MOVE, success: true, rule })),
+    });
     await showMoves();
     const items = await listedMoves();
 
     expect(textOf({ items })).toEqual(
-      rules.map((rule) => `Turn 3 · Bought Healing potion · ${wordings[rule]} · ✗`),
+      rules.map((rule) => `Turn 3 · Bought Healing potion · ${wordings[rule]} · ✓`),
     );
   });
 
@@ -132,5 +171,15 @@ describe('the bot move log', () => {
     await userEvent.click(await screen.findByRole('button', { name: sharedCopy.errors.retry }));
 
     expect(await listedMoves()).toHaveLength(1);
+  });
+
+  it('lists two moves of the same kind and turn without a duplicate key warning', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    await renderWatchedGame({ moves: [BUY_MOVE, BUY_MOVE] });
+    await showMoves();
+
+    expect(await listedMoves()).toHaveLength(2);
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });

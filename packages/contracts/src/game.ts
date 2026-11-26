@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { IdentifierSchema } from './ids.ts';
+
 // The bar the brief sets; the benchmark and the watch page both judge against it.
 export const TARGET_SCORE = 1000;
 
@@ -16,7 +18,7 @@ export const RunStatusSchema = z.enum(RUN_STATUSES);
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
 export const GameStateSchema = z.object({
-  gameId: z.string().min(1),
+  gameId: IdentifierSchema,
   lives: z.number().int(),
   gold: z.number().int(),
   dragonLevel: z.number().int(),

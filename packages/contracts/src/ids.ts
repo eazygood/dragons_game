@@ -6,7 +6,7 @@ export const IDENTIFIER_MAX_LENGTH = 64;
 
 const IDENTIFIER_PATTERN = new RegExp(`^[A-Za-z0-9_-]{1,${IDENTIFIER_MAX_LENGTH}}$`);
 
-const IdentifierSchema = z.string().regex(IDENTIFIER_PATTERN, 'Invalid identifier');
+export const IdentifierSchema = z.string().regex(IDENTIFIER_PATTERN, 'Invalid identifier');
 
 export const GameIdSchema = IdentifierSchema;
 const AdIdSchema = IdentifierSchema;

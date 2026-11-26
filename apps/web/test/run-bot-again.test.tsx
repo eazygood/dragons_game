@@ -32,7 +32,7 @@ describe('Run the bot again', () => {
 
     await userEvent.dblClick(await findRunAgainButton());
 
-    expect(await screen.findByRole('button', { name: watchCopy.runAgainStarting })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: sharedCopy.botStarting })).toBeDisabled();
     expect(api.callCountOf(BOT_GAMES_ROUTE)).toBe(1);
   });
 

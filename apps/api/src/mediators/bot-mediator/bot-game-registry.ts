@@ -1,4 +1,4 @@
-export type BotGameSlot = {
+type BotGameSlot = {
   signal: AbortSignal;
   /** Keeps the slot taken until the game settles, however it ends. */
   hold(input: { game: Promise<unknown> }): void;
@@ -9,6 +9,8 @@ export type BotGameSlot = {
 export type BotGameRegistry = {
   /** Null when the limit is reached or the registry is shutting down. */
   reserve(): BotGameSlot | null;
+  /** Tells a refused reservation apart: a full registry recovers, a closing one does not. */
+  isClosing(): boolean;
   /** Signals every game to stop, then waits until each has finished its run. */
   shutdown(): Promise<void>;
 };
@@ -54,5 +56,5 @@ export const createBotGameRegistry = ({ limit }: { limit: number }): BotGameRegi
     await Promise.all(open.map(({ settled }) => settled));
   };
 
-  return { reserve, shutdown };
+  return { reserve, isClosing: () => isClosing, shutdown };
 };

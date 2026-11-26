@@ -2,7 +2,8 @@ import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-type Handler = () => unknown;
+type StubRequest = { path: string };
+type Handler = (request: StubRequest) => unknown;
 type Route = { method: string; pattern: string; matcher: RegExp; handler: Handler };
 
 export type StubServer = {
@@ -17,16 +18,17 @@ export type StubServer = {
 
 const toMatcher = (pattern: string) => new RegExp(`^${pattern.replace(/:[a-zA-Z]+/g, '[^/]+')}$`);
 
-// A handler returns a JSON body (status 200), or [status, body] where a string body is HTML.
-const isStatusTuple = (reply: unknown): reply is [number, unknown] =>
+// A handler returns a JSON body (status 200), or [status, body, headers?] where a string body is HTML.
+const isStatusTuple = (reply: unknown): reply is [number, unknown, Record<string, string>?] =>
   Array.isArray(reply) && typeof reply[0] === 'number';
 
 const send = (response: ServerResponse, reply: unknown) => {
-  const [status, body] = isStatusTuple(reply) ? reply : [200, reply];
+  const [status, body, headers = {}] = isStatusTuple(reply) ? reply : [200, reply];
   const isHtml = typeof body === 'string';
 
   response.writeHead(status, {
     'content-type': isHtml ? 'text/html' : 'application/json',
+    ...headers,
   });
   response.end(isHtml ? body : JSON.stringify(body));
 };
@@ -50,7 +52,7 @@ export const startStubServer = async (): Promise<StubServer> => {
     }
 
     calls.set(route.pattern, (calls.get(route.pattern) ?? 0) + 1);
-    send(response, await route.handler());
+    send(response, await route.handler({ path: request.url ?? '' }));
   };
 
   const server: Server = createServer((request, response) => void handle(request, response));
@@ -70,10 +72,10 @@ export const startStubServer = async (): Promise<StubServer> => {
       then: (handler) => {
         let failures = 0;
 
-        register('GET')(pattern, () => {
+        register('GET')(pattern, (request) => {
           failures += 1;
 
-          return failures <= times ? [status, '<html>upstream error</html>'] : handler();
+          return failures <= times ? [status, '<html>upstream error</html>'] : handler(request);
         });
       },
     }),

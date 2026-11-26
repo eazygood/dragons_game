@@ -14,7 +14,7 @@ const MAX_PORT = 65535;
 const LogLevelSchema = z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']);
 
 const EnvSchema = z.object({
-  MUGLOAR_BASE_URL: z.url().default(DEFAULT_MUGLOAR_BASE_URL),
+  MUGLOAR_BASE_URL: z.url({ protocol: /^https?$/ }).default(DEFAULT_MUGLOAR_BASE_URL),
   MUGLOAR_TIMEOUT_MS: z.coerce.number().int().positive().default(DEFAULT_MUGLOAR_TIMEOUT_MS),
   MUGLOAR_READ_RETRIES: z.coerce.number().int().min(0).default(DEFAULT_MUGLOAR_READ_RETRIES),
   MUGLOAR_RETRY_BASE_DELAY_MS: z.coerce

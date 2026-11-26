@@ -40,10 +40,19 @@ Hooks: `useGame`, `useWatchedGame`, `useTurnView`, `useMoveHistory` (queries,
   move can still have burnt a turn, and the board must be refetched either way.
 - `createQueryClient()` (`src/query-client.ts`) owns the retry policy. Reads
   retry at most twice, and only on `unreachable` or a 5xx. Mutations never
-  retry, because `solve` and `buy` are not idempotent.
-- Every request has a `REQUEST_TIMEOUT_MS` (20 s) `AbortSignal.timeout` in
-  `api/client.ts`, so a hung solve or buy cannot leave the buttons disabled.
-  A timeout surfaces as `unreachable`.
+  retry, because `solve` and `buy` are not idempotent. Both run with
+  `networkMode: 'always'`: Query's default pauses while the browser reports
+  offline, which would show "Loading" forever and replay a queued solve or buy
+  on reconnect.
+- Every request has a `REQUEST_TIMEOUT_MS` (20 s) timeout in `api/client.ts`,
+  so a hung solve or buy cannot leave the buttons disabled. It stays armed
+  until the body is read. A timeout surfaces as `unreachable`. The client
+  builds it from `setTimeout` and its own `AbortController` rather than
+  `AbortSignal.timeout` and `AbortSignal.any`, which are newer than the
+  supported browsers and are not polyfilled by the build.
+- **Cancellation is not a failure.** When Query aborts a request (the
+  component unmounted, the key changed), the abort is rethrown as is, so it is
+  never reported as `unreachable`.
 - **Game over from the board.** `useTurnView`'s query function catches a
   `410 game_over`, invalidates `gameKeys.game(gameId)` and rethrows.
   `GET /api/games/:gameId` never answers 410, so the refetch returns the
@@ -57,26 +66,30 @@ Hooks: `useGame`, `useWatchedGame`, `useTurnView`, `useMoveHistory` (queries,
 ### Polling
 
 `/watch` is the only place that polls, and it polls **only while the game is
-`active`**, every `WATCH_POLL_INTERVAL_MS` (1000 ms).
+`active`**. Both intervals live in `api/poll-intervals.ts`.
 
 - `useWatchedGame` shares its key with `useGame`. Its `refetchInterval` is a
-  function of the last response: 1000 ms while `status === 'active'`, `false`
-  otherwise. Polling stops by itself on `game_over` or `abandoned`, and nothing
-  has to be unsubscribed.
-- `useMoveHistory` is `enabled` only while _Show moves_ is checked, and polls on the
-  same rule, driven by the game's status. A viewer who never opens the log never
-  sends a moves request.
+  function of the last response: `WATCH_POLL_INTERVAL_MS` (1000 ms) while
+  `status === 'active'`, `false` otherwise. Polling stops by itself on
+  `game_over` or `abandoned`, and nothing has to be unsubscribed.
+- `useMoveHistory` lives in `MoveLog`, which is mounted only while _Show moves_
+  is checked, and polls every `MOVE_HISTORY_POLL_INTERVAL_MS` (2500 ms) while
+  the game is active. The list grows by one row a turn and is the heavier
+  response, so it does not need the status bar's rate. A viewer who never
+  opens the log never sends a moves request.
 - The rule reads only `status`, so a manual game opened at `/watch` is polled and
   stopped the same way.
 - Polling is cheap on the server. Both routes read the database only (the bot
-  loop owns the upstream), and the throttle never sees them.
+  loop owns the upstream), and the throttle never sees them. They are still
+  rate limited per client (300 a minute), well above what one open tab sends.
 
 ## Layout
 
 ```
 apps/web/
 ├── src/
-│   ├── api/                 - api-error, client (apiRequest), game-paths, game-queries, game-mutations
+│   ├── api/                 - api-error, client (apiRequest), game-paths, game-queries, game-mutations,
+│   │                          game-status (hasActiveStatus), poll-intervals
 │   ├── features/play/
 │   │   ├── play-copy.ts     - every user-facing string on /play
 │   │   ├── start/           - StartGamePanel (new game, let the bot play), ResumeGameForm
@@ -85,19 +98,24 @@ apps/web/
 │   │   ├── advice/          - RecommendationBanner
 │   │   ├── shop/            - ShopPanel, ShopItemRow
 │   │   └── move-actions/    - useMoveActions, move-actions, MoveFeedback
-│   ├── features/watch/      - WatchScreen, WatchOutcome, RunBotAgainButton, MoveLog, MoveLine, watch-copy
+│   ├── features/watch/      - WatchScreen, WatchOutcome, RunBotAgainButton, MoveLog, MoveLine,
+│   │                          keyed-moves, watch-outcome, watch-copy
 │   ├── shared/              - used by both features: GameIdGate, GameStatusBar, GameUnavailable,
-│   │                          ErrorNotice, error-copy, RouteFallbacks, Panel, launch-lock,
-│   │                          focus-on-mount, format, shared-copy
+│   │                          ErrorNotice, error-copy, RefreshHint, RouteFallbacks, Panel,
+│   │                          launch-lock, focus-on-mount, format, page-head, shared-copy
 │   ├── routes/              - file routes: / → /play, /play, /play/$gameId, /watch/$gameId
 │   ├── router.tsx           - router with the not-found and error fallbacks
-│   ├── main.tsx             - zod jitless config, providers
+│   ├── zod-config.ts        - zod jitless mode; imported first by main.tsx
+│   ├── main.tsx             - providers
 │   ├── query-client.ts
 │   └── styles/tokens.css    - palette, spacing, the `:focus-visible` ring
 ├── public/favicon.svg
 ├── e2e/                     - Playwright specs and their intercepted-API helpers
 └── test/                    - all web tests, plus stubApi, fixtures and render helpers
 ```
+
+Each component's styles sit next to it as a `*.module.css` file; `tokens.css`
+is the only global stylesheet.
 
 `routeTree.gen.ts` is generated by the router plugin and committed, because
 `tsc --noEmit` needs it before any Vite run. Lint and Prettier ignore it.
@@ -198,21 +216,23 @@ are UI work, not `catch` blocks. `ERROR_COPY` (`shared/error-copy.ts`) maps ever
 `ClientErrorCode` to a message with `satisfies Record<ClientErrorCode, string>`,
 so a new code fails typecheck until it has copy.
 
-| State                                       | Treatment                                                                                                                     |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `GameOver` (`410`)                          | `GameOverScreen` with the final score and a "new game" action; focus moves to its heading. Not a toast.                       |
-| `GameNotFound` (`404`)                      | `GameUnavailable` "No such game" with a way back to the start. No retry.                                                      |
-| `GameNotPlayable` (`409` on the turn query) | `GameUnavailable` "The bot's game" with a link to watch it, and a way back. No retry.                                         |
-| `AdExpired` (`409` on a solve)              | The board is refetched and `MoveFeedback` says the ad expired before you got to it.                                           |
-| `409` on a buy                              | `MoveFeedback` says the purchase was refused; the board and gold are refetched.                                               |
-| `InsufficientGold`                          | `ShopItemRow` is disabled with the reason linked by `aria-describedby`, visible _before_ the click.                           |
-| `too_many_requests` (`429`)                 | "Too many requests in a short time. Wait a moment, then try again."                                                           |
-| `upstream_unavailable` (`502`)              | "The game is safe, but the Mugloar server is not answering." with a retry. A non-JSON 502/503/504 from a proxy maps here too. |
-| `unreachable` (status 0)                    | The API itself did not answer: network failure or the 20 s timeout. "Cannot reach the game server…" with a retry.             |
-| Response parse failure                      | `invalid_response`: generic error with a retry; the zod issues are logged to the console.                                     |
-| Failed background refresh                   | The last good state stays on screen with "Could not refresh the game. Showing the last known state." (`role="status"`).       |
-| Unknown route                               | Router `defaultNotFoundComponent`: `NotFoundScreen` with a link to `/play`.                                                   |
-| Error thrown while rendering a route        | Router `defaultErrorComponent`: `RouteErrorScreen` renders `ErrorNotice` with the router's `reset` as retry.                  |
+| State                                       | Treatment                                                                                                                                             |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GameOver` (`410`)                          | `GameOverScreen` with the final score and a "new game" action; focus moves to its heading. Not a toast.                                               |
+| `GameNotFound` (`404`)                      | `GameUnavailable` "No such game" with a way back to the start. No retry.                                                                              |
+| `404` on the turn query                     | The game is stored but the upstream has forgotten it: `GameUnavailable` "This game has expired on the game server" with "Start a new game". No retry. |
+| `GameNotPlayable` (`409` on the turn query) | `GameUnavailable` "The bot's game" with a link to watch it, and a way back. No retry.                                                                 |
+| `AdExpired` (`409` on a solve)              | The board is refetched and `MoveFeedback` says the ad expired before you got to it.                                                                   |
+| `409` on a buy                              | `MoveFeedback` says the purchase was refused; the board and gold are refetched.                                                                       |
+| `InsufficientGold`                          | `ShopItemRow` is disabled with the reason linked by `aria-describedby`, visible _before_ the click.                                                   |
+| `too_many_requests` (`429`)                 | "Too many requests in a short time. Wait a moment, then try again."                                                                                   |
+| `service_unavailable` (`503`)               | "The game service is temporarily unavailable. Try again in a moment." Sent while the server shuts down.                                               |
+| `upstream_unavailable` (`502`)              | "The game is safe, but the Mugloar server is not answering." with a retry. A non-JSON 502/503/504 from a proxy maps here too.                         |
+| `unreachable` (status 0)                    | The API itself did not answer: network failure, the browser offline, or the 20 s timeout. "Cannot reach the game server…" with a retry.               |
+| Response parse failure                      | `invalid_response`: generic error with a retry; the zod issues are logged to the console.                                                             |
+| Failed background refresh                   | The last good state stays on screen with "Could not refresh the game. Showing the last known state." (`role="status"`).                               |
+| Unknown route                               | Router `defaultNotFoundComponent`: `NotFoundScreen` with a link to `/play`.                                                                           |
+| Error thrown while rendering a route        | Router `defaultErrorComponent`: `RouteErrorScreen` renders `ErrorNotice` with the router's `reset` as retry.                                          |
 
 Only a first load fails hard (`isLoadingError` → `ErrorNotice` with Retry). A
 refetch error (`isRefetchError`) keeps the last good data; on `/watch` the next
@@ -240,7 +260,7 @@ run to a dropped request is the worst outcome in this app.
 
 Explicit brief requirements, so they are verified rather than assumed: one
 responsive layout from ~360px upward, exercised by Playwright across Chromium,
-Firefox and WebKit at 360px and 1280px. Each flow ends by asserting that the page
+Firefox and WebKit at 360px, 768px and 1280px. Each flow ends by asserting that the page
 does not scroll horizontally at the width it ran in. See [`testing.md`](testing.md).
 
 ## Accessibility
@@ -267,5 +287,15 @@ Not in the brief, cheap here. What the code does:
 
 The API serves the app with a helmet CSP that forbids `eval`. zod 4 probes for
 eval support with `new Function` on first parse, which would log a CSP violation
-on every page load, so `main.tsx` calls `z.config({ jitless: true })` before
-rendering.
+on every page load. `src/zod-config.ts` calls `z.config({ jitless: true })`
+and is the first import in `main.tsx`, so it runs before any module builds a
+schema.
+
+Import order alone is not enough in the build: the entry chunk would run after
+the shared chunk that builds the contract schemas. `vite.config.ts` sets
+`strictExecutionOrder` so the bundle keeps the source order.
+`zod-config.test.ts` covers the setting.
+
+`vite preview`, which the e2e tests run against, sends a copy of the API's
+policy. Keep it in sync with `apps/api/src/plugins/security-headers.ts`: a
+looser preview policy would let e2e pass on code the real server blocks.

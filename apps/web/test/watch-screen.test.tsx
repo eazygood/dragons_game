@@ -3,7 +3,8 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { WATCH_POLL_INTERVAL_MS, gameKeys } from '../src/api/game-queries.ts';
+import { gameKeys } from '../src/api/game-queries.ts';
+import { WATCH_POLL_INTERVAL_MS } from '../src/api/poll-intervals.ts';
 import { sharedCopy } from '../src/shared/shared-copy.ts';
 import { watchCopy } from '../src/features/watch/watch-copy.ts';
 import { watchOutcome } from '../src/features/watch/watch-outcome.ts';
@@ -19,7 +20,6 @@ import {
 import { renderInRouter } from './render.tsx';
 
 const BELOW_TARGET = 640;
-const NEUTRAL_TITLE = 'Watching a game';
 
 const LIVE_GAME = {
   state: { gameId: 'g1', lives: 2, gold: 75, dragonLevel: 1, turn: 18, score: 340 },
@@ -103,10 +103,10 @@ describe('WatchScreen', () => {
 
     renderInRouter(<WatchScreen gameId="g1" />);
 
-    expect(await screen.findByRole('heading', { name: NEUTRAL_TITLE })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: watchCopy.title })).toBeVisible();
   });
 
-  it('keeps the live numbers when a later poll fails', async () => {
+  it('keeps the live numbers and says the refresh failed when a later poll fails', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     stubApi({
       [GAME_ROUTE]: respondInSequence({
@@ -116,6 +116,7 @@ describe('WatchScreen', () => {
             status: 502,
             body: { error: { code: 'upstream_unavailable', message: 'down' } },
           }),
+          respondOk({ body: LIVE_GAME }),
         ],
       }),
     });
@@ -123,13 +124,28 @@ describe('WatchScreen', () => {
     const { queryClient } = renderInRouter(<WatchScreen gameId={GAME_ID} />);
 
     await screen.findByText(watchCopy.inProgress);
+    expect(screen.queryByText(sharedCopy.errors.refreshFailed)).toBeNull();
+
     await vi.advanceTimersByTimeAsync(WATCH_POLL_INTERVAL_MS);
     await waitFor(() =>
       expect(queryClient.getQueryState(gameKeys.game(GAME_ID))?.status).toBe('error'),
     );
 
     expectStatusField({ label: sharedCopy.status.score, value: 340 });
+    expect(screen.getByText(sharedCopy.errors.refreshFailed)).toBeVisible();
     expect(screen.queryByRole('alert')).toBeNull();
+
+    await vi.advanceTimersByTimeAsync(WATCH_POLL_INTERVAL_MS);
+
+    await waitFor(() => expect(screen.queryByText(sharedCopy.errors.refreshFailed)).toBeNull());
+  });
+
+  it('moves focus to the page heading once the game has loaded', async () => {
+    stubApi({ [GAME_ROUTE]: respondOk({ body: LIVE_GAME }) });
+
+    renderInRouter(<WatchScreen gameId="g1" />);
+
+    expect(await screen.findByRole('heading', { name: watchCopy.title })).toHaveFocus();
   });
 
   it('shows no such game for an unknown id', async () => {

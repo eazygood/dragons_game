@@ -1,6 +1,7 @@
-# Three stages: the web build needs the whole toolchain, the API needs only production
-# dependencies, and the runtime image carries neither a compiler nor a package manager.
-FROM node:26-slim AS base
+# Four stages on a shared base: the web build needs the whole toolchain, the API needs only
+# production dependencies, and the runtime image carries neither a compiler nor a package manager.
+# The tag says what is meant; the digest makes the build reproducible. Refresh both together.
+FROM node:26-slim@sha256:abe7e5a82b61a8ef67b315b85497c9e65173387ccf2f4a029248184b8e020be5 AS base
 
 # Lets the build run behind a registry mirror or proxy; the default is the public registry.
 ARG NPM_REGISTRY=https://registry.npmjs.org/
@@ -38,7 +39,7 @@ COPY packages/contracts packages/contracts
 RUN pnpm --filter @bigbank-dragon/web build
 
 
-FROM node:26-slim AS runtime
+FROM node:26-slim@sha256:abe7e5a82b61a8ef67b315b85497c9e65173387ccf2f4a029248184b8e020be5 AS runtime
 
 ENV NODE_ENV=production
 WORKDIR /app

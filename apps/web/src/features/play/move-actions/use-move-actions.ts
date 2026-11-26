@@ -5,7 +5,7 @@ import { useSubmitMove } from '../../../api/game-mutations.ts';
 import type { MoveRequest } from '../../../api/game-mutations.ts';
 import { errorCopy } from '../../../shared/error-copy.ts';
 import { playCopy } from '../play-copy.ts';
-import type { FeedbackRef, MoveActions, MoveOutcome } from './move-actions.ts';
+import type { FeedbackRef, MoveActions, MoveReport } from './move-actions.ts';
 
 const noticeFor = ({ error, kind }: { error: unknown; kind: MoveRequest['kind'] }) => {
   // The settled invalidation refetches the game, which renders the end screen.
@@ -24,13 +24,18 @@ export const useMoveActions = ({
   gameId,
 }: {
   gameId: string;
-}): { moveActions: MoveActions; moveOutcome: MoveOutcome; feedbackRef: FeedbackRef } => {
+}): { moveActions: MoveActions; moveReport: MoveReport; feedbackRef: FeedbackRef } => {
   const submitMove = useSubmitMove({ gameId });
   const feedbackRef: FeedbackRef = useRef(null);
 
   // The clicked card is disabled, then replaced, which would drop focus to <body>.
   // The feedback region outlives the board and is where the result is announced.
   const submit = (request: MoveRequest) => {
+    // A second solve or buy while one is in flight would burn another turn.
+    if (submitMove.isPending) {
+      return;
+    }
+
     submitMove.mutate(request);
     feedbackRef.current?.focus();
   };
@@ -41,7 +46,7 @@ export const useMoveActions = ({
       buy: (itemId) => submit({ kind: 'buy', itemId }),
       isPending: submitMove.isPending,
     },
-    moveOutcome: {
+    moveReport: {
       lastResult: submitMove.data ?? null,
       notice: submitMove.isError
         ? noticeFor({ error: submitMove.error, kind: submitMove.variables.kind })

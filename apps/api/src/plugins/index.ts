@@ -1,4 +1,5 @@
 export { botGamesPlugin } from './bot-games.ts';
+export { crossSiteGuardPlugin } from './cross-site-guard.ts';
 export { jsonOnlyBodiesPlugin } from './json-only-bodies.ts';
 export { mysqlPlugin } from './mysql.ts';
 export { rateLimitPlugin } from './rate-limit.ts';

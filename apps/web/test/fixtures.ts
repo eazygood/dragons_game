@@ -1,16 +1,14 @@
 import { HEALING_POTION_ID } from '@bigbank-dragon/contracts';
-import type {
-  AdVerdict,
-  AdvisedAd,
-  Decision,
-  GameView,
-  Move,
-  MoveResult,
-  TurnView,
-} from '@bigbank-dragon/contracts';
-import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
+import type { AdVerdict, Decision, GameView, Move, MoveResult } from '@bigbank-dragon/contracts';
+import {
+  SURE_AD_MESSAGE,
+  buildAdvisedAd,
+  buildTurnView,
+} from '@bigbank-dragon/contracts/test-support';
 
 import type { MoveActions } from '../src/features/play/move-actions/move-actions.ts';
+
+export { SURE_AD_MESSAGE, buildAdvisedAd };
 
 export const GAME_ID = 'g1';
 export const GAME_ROUTE = 'GET /api/games/g1';
@@ -52,46 +50,14 @@ export const BUY_MOVE = {
   rule: 'survival_floor',
 } satisfies Move;
 
-export const buildAdvisedAd = (overrides: Partial<AdvisedAd> = {}): AdvisedAd => ({
-  adId: 'sure1',
-  message: 'Help defend the village',
-  reward: 30,
-  expiresIn: 5,
-  probability: 'Sure thing',
-  wasEncrypted: false,
-  advice: { verdict: 'recommended', estimatedProbability: 0.95, expectedValue: 25 },
-  ...overrides,
-});
+export const TURN_VIEW = buildTurnView({ gameId: GAME_ID });
 
-export const TURN_VIEW: TurnView = {
-  game: GAME_VIEW,
-  board: [
-    buildAdvisedAd(),
-    buildAdvisedAd({
-      adId: 'risky1',
-      message: 'Escort the merchant through the swamp',
-      probability: 'Risky',
-      reward: 60,
-      advice: { verdict: 'long_shot', estimatedProbability: 0.4, expectedValue: -18 },
-    }),
-  ],
-  shop: [...RECORDED_SHOP_ITEMS],
-  recommendation: {
-    kind: 'solve',
-    adId: 'sure1',
-    reasoning: {
-      rule: 'best_expected_value',
-      estimatedProbability: 0.95,
-      expectedValue: 25,
-      consideredCount: 2,
-    },
-  },
-};
+export const MOVE_MESSAGE = 'You successfully defended the village';
 
 export const MOVE_RESULT: MoveResult = {
   game: { ...GAME_VIEW, state: { ...GAME_VIEW.state, gold: 30, score: 30, turn: 1 } },
   success: true,
-  message: 'You successfully defended the village',
+  message: MOVE_MESSAGE,
 };
 
 export const IDLE_MOVE_ACTIONS: MoveActions = {

@@ -1,21 +1,25 @@
 import {
+  ApiErrorBodySchema,
   GameViewSchema,
   MoveListSchema,
   MoveResultSchema,
-  TurnViewSchema,
 } from '@bigbank-dragon/contracts';
-import type { RunStatus } from '@bigbank-dragon/contracts';
+import type { ApiErrorCode, RunStatus } from '@bigbank-dragon/contracts';
+import { STARTING_PROGRESS } from '@bigbank-dragon/contracts/test-support';
+import type { Progress } from '@bigbank-dragon/contracts/test-support';
 import type { Page, Request } from '@playwright/test';
+
+export {
+  SURE_AD_ID,
+  SURE_AD_MESSAGE,
+  STARTING_PROGRESS,
+  buildTurnView,
+} from '@bigbank-dragon/contracts/test-support';
 
 export const PLAYER_GAME_ID = 'e2e-player';
 export const BOT_GAME_ID = 'e2e-bot';
-export const RECOMMENDED_AD_ID = 'sure1';
-export const RECOMMENDED_AD_MESSAGE = 'Help defend the village';
 const SOLVE_REWARD = 30;
 
-type Progress = { score: number; gold: number; turn: number };
-
-export const STARTING_PROGRESS: Progress = { score: 0, gold: 0, turn: 0 };
 export const SOLVED_PROGRESS: Progress = { score: SOLVE_REWARD, gold: SOLVE_REWARD, turn: 1 };
 export const BOT_FINISHED_PROGRESS: Progress = { score: 1240, gold: 310, turn: 61 };
 
@@ -31,45 +35,6 @@ export const buildGameViewResponse = ({
   GameViewSchema.parse({
     state: { gameId, lives: 3, dragonLevel: 0, ...progress },
     status,
-  });
-
-export const buildTurnView = ({ gameId, progress }: { gameId: string; progress: Progress }) =>
-  TurnViewSchema.parse({
-    game: buildGameViewResponse({ gameId, status: 'active', progress }),
-    board: [
-      {
-        adId: RECOMMENDED_AD_ID,
-        message: RECOMMENDED_AD_MESSAGE,
-        reward: SOLVE_REWARD,
-        expiresIn: 5,
-        probability: 'Sure thing',
-        wasEncrypted: false,
-        advice: { verdict: 'recommended', estimatedProbability: 0.95, expectedValue: 25 },
-      },
-      {
-        adId: 'risky1',
-        message: 'Escort the merchant through the swamp',
-        reward: 60,
-        expiresIn: 3,
-        probability: 'Risky',
-        wasEncrypted: false,
-        advice: { verdict: 'long_shot', estimatedProbability: 0.4, expectedValue: -18 },
-      },
-    ],
-    shop: [
-      { id: 'hpot', name: 'Healing potion', cost: 50 },
-      { id: 'cs', name: 'Claw Sharpening', cost: 100 },
-    ],
-    recommendation: {
-      kind: 'solve',
-      adId: RECOMMENDED_AD_ID,
-      reasoning: {
-        rule: 'best_expected_value',
-        estimatedProbability: 0.95,
-        expectedValue: 25,
-        consideredCount: 2,
-      },
-    },
   });
 
 export const buildSolveResult = ({ gameId, progress }: { gameId: string; progress: Progress }) =>
@@ -103,8 +68,29 @@ export const buildBotMoves = () =>
 
 export const API_ROUTE_PATTERN = '**/api/**';
 
-// Keys read 'METHOD /path'; a responder returns the JSON body of a 200 answer.
+// Keys read 'METHOD /path'; a responder returns the JSON body of a 200 answer, or a `failWith`.
 export type ApiRoutes = Record<string, () => unknown>;
+
+class ApiFailure {
+  readonly status: number;
+  readonly body: unknown;
+
+  constructor({ status, body }: { status: number; body: unknown }) {
+    this.status = status;
+    this.body = body;
+  }
+}
+
+// Same envelope the API sends, so the client's own error parsing is what the spec exercises.
+export const failWith = ({
+  status,
+  code,
+  message = code,
+}: {
+  status: number;
+  code: ApiErrorCode;
+  message?: string;
+}) => new ApiFailure({ status, body: ApiErrorBodySchema.parse({ error: { code, message } }) });
 
 export const requestKey = ({ request }: { request: Request }) =>
   `${request.method()} ${new URL(request.url()).pathname}`;
@@ -120,6 +106,14 @@ export const routeApi = async ({ page, routes }: { page: Page; routes: ApiRoutes
       return;
     }
 
-    await route.fulfill({ json: respond() });
+    const reply = respond();
+
+    if (reply instanceof ApiFailure) {
+      await route.fulfill({ status: reply.status, json: reply.body });
+
+      return;
+    }
+
+    await route.fulfill({ json: reply });
   });
 };

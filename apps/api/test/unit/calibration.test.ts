@@ -1,9 +1,9 @@
-import { IMPOSSIBLE_LABEL, PROBABILITY_LABELS } from '@bigbank-dragon/contracts';
+import { PROBABILITY_LABELS } from '@bigbank-dragon/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { buildCalibration, levelBucket, rewardBand } from '../../src/domain/engine/calibration.ts';
-import type { CalibrationCount } from '../../src/domain/engine/calibration.ts';
-import { PROBABILITY_PRIOR, STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { buildCalibration, withAttempt } from '../../src/domain/engine/calibration.ts';
+import type { CalibrationAttempt, CalibrationCount } from '../../src/domain/engine/calibration.ts';
+import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
 
 const config = STRATEGY_CONFIG;
 const CHEAP = 50;
@@ -38,15 +38,6 @@ describe('calibration', () => {
     expect(calibration.estimate({ label: 'Sure thing', level: 6, reward: CHEAP })).toBeLessThan(
       0.2,
     );
-  });
-
-  it('pools raw levels into buckets, because raw cells are too sparse', () => {
-    const bucket = (level: number) => levelBucket({ level, config });
-
-    expect(bucket(0)).toBe(bucket(1));
-    expect(bucket(1)).not.toBe(bucket(2));
-    expect(bucket(3)).not.toBe(bucket(4));
-    expect(bucket(9)).toBe(bucket(6));
   });
 
   it('sums evidence from every level that shares a bucket', () => {
@@ -95,23 +86,114 @@ describe('calibration', () => {
       0.95,
     );
   });
-
-  it('pools rewards into bands at the configured edges', () => {
-    const band = (reward: number) => rewardBand({ reward, config });
-
-    expect(band(1)).toBe(band(99));
-    expect(band(99)).not.toBe(band(100));
-    expect(band(159)).not.toBe(band(160));
-    expect(band(160)).toBe(band(400));
-  });
 });
 
 describe('probability prior', () => {
-  it('gives every label a prior and ranks them monotonically', () => {
-    const priors = PROBABILITY_LABELS.map((label) => PROBABILITY_PRIOR[label]);
+  it('ranks the labels monotonically', () => {
+    const priors = PROBABILITY_LABELS.map((label) => config.probabilityPrior[label]);
 
-    expect(priors).toHaveLength(PROBABILITY_LABELS.length);
     expect([...priors].sort((a, b) => b - a)).toEqual(priors);
-    expect(PROBABILITY_PRIOR[IMPOSSIBLE_LABEL]).toBe(0);
+  });
+});
+
+// The same GROUP BY the ad_attempts repository runs: one count per (label, level, reward).
+const aggregate = ({ attempts }: { attempts: CalibrationAttempt[] }): CalibrationCount[] => {
+  const cells = new Map<string, CalibrationCount>();
+
+  for (const { probability, dragonLevel, reward, success } of attempts) {
+    const key = `${probability}|${dragonLevel}|${reward}`;
+    const cell = cells.get(key) ?? { probability, dragonLevel, reward, attempts: 0, successes: 0 };
+
+    cells.set(key, {
+      ...cell,
+      attempts: cell.attempts + 1,
+      successes: cell.successes + (success ? 1 : 0),
+    });
+  }
+
+  return [...cells.values()];
+};
+
+const attempt = (overrides: Partial<CalibrationAttempt>): CalibrationAttempt => ({
+  probability: 'Sure thing',
+  dragonLevel: 0,
+  reward: CHEAP,
+  success: true,
+  ...overrides,
+});
+
+// Spreads attempts over raw levels that share a bucket and rewards that share a band, and over
+// cells that do not, because the fold must agree with the aggregation on both.
+const MIXED_ATTEMPTS: CalibrationAttempt[] = [
+  attempt({ dragonLevel: 0, reward: 30 }),
+  attempt({ dragonLevel: 1, reward: 99 }),
+  attempt({ dragonLevel: 1, reward: 99, success: false }),
+  attempt({ dragonLevel: 2, reward: 99, success: false }),
+  attempt({ dragonLevel: 3, reward: 100, success: false }),
+  attempt({ dragonLevel: 2, reward: LUCRATIVE, success: false }),
+  attempt({ probability: 'Gamble', dragonLevel: 6, reward: 100 }),
+  attempt({ probability: 'Gamble', dragonLevel: 9, reward: 400, success: false }),
+  attempt({ probability: 'Impossible', dragonLevel: 0, reward: CHEAP, success: false }),
+];
+
+describe('withAttempt', () => {
+  it('equals the calibration rebuilt from the table after the same attempts', () => {
+    const folded = MIXED_ATTEMPTS.reduce(
+      (calibration, next) => withAttempt({ calibration, attempt: next }),
+      calibratedFrom([]),
+    );
+    const rebuilt = calibratedFrom(aggregate({ attempts: MIXED_ATTEMPTS }));
+
+    expect(folded.evidence).toEqual(rebuilt.evidence);
+  });
+
+  it('equals a rebuild when it extends evidence that was already measured', () => {
+    const earlier = MIXED_ATTEMPTS.slice(0, 4);
+    const later = MIXED_ATTEMPTS.slice(4);
+    const folded = later.reduce(
+      (calibration, next) => withAttempt({ calibration, attempt: next }),
+      calibratedFrom(aggregate({ attempts: earlier })),
+    );
+
+    expect(folded.evidence).toEqual(
+      calibratedFrom(aggregate({ attempts: MIXED_ATTEMPTS })).evidence,
+    );
+  });
+
+  it('counts a failure as an attempt without a success', () => {
+    const calibration = withAttempt({
+      calibration: calibratedFrom([]),
+      attempt: attempt({ success: false }),
+    });
+
+    expect(calibration.estimate({ label: 'Sure thing', level: 0, reward: CHEAP })).toBeCloseTo(
+      (config.smoothingAlpha * 0.95) / (1 + config.smoothingAlpha),
+      5,
+    );
+  });
+
+  it('moves the estimate only for the bucket and band the attempt landed in', () => {
+    const calibration = withAttempt({
+      calibration: calibratedFrom([]),
+      attempt: attempt({ dragonLevel: 6, reward: LUCRATIVE, success: false }),
+    });
+
+    expect(
+      calibration.estimate({ label: 'Sure thing', level: 9, reward: LUCRATIVE + 1 }),
+    ).toBeLessThan(0.95);
+    expect(calibration.estimate({ label: 'Sure thing', level: 6, reward: CHEAP })).toBeCloseTo(
+      0.95,
+    );
+    expect(calibration.estimate({ label: 'Sure thing', level: 0, reward: LUCRATIVE })).toBeCloseTo(
+      0.95,
+    );
+  });
+
+  it('leaves the calibration it was given untouched', () => {
+    const before = calibratedFrom([]);
+
+    withAttempt({ calibration: before, attempt: attempt({ success: false }) });
+
+    expect(before.evidence.size).toBe(0);
   });
 });

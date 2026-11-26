@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { priorCalibration } from '../../src/domain/engine/calibration.ts';
 import { decide } from '../../src/domain/engine/decide.ts';
-import { PROBABILITY_PRIOR, STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
+import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
 
 // The shipped strategy at its boundaries; expectations come from the config, not literals.
 const config = STRATEGY_CONFIG;
@@ -54,6 +54,22 @@ const floorCases: FloorCase[] = [
     rule: 'survival_floor',
   },
   {
+    name: 'lives below the floor, potion affordable',
+    lives: config.livesFloor - 1,
+    gold: potionCost,
+    shopListsPotion: true,
+    kind: 'buy',
+    rule: 'survival_floor',
+  },
+  {
+    name: 'lives below the floor, one gold short of the potion',
+    lives: config.livesFloor - 1,
+    gold: potionCost - 1,
+    shopListsPotion: true,
+    kind: 'solve',
+    rule: 'best_expected_value',
+  },
+  {
     name: 'lives one above the floor',
     lives: config.livesFloor + 1,
     gold: potionCost,
@@ -96,7 +112,8 @@ describe('decide at the survival floor', () => {
 
 const LONG_SHOT =
   PROBABILITY_LABELS.find(
-    (label) => label !== IMPOSSIBLE_LABEL && PROBABILITY_PRIOR[label] < config.minimumProbability,
+    (label) =>
+      label !== IMPOSSIBLE_LABEL && config.probabilityPrior[label] < config.minimumProbability,
   ) ?? IMPOSSIBLE_LABEL;
 
 const twin = ({

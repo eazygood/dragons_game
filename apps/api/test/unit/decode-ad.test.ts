@@ -1,7 +1,7 @@
+import type { RawAd } from '@bigbank-dragon/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { decodeAd, decodeAds } from '../../src/domain/decode-ad.ts';
-import type { RawAd } from '../../src/domain/decode-ad.ts';
+import { decodeAds } from '../../src/domain/decode-ad.ts';
 
 const toBase64 = (value: string) => Buffer.from(value, 'utf8').toString('base64');
 
@@ -16,47 +16,41 @@ const BASE: RawAd = {
 
 const BASE64_AD: RawAd = {
   ...BASE,
+  adId: toBase64(BASE.adId),
   message: toBase64(BASE.message),
   probability: toBase64(BASE.probability),
   encrypted: 1,
 };
 
-describe('decodeAd', () => {
+const decodeOne = ({ raw }: { raw: RawAd }) => decodeAds({ raws: [raw] })[0];
+
+describe('decodeAds', () => {
   it('decodes a base64 adId exactly as the live API requires', () => {
     // Verified 2026-11-23: POST /solve/cVlmaFlnRnQ= is a 400; the decoded id works.
-    const decoded = decodeAd({ raw: { ...BASE64_AD, adId: 'cVlmaFlnRnQ=' } });
-
-    expect(decoded.adId).toBe('qYfhYgFt');
-    expect(decoded.wasEncrypted).toBe(true);
+    expect(decodeOne({ raw: { ...BASE64_AD, adId: 'cVlmaFlnRnQ=' } })).toMatchObject({
+      adId: 'qYfhYgFt',
+      wasEncrypted: true,
+    });
   });
 
   it('decodes encrypted: 2 as rot13', () => {
     const raw: RawAd = { ...BASE, probability: 'Cvrpr bs pnxr', encrypted: 2 };
 
-    expect(decodeAd({ raw }).probability).toBe('Piece of cake');
+    expect(decodeOne({ raw })).toMatchObject({ probability: 'Piece of cake', wasEncrypted: true });
   });
 
-  it('leaves reward and expiresIn untouched when decoding', () => {
-    const decoded = decodeAd({ raw: { ...BASE64_AD, reward: 193, expiresIn: 3 } });
-
-    expect(decoded.reward).toBe(193);
-    expect(decoded.expiresIn).toBe(3);
-  });
-
-  it('decodes the message alongside the id and the label', () => {
-    expect(decodeAd({ raw: BASE64_AD }).message).toBe(BASE.message);
+  it('decodes the message alongside the id and the label, leaving reward and expiresIn alone', () => {
+    expect(decodeOne({ raw: { ...BASE64_AD, reward: 193, expiresIn: 3 } })).toMatchObject({
+      message: BASE.message,
+      reward: 193,
+      expiresIn: 3,
+    });
   });
 
   it('passes a plaintext ad through and marks it unencrypted', () => {
-    expect(decodeAd({ raw: { ...BASE, encrypted: null } }).wasEncrypted).toBe(false);
+    expect(decodeOne({ raw: BASE })).toMatchObject({ adId: BASE.adId, wasEncrypted: false });
   });
 
-  it('rejects a decoded probability that is not a known label', () => {
-    expect(() => decodeAd({ raw: { ...BASE, probability: 'Absolutely fine' } })).toThrow();
-  });
-});
-
-describe('decodeAds', () => {
   it('decodes a mixed board, preserving order', () => {
     const decoded = decodeAds({ raws: [BASE, { ...BASE64_AD, adId: 'cVlmaFlnRnQ=' }] });
 
@@ -66,6 +60,15 @@ describe('decodeAds', () => {
   it('drops an ad whose decoded label is unknown instead of failing the board', () => {
     const decoded = decodeAds({
       raws: [{ ...BASE, adId: 'odd', probability: 'Absolutely fine' }, BASE],
+    });
+
+    expect(decoded.map((ad) => ad.adId)).toEqual(['BR0b2WyN']);
+  });
+
+  // An id that decodes to a path separator could redirect the solve call to another route.
+  it('drops an ad whose decoded id is not a safe identifier', () => {
+    const decoded = decodeAds({
+      raws: [{ ...BASE64_AD, adId: toBase64('../shop/buy/hpot') }, BASE],
     });
 
     expect(decoded.map((ad) => ad.adId)).toEqual(['BR0b2WyN']);

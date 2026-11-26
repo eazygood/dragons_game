@@ -67,7 +67,7 @@ describe('game routes', () => {
     expect(body.recommendation).toMatchObject({ kind: 'solve', adId: 'sure1' });
   });
 
-  // Review Focus #4. Each game-id route declares its own params schema, so each is checked.
+  // Each game-id route declares its own params schema, so each is checked.
   it.each([
     ...['bad!id', 'cVlmaFlnRnQ%3D', 'a'.repeat(65)].map((id) => ({ id, route: '/turn' })),
     { id: 'bad!id', route: '' },
@@ -112,7 +112,6 @@ describe('game routes', () => {
     expect(response.json()).toMatchObject({ error: { code: 'conflict' } });
   });
 
-  // Review Focus #5
   it('answers 410 on game over and then reports the finished game', async () => {
     vi.mocked(adRepository.mugloar.findMany).mockResolvedValue({ status: 'game_over' });
 
@@ -125,7 +124,6 @@ describe('game routes', () => {
     });
   });
 
-  // Review Focus #5
   it('answers 410 when the solve itself is game over, and ends the run', async () => {
     const url = `/api/games/${gameId}/ads/sure1/solve`;
 

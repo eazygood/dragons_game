@@ -1,7 +1,7 @@
 import type { Decision, TurnView } from '@bigbank-dragon/contracts';
 import { useId } from 'react';
 
-import { formatGold, formatPercent } from '../../../shared/format.ts';
+import { formatChance, formatGold } from '../../../shared/format.ts';
 import { playCopy } from '../play-copy.ts';
 import styles from './RecommendationBanner.module.css';
 
@@ -25,7 +25,7 @@ const describeAdvice = ({
   const ad = turnView.board.find(({ adId }) => adId === recommendation.adId);
   const { estimatedProbability, expectedValue } = recommendation.reasoning;
   const odds = playCopy.advice.odds({
-    percent: formatPercent({ probability: estimatedProbability }),
+    percent: formatChance({ winChance: estimatedProbability }),
     gold: formatGold({ gold: expectedValue }),
   });
 

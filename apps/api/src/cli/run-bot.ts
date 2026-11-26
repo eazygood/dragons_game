@@ -1,8 +1,8 @@
 import type { Knex } from 'knex';
 
-import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
 import type { Logger } from '../entities/logger.ts';
 import { SILENT_LOGGER, playGame } from '../managers/bot-manager/index.ts';
+import type { StrategyConfig } from '../managers/bot-manager/index.ts';
 import { startGameRun } from '../managers/game-manager/index.ts';
 import type { BotRunResult, BotStrategy } from './types.ts';
 

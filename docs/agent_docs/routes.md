@@ -3,6 +3,9 @@
 ## Organisation
 
 ```
+api-prefix.ts             - the `/api` prefix, shared by routes/index.ts and web-app.ts
+app-limits.ts             - `AppLimits`: bot cap, request timeout, body limit, rate limits
+
 routes/
 ├── index.ts              - registration under /api, called from app.ts
 ├── game-routes.ts        - start, state, moves, turn, solve, buy
@@ -10,18 +13,25 @@ routes/
 ├── health-routes.ts      - readiness: 200, or 503 when the database does not answer
 ├── bot-routes.ts         - start a bot game
 ├── rate-limit-config.ts  - turns an `AppLimits` rate into a route's `config.rateLimit`
-├── api-prefix.ts         - the `/api` prefix, shared with the 404 handler
 └── error-handlers/       - error-handler.ts, the single registered error handler
 
 plugins/                  - registered by app.ts, in this order
 ├── mysql.ts              - decorates `app.db`; onClose destroys the pool
 ├── bot-games.ts          - decorates `app.botGames` (the registry); onClose stops games
 ├── security-headers.ts   - @fastify/helmet: CSP and the other headers
+├── cross-site-guard.ts   - refuses a cross-site POST/PUT/PATCH/DELETE with 403
 ├── rate-limit.ts         - @fastify/rate-limit, opt-in per route
 ├── json-only-bodies.ts   - removes the text/plain parser
 ├── zod-validator.ts      - compiles contract schemas for route validation
 └── web-app.ts            - @fastify/static for the SPA, and `notFoundHandler`
 ```
+
+`app.ts` registers, in order: `mysql`, `bot-games`, `security-headers`,
+`cross-site-guard`, `rate-limit`, `json-only-bodies`; then sets the zod
+validator compiler, the error handler and `notFoundHandler`; then registers the
+routes under `/api` and, last, `web-app`. Fastify's `frameworkErrors` also goes
+to the error handler, so a request refused before routing (a malformed URL) gets
+the same envelope.
 
 Request schemas are the zod schemas in `packages/contracts`. There is no local
 `schemas/` folder.
@@ -30,16 +40,19 @@ Request schemas are the zod schemas in `packages/contracts`. There is no local
 
 All endpoints are under `/api`.
 
-| Method | Path                              | 2xx              | Other                        |
-| ------ | --------------------------------- | ---------------- | ---------------------------- |
-| GET    | `/health`                         | 200 `{status}`   | 503 `{status}`               |
-| POST   | `/games`                          | 201 `GameView`   | 429, 502                     |
-| POST   | `/bot-games`                      | 201 `GameView`   | 429, 502                     |
-| GET    | `/games/:gameId`                  | 200 `GameView`   | 400, 404 (database only)     |
-| GET    | `/games/:gameId/moves`            | 200 `Move[]`     | 400, 404 (database only)     |
-| GET    | `/games/:gameId/turn`             | 200 `TurnView`   | 400, 404, 409, 410, 502      |
-| POST   | `/games/:gameId/ads/:adId/solve`  | 200 `MoveResult` | 400, 404, 409, 410, 429, 502 |
-| POST   | `/games/:gameId/shop/:itemId/buy` | 200 `MoveResult` | 400, 404, 409, 410, 429, 502 |
+| Method | Path                              | 2xx              | Other                             |
+| ------ | --------------------------------- | ---------------- | --------------------------------- |
+| GET    | `/health`                         | 200 `{status}`   | 503 `{status}`                    |
+| POST   | `/games`                          | 201 `GameView`   | 403, 413, 415, 429, 502           |
+| POST   | `/bot-games`                      | 201 `GameView`   | 403, 413, 415, 429, 502, 503      |
+| GET    | `/games/:gameId`                  | 200 `GameView`   | 400, 404 (database only), 429     |
+| GET    | `/games/:gameId/moves`            | 200 `Move[]`     | 400, 404 (database only), 429     |
+| GET    | `/games/:gameId/turn`             | 200 `TurnView`   | 400, 404, 409, 410, 429, 502      |
+| POST   | `/games/:gameId/ads/:adId/solve`  | 200 `MoveResult` | 400, 403, 404, 409, 410, 429, 502 |
+| POST   | `/games/:gameId/shop/:itemId/buy` | 200 `MoveResult` | 400, 403, 404, 409, 410, 429, 502 |
+
+Every `POST` can also answer `413` (a body over `bodyLimitBytes`, 1 KiB) and
+`415` (a non-JSON body); no route reads a body.
 
 `GET /health` runs `select 1` through `healthMediator` and `healthManager`, so it
 answers for the database, not just the process. A failed probe is `503
@@ -74,14 +87,21 @@ Bot games are capped (`AppLimits.maxBotGames`, 3). Each one makes an upstream ca
 every turn, and the upstream throttle is shared, so an uncapped route lets one client
 starve every player. `startBotGame` reserves a slot **before** it asks the upstream
 for a game, so concurrent requests cannot overshoot the cap; at the cap it throws
-`TooManyRequestsError` (`429 too_many_requests`). The slot is held until the game
-settles, and released at once if starting it fails.
+`TooManyRequestsError` (`429 too_many_requests`) with `Retry-After: 30`
+(`BOT_SLOT_RETRY_AFTER_SECONDS`; a bot game takes a minute or two). Once shutdown has
+begun the registry refuses every slot, and the route answers
+`503 service_unavailable` instead, because waiting will not help. The slot is held
+until the game settles, and released at once if starting it fails.
 
 Shutdown closes games before the pool. `app.close()` runs `botGamesPlugin`'s
 `onClose` first (it is registered after `mysqlPlugin`, and `onClose` hooks run
 last-registered first): it aborts every game's `AbortSignal` and waits. A game
 finishes the turn in flight, abandons its run and returns; only then is the pool
 destroyed. `test/integration/bot-shutdown.test.ts` fails if the order is reversed.
+
+A game the upstream has forgotten (games expire when left idle) makes `/turn`,
+`/solve` and `/buy` answer `404 not_found`, because the upstream answers `404` for
+it; the web app shows that as an expired game.
 
 An unknown `/api/*` path answers `404 not_found` as JSON. Any other `GET` that no
 route matches is answered with `index.html` when the web app is being served (see
@@ -137,19 +157,27 @@ HTTP mapping:
 | `ShopItemNotFound`    | `404` |                                       |
 | `GameNotPlayable`     | `409` | A bot's game; humans cannot move it   |
 | _(schema validation)_ | `400` | Fastify's `error.validation`          |
-| Fastify 4xx           | `4xx` | Malformed JSON; `415` for non-JSON    |
+| Fastify 4xx           | `4xx` | Malformed JSON; `413`, `415`          |
+| `CrossSiteRequest`    | `403` | `invalid_request`; see _Hardening_    |
 | `TooManyRequests`     | `429` | Rate limit, or the bot-game cap       |
 | `UpstreamUnavailable` | `502` | Mugloar unreachable after retries     |
+| `ServiceUnavailable`  | `503` | A bot game asked for during shutdown  |
 | `PersistenceFailed`   | `500` | The player's state could not be saved |
+| `DecisionInvariant`   | `500` | The engine named an ad or item absent |
 | _(unmapped)_          | `500` | Logged; the message is never sent     |
 
 **5xx messages are fixed.** A `4xx` sends the error's own message, which is
 written for the client. A `5xx` `AppError` is logged at `warn` with its `cause`
 (which can hold the upstream status and the start of its HTML body) and sends a
 fixed text: `upstream_unavailable` → "The Mugloar server is unavailable",
-anything else → "Internal server error". An unmapped error is logged at `error`
-and answers `500 internal`. Fastify's own 4xx errors (malformed JSON, `415`) map
-to `invalid_request` with Fastify's message.
+`service_unavailable` → "The server is shutting down", anything else →
+"Internal server error". An unmapped error is logged at `error` and answers
+`500 internal`. Fastify's own 4xx errors (malformed JSON, `413`, `415`) map to
+`invalid_request` with Fastify's message.
+
+**`Retry-After`.** `@fastify/rate-limit` sets it on its own refusals. A `429`
+raised by our code (the bot cap) carries `retryAfterSeconds`, and the handler
+adds the header from it unless one is already set.
 
 **Game over is not in this table.** The adapter returns `410` as a terminal
 `{ status: 'game_over' }` result and never throws it, so it never reaches the
@@ -166,13 +194,35 @@ Response bodies share one envelope so the client has a single error path.
 All of it is registered in `app.ts`, ahead of the routes.
 
 - **Rate limits** (`@fastify/rate-limit`, `plugins/rate-limit.ts`). Opt-in per route
-  through `config.rateLimit`, never global: `GET /games/:gameId` and `/moves` are
-  polled once a second and stay unlimited. `POST /games` and `POST /bot-games` share
-  `startGameRate` (10 a minute per client); solve and buy use `playMoveRate` (120 a
-  minute, a human cannot click faster). The counters live in memory, which is right
-  for one process. A refusal is `429 too_many_requests` with `Retry-After`. Clients
-  are keyed by socket IP and `trustProxy` is off, so behind a proxy every client
-  would share one bucket; compose binds to loopback, so none sits in front today.
+  through `config.rateLimit`, never global, per client and per route:
+
+  | `AppLimits` field | Routes                           | Limit        |
+  | ----------------- | -------------------------------- | ------------ |
+  | `startGameRate`   | `POST /games`, `POST /bot-games` | 10 a minute  |
+  | `playMoveRate`    | solve, buy                       | 120 a minute |
+  | `readTurnRate`    | `GET /games/:gameId/turn`        | 60 a minute  |
+  | `pollRate`        | `GET /games/:gameId`, `/moves`   | 300 a minute |
+  | _(none)_          | `GET /health`                    | unlimited    |
+
+  `/turn` is metered like a move because it can fetch the board and shop
+  upstream. The polled reads only touch the database; the web polls them at most
+  once a second, so 300 leaves room for several tabs while still bounding a
+  client that loops. The counters live in memory (see _Single-process
+  assumptions_ in [`architecture.md`](architecture.md)). A refusal is
+  `429 too_many_requests` with `Retry-After`. Clients are keyed by socket IP and
+  `trustProxy` is off, so behind a proxy every client would share one bucket;
+  compose binds to loopback, so none sits in front today.
+
+- **Cross-site guard** (`plugins/cross-site-guard.ts`). An `onRequest` hook refuses a
+  `POST`, `PUT`, `PATCH` or `DELETE` with `403` when `Sec-Fetch-Site` is
+  `cross-site`, or when an `Origin` header names a host other than the request's
+  `Host`. CORS does not stop a page on another site from sending such a request
+  through a visitor's browser; it only hides the response. Browsers always send
+  one of the two headers on a cross-site write, while curl, the CLIs and the tests
+  send neither, so they pass. It reuses `invalid_request` because a new code would
+  break the web's exhaustive error-copy map, and only a browser can trigger it.
+- **Body limit.** `bodyLimit` is 1 KiB (`bodyLimitBytes`): no route needs a body,
+  so a flood is refused with `413` before it is buffered or parsed.
 - **Request timeout.** `requestTimeout` is 15s: the longest a client may take to send a
   request, which cuts off a connection that trickles its headers. It does not limit a
   handler; the upstream's own 10s timeout does that.
@@ -183,9 +233,9 @@ All of it is registered in `app.ts`, ahead of the routes.
 - **JSON bodies only.** `plugins/json-only-bodies.ts` removes Fastify's `text/plain`
   parser. A cross-site `<form enctype="text/plain">` needs no preflight, so JSON,
   which does, is the only body type a route can read; `text/plain` answers `415`.
-  The web client sends no body on its POSTs. Known limit: a bodiless cross-site
-  `fetch(..., { mode: 'no-cors' })` still reaches `POST /games` and `/bot-games`; the
-  rate limit and the bot cap are what bound it.
+  The web client sends no body on its POSTs. A bodiless cross-site
+  `fetch(..., { mode: 'no-cors' })` from a browser is refused by the cross-site
+  guard; the rate limit and the bot cap bound a client that is not a browser.
 
 `AppLimits` (`app-limits.ts`) holds every default, and `buildApp({ limits })` takes
 an override, which is how the tests use a tight limit.
@@ -200,21 +250,28 @@ owns:
 - tolerating **HTML bodies** on non-2xx responses
 - translating `410` into the `GameOver` domain state instead of throwing
 - the shared process-wide outbound throttle
+- a 256 KiB cap on every response body it reads
 
 See [`architecture.md`](architecture.md) for the verified upstream contract.
 
 ## Serving the web app
 
 When `WEB_DIST_DIR` is set, `plugins/web-app.ts` registers `@fastify/static` for
-the built React app, and its `notFoundHandler` (set in `app.ts`) answers any unmatched non-`/api` `GET`
-with `index.html` so client-side routes survive a reload. A request for a missing
-asset therefore gets `200 text/html`, not a 404 (a known limit). `/api/*` misses
-keep the JSON envelope. `WEB_DIST_DIR` is unset in development, where Vite serves
-the app and proxies `/api`. `compose.yaml` sets it for the `app` service.
+the built React app, and its `notFoundHandler` (set in `app.ts`) answers any
+unmatched non-`/api` `GET` with `index.html` so client-side routes survive a
+reload. A request for a missing asset therefore gets `200 text/html`, not a 404
+(a known limit). `/api/*` misses keep the JSON envelope; the match is on the
+`/api` prefix followed by `/`, `?` or the end, so `/apiary` is an app route.
+
+- **Caching.** Files under `assets/` are named by content hash, so they are served
+  `public, max-age=31536000, immutable`. Everything else, `index.html` included,
+  is `no-cache`, so a new deploy is picked up on the next load.
+- **Dotfiles are denied**, so a stray `.env` in the build output is never served. `WEB_DIST_DIR` is unset in development, where Vite serves
+  the app and proxies `/api`. `compose.yaml` sets it for the `app` service.
 
 ## Running in Docker
 
-The `Dockerfile` has three stages: production dependencies, the web build (on top of
+The `Dockerfile` has four stages: a shared `base`, production dependencies, the web build (on top of
 them, so the two installs never run side by side on a small VM), and a `node:26-slim`
 runtime that runs as `node`, not root. The runtime has no pnpm and no tsx: Node strips
 the types from `apps/api/src` itself, which is why the API uses only erasable
@@ -225,8 +282,9 @@ turn in flight (one 10s upstream timeout) to finish before the pool closes.
 
 ## No streaming
 
-There is no SSE or WebSocket. `/watch` polls `GET /games/:gameId` (and `/moves`
-when the move log is open) once a second while the game is `active`. A bot game's
+There is no SSE or WebSocket. `/watch` polls `GET /games/:gameId` once a second,
+and `/moves` every 2.5 seconds when the move log is open, while the game is
+`active`. A bot game's
 progress is just rows in the database, so a viewer can come and go, reload, or
 open the same game twice without touching the run. See
 [`frontend.md`](frontend.md) for the polling rule.

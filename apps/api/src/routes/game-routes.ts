@@ -18,6 +18,8 @@ const HTTP_CREATED = 201;
 export const registerGameRoutes = (app: FastifyInstance, { limits }: { limits: AppLimits }) => {
   const startGameConfig = rateLimitConfig({ rate: limits.startGameRate });
   const playMoveConfig = rateLimitConfig({ rate: limits.playMoveRate });
+  const readTurnConfig = rateLimitConfig({ rate: limits.readTurnRate });
+  const pollConfig = rateLimitConfig({ rate: limits.pollRate });
 
   app.post('/games', { config: startGameConfig }, async (_request, reply) =>
     reply.status(HTTP_CREATED).send(await gameMediator.startGame({ db: app.db })),
@@ -25,19 +27,19 @@ export const registerGameRoutes = (app: FastifyInstance, { limits }: { limits: A
 
   app.get<{ Params: GameParams }>(
     '/games/:gameId',
-    { schema: { params: GameParamsSchema } },
+    { schema: { params: GameParamsSchema }, config: pollConfig },
     ({ params }) => gameMediator.findGame({ db: app.db, gameId: params.gameId }),
   );
 
   app.get<{ Params: GameParams }>(
     '/games/:gameId/moves',
-    { schema: { params: GameParamsSchema } },
+    { schema: { params: GameParamsSchema }, config: pollConfig },
     ({ params }) => gameMediator.findMoves({ db: app.db, gameId: params.gameId }),
   );
 
   app.get<{ Params: GameParams }>(
     '/games/:gameId/turn',
-    { schema: { params: GameParamsSchema } },
+    { schema: { params: GameParamsSchema }, config: readTurnConfig },
     async ({ params, log }, reply) => {
       const turnViewResult = await gameMediator.findTurn({
         db: app.db,

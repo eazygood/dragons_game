@@ -7,7 +7,7 @@ export type MoveActions = {
   isPending: boolean;
 };
 
-export type MoveOutcome = {
+export type MoveReport = {
   lastResult: MoveResult | null;
   notice: string | null;
 };

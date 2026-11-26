@@ -1,4 +1,3 @@
-import { HEALING_POTION_ID } from '@bigbank-dragon/contracts';
 import type { Ad, GameState, ShopItem } from '@bigbank-dragon/contracts';
 import { RECORDED_SHOP_ITEMS } from '@bigbank-dragon/contracts/test-support';
 import { describe, expect, it } from 'vitest';
@@ -11,7 +10,7 @@ import type { StrategyConfig } from '../../src/domain/engine/strategy-config.ts'
 
 // Mechanism tests pin the values they exercise, so retuning the defaults
 // cannot silently change what they prove.
-const config: StrategyConfig = { ...STRATEGY_CONFIG, livesFloor: 2, levelUpEnabled: true };
+const config: StrategyConfig = { ...STRATEGY_CONFIG, livesFloor: 2 };
 const calibration = priorCalibration({ config });
 const shop: ShopItem[] = [...RECORDED_SHOP_ITEMS];
 
@@ -29,40 +28,7 @@ const ad = (overrides: Partial<Ad>): Ad => ({
 
 const fixed = (probability: number): Calibration => ({ estimate: () => probability });
 
-const board = [
-  ad({ adId: 'cake', probability: 'Piece of cake', reward: 20 }),
-  ad({ adId: 'gamble', probability: 'Gamble', reward: 100 }),
-];
-
 describe('decide', () => {
-  it('buys a healing potion instead of playing when lives are at the floor', () => {
-    const decision = decide({
-      state: { ...state, lives: 1, gold: 60 },
-      board: [ad({ probability: 'Sure thing' })],
-      shop,
-      calibration,
-      config,
-    });
-
-    expect(decision).toMatchObject({
-      kind: 'buy',
-      itemId: 'hpot',
-      reasoning: { rule: 'survival_floor' },
-    });
-  });
-
-  it('plays on at the lives floor when it cannot afford a potion', () => {
-    const decision = decide({
-      state: { ...state, lives: 1, gold: 10 },
-      board: [ad({ probability: 'Sure thing' })],
-      shop,
-      calibration,
-      config,
-    });
-
-    expect(decision.kind).toBe('solve');
-  });
-
   it('picks the highest expected value above the probability floor', () => {
     const candidates = [
       ad({ adId: 'a', probability: 'Sure thing', reward: 10 }),
@@ -89,7 +55,6 @@ describe('decide', () => {
     });
   });
 
-  // Review Focus #1
   it('stops rather than solving nothing when every ad is filtered out', () => {
     const unusable = [ad({ probability: 'Impossible' }), ad({ expiresIn: 0 })];
     const decision = decide({
@@ -103,17 +68,8 @@ describe('decide', () => {
     expect(decision).toMatchObject({ kind: 'stop', reasoning: { rule: 'no_viable_option' } });
   });
 
-  it('buys rather than stopping when the board is unusable but gold allows', () => {
-    const unusable = [ad({ probability: 'Impossible' })];
-
-    expect(
-      decide({ state: { ...state, gold: 400 }, board: unusable, shop, calibration, config }).kind,
-    ).toBe('buy');
-  });
-
   it('stops on an exhausted board with the shipped settings, however much gold is left', () => {
-    // Measured: from turn ~95 every ad is Impossible, and 7 games that bought
-    // 8–22 level-ups there won no further reward.
+    // Measured: from turn ~95 every ad is Impossible, so gold spent there wins nothing.
     const exhausted = [ad({ probability: 'Impossible' }), ad({ probability: 'Impossible' })];
     const decision = decide({
       state: { ...state, lives: 4, gold: 1400 },
@@ -126,35 +82,6 @@ describe('decide', () => {
     expect(decision).toMatchObject({ kind: 'stop', reasoning: { rule: 'no_viable_option' } });
   });
 
-  const cheapestLevelUpCost = Math.min(
-    ...shop.filter((item) => item.id !== HEALING_POTION_ID).map((item) => item.cost),
-  );
-
-  // The board stays viable, so only the gold reserve decides between buying and playing.
-  it.each([
-    { gold: cheapestLevelUpCost + config.levelUpGoldReserve, rule: 'level_up' },
-    { gold: cheapestLevelUpCost + config.levelUpGoldReserve - 1, rule: 'best_expected_value' },
-  ])(
-    'on a viable board with $gold gold, levels up only if the reserve survives the buy → $rule',
-    ({ gold, rule }) => {
-      const decision = decide({ state: { ...state, gold }, board, shop, calibration, config });
-
-      expect(decision.reasoning.rule).toBe(rule);
-    },
-  );
-
-  it('never levels up when the policy is disabled', () => {
-    const decision = decide({
-      state: { ...state, gold: 500 },
-      board,
-      shop,
-      calibration,
-      config: { ...config, levelUpEnabled: false },
-    });
-
-    expect(decision.reasoning.rule).not.toBe('level_up');
-  });
-
   it('reports the estimate and expected value it acted on', () => {
     const decision = decide({
       state,
@@ -165,6 +92,8 @@ describe('decide', () => {
     });
 
     expect(decision.reasoning).toMatchObject({ estimatedProbability: 0.9, consideredCount: 1 });
-    expect(decision.reasoning.expectedValue).toBeCloseTo(0.9 * 20 - 0.1 * 70);
+    expect(decision.reasoning.expectedValue).toBeCloseTo(
+      0.9 * 20 - 0.1 * (config.lifeCostInGold + config.turnCostInGold),
+    );
   });
 });

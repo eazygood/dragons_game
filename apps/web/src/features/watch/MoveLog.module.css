@@ -1,8 +1,4 @@
 .log {
-  display: grid;
+  composes: plain-list from '../../shared/plain-list.module.css';
   gap: var(--space-1);
-  max-width: 40rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }

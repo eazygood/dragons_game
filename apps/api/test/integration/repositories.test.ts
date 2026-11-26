@@ -1,13 +1,10 @@
 import type { ProbabilityLabel } from '@bigbank-dragon/contracts';
-import type { Knex } from 'knex';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
-import { loadConfig } from '../../src/config/index.ts';
 import type { AdAttempt } from '../../src/entities/ad-attempt.ts';
 import type { NewGameRun } from '../../src/entities/game-run.ts';
-import { DbTables } from '../../src/repositories/db-tables.ts';
 import { adAttemptRepository, gameRunRepository } from '../../src/repositories/index.ts';
+import { useMigratedDatabase } from '../support/integration-db.ts';
 
 const STARTED_AT = new Date('2026-11-24T10:00:00.000Z');
 
@@ -50,22 +47,10 @@ const attemptOf = ({
 
 // Every test creates its own run under its own game id, so the order they run in is irrelevant.
 describe('repositories', () => {
-  let db: Knex;
+  const db = useMigratedDatabase();
 
   const createRun = (patch: Partial<NewGameRun> & Pick<NewGameRun, 'gameId'>) =>
     gameRunRepository.db.createOne({ db, gameRun: { ...ACTIVE_RUN, ...patch } });
-
-  beforeAll(async () => {
-    db = createDatabase({ config: loadConfig({ env: process.env }) });
-    await db.migrate.rollback(undefined, true);
-    await db.migrate.latest();
-  });
-
-  afterAll(() => db.destroy());
-
-  beforeEach(async () => {
-    await db(DbTables.GameRuns).delete();
-  });
 
   it('round-trips a game run through transform and back', async () => {
     const id = await gameRunRepository.db.createOne({ db, gameRun: ACTIVE_RUN });

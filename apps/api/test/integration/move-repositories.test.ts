@@ -1,8 +1,6 @@
 import type { Knex } from 'knex';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
-import { loadConfig } from '../../src/config/index.ts';
 import type { AdAttempt } from '../../src/entities/ad-attempt.ts';
 import type { GameRunId } from '../../src/entities/game-run.ts';
 import type { Purchase } from '../../src/entities/purchase.ts';
@@ -12,6 +10,7 @@ import {
   gameRunRepository,
   purchaseRepository,
 } from '../../src/repositories/index.ts';
+import { useMigratedDatabase } from '../support/integration-db.ts';
 
 const STARTED_AT = new Date('2026-11-24T10:00:00.000Z');
 
@@ -59,20 +58,11 @@ const purchaseOf = ({ gameRunId, turn }: Pick<Purchase, 'gameRunId' | 'turn'>): 
 });
 
 describe('move repositories', () => {
-  let db: Knex;
+  const db = useMigratedDatabase();
   let runId: GameRunId;
   let otherRunId: GameRunId;
 
-  beforeAll(async () => {
-    db = createDatabase({ config: loadConfig({ env: process.env }) });
-    await db.migrate.rollback(undefined, true);
-    await db.migrate.latest();
-  });
-
-  afterAll(() => db.destroy());
-
   beforeEach(async () => {
-    await db(DbTables.GameRuns).delete();
     runId = await startRun({ db, gameId: 'moves-run' });
     otherRunId = await startRun({ db, gameId: 'moves-other' });
   });

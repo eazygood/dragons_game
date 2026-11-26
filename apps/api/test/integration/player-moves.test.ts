@@ -1,10 +1,7 @@
 import type { GameState } from '@bigbank-dragon/contracts';
-import type { Knex } from 'knex';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createDatabase } from '../../src/adapters/mysql-adapter.ts';
-import { loadConfig } from '../../src/config/index.ts';
-import { PROBABILITY_PRIOR } from '../../src/domain/engine/strategy-config.ts';
+import { STRATEGY_CONFIG } from '../../src/domain/engine/strategy-config.ts';
 import type { GameRun } from '../../src/entities/game-run.ts';
 import {
   AdExpiredError,
@@ -25,6 +22,7 @@ import {
   gameRunRepository,
   purchaseRepository,
 } from '../../src/repositories/index.ts';
+import { useMigratedDatabase } from '../support/integration-db.ts';
 import {
   PLAYER_GAME_ID,
   SILENT_LOGGER,
@@ -34,20 +32,11 @@ import {
 } from '../support/player-game.ts';
 
 describe('player moves', () => {
-  let db: Knex;
+  const db = useMigratedDatabase();
   let run: GameRun;
   let state: GameState;
 
-  beforeAll(async () => {
-    db = createDatabase({ config: loadConfig({ env: process.env }) });
-    await db.migrate.rollback(undefined, true);
-    await db.migrate.latest();
-  });
-
-  afterAll(() => db.destroy());
-
   beforeEach(async () => {
-    await db(DbTables.GameRuns).delete();
     stubPlayerUpstream();
     ({ run, state } = await startGameRun({ db, strategy: 'manual' }));
   });
@@ -72,10 +61,12 @@ describe('player moves', () => {
     const row = (await db(DbTables.AdAttempts).first()) as Record<string, unknown>;
 
     expect(row).toMatchObject({ ad_id: 'sure1', probability: 'Sure thing', success: 1 });
-    expect(Number(row.estimated_probability)).toBeCloseTo(PROBABILITY_PRIOR['Sure thing'], 4);
+    expect(Number(row.estimated_probability)).toBeCloseTo(
+      STRATEGY_CONFIG.probabilityPrior['Sure thing'],
+      4,
+    );
   });
 
-  // Review Focus #2
   it('rejects an ad that left the board without calling solve', async () => {
     await expect(
       solvePlayerAd({ db, gameId: PLAYER_GAME_ID, adId: 'vanished', logger: SILENT_LOGGER }),
@@ -83,7 +74,6 @@ describe('player moves', () => {
     expect(adAttemptRepository.mugloar.createOne).not.toHaveBeenCalled();
   });
 
-  // Review Focus #3
   it('refuses a purchase the stored gold cannot cover, without burning a turn', async () => {
     await expect(
       buyPlayerItem({ db, gameId: PLAYER_GAME_ID, itemId: 'hpot', logger: SILENT_LOGGER }),
@@ -121,7 +111,6 @@ describe('player moves', () => {
     ).rejects.toBeInstanceOf(ShopItemNotFoundError);
   });
 
-  // Review Focus #5
   it('ends the run when a solve takes the last life', async () => {
     vi.mocked(adAttemptRepository.mugloar.createOne).mockResolvedValue(
       solvedAdResponse({ success: false, lives: 0, gold: 0, score: 0, message: 'defeated' }),
@@ -157,7 +146,6 @@ describe('player moves', () => {
     ).rejects.toBeInstanceOf(GameNotPlayableError);
   });
 
-  // Review Focus #1 (server half)
   it('runs concurrent moves on one game one at a time', async () => {
     let inFlight = 0;
     let maxInFlight = 0;

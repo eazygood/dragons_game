@@ -12,6 +12,6 @@ export const GameOverScreen = ({ game }: { game: GameView }) => (
       {playCopy.gameOver.title}
     </h2>
     <p>{playCopy.gameOver.finalScore(game.state.score)}</p>
-    <Link to="/play">{playCopy.gameOver.newGame}</Link>
+    <Link to="/play">{playCopy.start.newGame}</Link>
   </Panel>
 );

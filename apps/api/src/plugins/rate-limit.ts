@@ -3,7 +3,7 @@ import fp from 'fastify-plugin';
 
 import { TooManyRequestsError } from '../errors/too-many-requests-error.ts';
 
-// Routes opt in through config.rateLimit; the polled GETs stay unlimited.
+// Routes opt in through config.rateLimit; health stays unlimited, polled GETs get a generous cap.
 // The builder's return value is thrown, so the error handler maps it like any other AppError.
 export const rateLimitPlugin = fp(async (app) => {
   await app.register(rateLimit, {

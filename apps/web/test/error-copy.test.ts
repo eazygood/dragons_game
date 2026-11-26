@@ -2,8 +2,22 @@ import { describe, expect, it } from 'vitest';
 
 import { ApiError } from '../src/api/api-error.ts';
 import type { ClientErrorCode } from '../src/api/api-error.ts';
-import { ERROR_COPY, errorCopy } from '../src/shared/error-copy.ts';
+import { errorCopy } from '../src/shared/error-copy.ts';
 import { sharedCopy } from '../src/shared/shared-copy.ts';
+
+// A Record rather than an array, so a new error code fails typecheck until it is listed here.
+const CODES: Record<ClientErrorCode, true> = {
+  invalid_request: true,
+  not_found: true,
+  conflict: true,
+  upstream_unavailable: true,
+  internal: true,
+  game_over: true,
+  too_many_requests: true,
+  service_unavailable: true,
+  unreachable: true,
+  invalid_response: true,
+};
 
 const buildApiError = ({ code }: { code: ClientErrorCode }) =>
   new ApiError({ status: 0, code, message: 'detail the user must not see' });
@@ -24,8 +38,14 @@ describe('errorCopy', () => {
     expect(unreachable).not.toBe(upstreamDown);
   });
 
+  it('tells the user the service is temporarily unavailable on a 503', () => {
+    expect(errorCopy({ error: buildApiError({ code: 'service_unavailable' }) })).toBe(
+      sharedCopy.errors.serviceUnavailable,
+    );
+  });
+
   it('never shows the raw error message', () => {
-    for (const code of Object.keys(ERROR_COPY) as ClientErrorCode[]) {
+    for (const code of Object.keys(CODES) as ClientErrorCode[]) {
       expect(errorCopy({ error: buildApiError({ code }) })).not.toContain('detail');
     }
   });

@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+import { IdentifierSchema } from './ids.ts';
+
 export const ShopItemSchema = z.object({
-  id: z.string().min(1),
+  id: IdentifierSchema,
   name: z.string(),
   cost: z.number().int(),
 });

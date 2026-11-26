@@ -1,14 +1,12 @@
 export { buyPlayerItem } from './buy-player-item.ts';
-export { findAds } from './find-ads.ts';
+export { findAds, findShopItems } from './board.ts';
 export { findMoveHistory } from './find-move-history.ts';
 export { findPlayableRun, findRun } from './find-run.ts';
-export { findShopItems } from './find-shop-items.ts';
 export { finishRun } from './finish-run.ts';
-export { keepPlayingOnPersistenceFailure } from './keep-playing.ts';
-export { isOutOfLives } from './out-of-lives.ts';
 export { playBuyTurn } from './play-buy-turn.ts';
+export type { MoveContext } from './play-move.ts';
 export { playSolveTurn } from './play-solve-turn.ts';
 export { recordGameOver } from './record-game-over.ts';
-export { stateFromRun } from './run-state.ts';
+export { isOutOfLives, stateFromRun } from './run-state.ts';
 export { solvePlayerAd } from './solve-player-ad.ts';
 export { startGameRun } from './start-game-run.ts';

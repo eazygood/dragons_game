@@ -1,10 +1,12 @@
-import { Link, Outlet, createRootRoute } from '@tanstack/react-router';
+import { HeadContent, Link, Outlet, createRootRoute } from '@tanstack/react-router';
 
+import { pageHead } from '../shared/page-head.ts';
 import { sharedCopy } from '../shared/shared-copy.ts';
-import styles from './root.module.css';
+import styles from './__root.module.css';
 
 const RootLayout = () => (
   <>
+    <HeadContent />
     <header className={styles.header}>
       <h1 className={styles.title}>
         <Link to="/" className={styles.titleLink}>
@@ -18,4 +20,4 @@ const RootLayout = () => (
   </>
 );
 
-export const Route = createRootRoute({ component: RootLayout });
+export const Route = createRootRoute({ component: RootLayout, head: () => pageHead() });

@@ -1,5 +1,4 @@
 .error {
+  composes: error from '../../shared/inline-error.module.css';
   flex-basis: 100%;
-  margin: 0;
-  color: var(--color-danger);
 }

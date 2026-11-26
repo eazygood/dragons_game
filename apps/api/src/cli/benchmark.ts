@@ -3,10 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { TARGET_SCORE } from '@bigbank-dragon/contracts';
 import type { Knex } from 'knex';
 
-import { STRATEGY_CONFIG } from '../domain/engine/strategy-config.ts';
-import type { StrategyConfig } from '../domain/engine/strategy-config.ts';
 import type { Logger } from '../entities/logger.ts';
-import { SILENT_LOGGER } from '../managers/bot-manager/index.ts';
+import {
+  STRATEGY_CONFIG,
+  SILENT_LOGGER,
+  findBenchmarkRuns,
+} from '../managers/bot-manager/index.ts';
+import type { StrategyConfig } from '../managers/bot-manager/index.ts';
 import { summarise } from './benchmark-report.ts';
 import type { BenchmarkSummary } from './benchmark-report.ts';
 import { runBounded } from './bounded-pool.ts';
@@ -74,8 +77,17 @@ export const runBenchmark = async ({
     }
   });
 
+  const runDurationsInMs = (await findBenchmarkRuns({ db, benchmarkId })).flatMap(
+    ({ startedAt, endedAt }) => (endedAt === null ? [] : [endedAt.getTime() - startedAt.getTime()]),
+  );
+
   return {
-    ...summarise({ results, failedRuns: outcomes.length - results.length, target: TARGET_SCORE }),
+    ...summarise({
+      results,
+      failedRuns: outcomes.length - results.length,
+      runDurationsInMs,
+      target: TARGET_SCORE,
+    }),
     benchmarkId,
     strategy,
   };
