@@ -22,10 +22,7 @@ services:
       start_period: 10s
 
   app:
-    build:
-      context: .
-      args:
-        NPM_REGISTRY: '${NPM_REGISTRY:-https://registry.npmjs.org/}'
+    build: .
     depends_on:
       mysql:
         condition: service_healthy

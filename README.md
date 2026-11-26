@@ -6,21 +6,54 @@ advice beside every ad, and the same engine can play a whole game on its own.
 One Fastify API owns the only client to the game server; the browser never talks
 to it directly.
 
-## Run it
+## Build and run
+
+### With Docker
+
+Needs Docker with Compose v2 and internet access (the app plays on the live game
+server). On macOS with Colima, run `colima start` first.
 
 ```bash
-docker compose up --build
+docker compose up --build       # build the app image, start MySQL and the app
 ```
 
 Open <http://localhost:3000>. The API is on the same port, under `/api`.
 
-- Needs Docker with Compose v2 and internet access (the app plays on the live
-  game server). On macOS with Colima, run `colima start` first.
-- The first build takes about a minute. Migrations run when the app starts;
-  data lives in the `mysql-data` volume (`docker compose down -v` wipes it).
+- The first build takes about a minute. Migrations run when the app starts.
+- `--build` rebuilds the image from the current code; without it, the last image
+  is reused.
+- Add `-d` to run in the background, then `docker compose logs -f app` to follow
+  the logs.
+- `docker compose down` stops everything. Data lives in the `mysql-data` volume;
+  `docker compose down -v` wipes it.
 - Port taken? `APP_PORT=3001 MYSQL_PORT=3307 docker compose up --build`.
-- Behind a registry mirror or proxy? `NPM_REGISTRY=<url> docker compose up --build`
-  (see [Troubleshooting](#troubleshooting)).
+
+### Without Docker for the app
+
+Needs Node 26 (`.nvmrc`) and pnpm 12.4.2 (`npm install --global pnpm@12.4.2`).
+MySQL still runs in Docker.
+
+```bash
+pnpm install                        # once
+docker compose up -d --wait mysql   # only the database runs in Docker
+pnpm db:migrate
+pnpm dev                            # API on :3000, web on :5173 (proxies /api)
+pnpm bot                            # optional: one headless game, prints the score
+```
+
+Open <http://localhost:5173>. Configuration is environment variables with local
+defaults, validated at start-up in `apps/api/src/config/index.ts`.
+
+To run the production build instead of watch mode:
+
+```bash
+pnpm build                          # bundles the web app into apps/web/dist
+WEB_DIST_DIR=$PWD/apps/web/dist pnpm --filter @dragons-game/api start
+```
+
+Only the web app has a build step: Node strips the types from the API's
+TypeScript itself. With `WEB_DIST_DIR` set, the API serves the app on
+<http://localhost:3000>, as it does in Docker.
 
 ## What you can do
 
@@ -270,12 +303,9 @@ In Postman, leave the body type on _none_. A `POST` sent with
 `Content-Type: application/json` and an empty body is answered with
 `400 invalid_request`, and none of the `POST` routes takes a body.
 
-## Setup for tests and local development
-
-Needs Node 26 (`.nvmrc`) and pnpm 12.4.2 (`npm install --global pnpm@12.4.2`),
-then `pnpm install` once.
-
 ## Tests
+
+Needs the setup from [Without Docker for the app](#without-docker-for-the-app).
 
 ```bash
 pnpm test               # unit, contract and component tests; no database or network
@@ -301,18 +331,6 @@ CI (`.github/workflows/ci.yml`) runs lint, format, typecheck and the unit suites
 then the integration tests against a MySQL 8.4 service and the E2E suite, on
 every push and pull request to `master`. The benchmark plays the live game, so it
 stays manual.
-
-## Local development without Docker for the app
-
-```bash
-docker compose up -d --wait mysql   # only the database runs in Docker
-pnpm db:migrate
-pnpm dev                      # API on :3000, web on :5173 (proxies /api)
-pnpm bot                      # optional: one headless game, prints the score
-```
-
-Configuration is environment variables with local defaults, validated at start-up
-in `apps/api/src/config/index.ts`.
 
 ## Known limits
 
@@ -366,12 +384,10 @@ in `apps/api/src/config/index.ts`.
 ## Troubleshooting
 
 - **`docker build` fails at the corepack or `npm install` step with a
-  certificate error**: you are behind a TLS-intercepting proxy, and the image does not trust its
-  certificate. Point the build at a registry mirror you can reach with
-  `NPM_REGISTRY=<url> docker compose up --build`; the `Dockerfile` passes it to
-  npm, pnpm and corepack. Or skip the app image: run only MySQL in Docker and
+  certificate error**: a proxy or network filter is intercepting or blocking
+  `registry.npmjs.org`. Build on a network without it, or skip the app image: run only MySQL in Docker and
   the app with the host's `pnpm`, as in
-  [Local development](#local-development-without-docker-for-the-app).
+  [Without Docker for the app](#without-docker-for-the-app).
 - **Containers do not start on macOS.** With Colima, check `colima status` and
   run `colima start`.
 
