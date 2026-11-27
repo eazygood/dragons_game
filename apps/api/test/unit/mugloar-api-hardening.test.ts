@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { mugloarApiAdapter } from '../../src/adapters/mugloar-api-adapter/index.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
-import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import { FETCH_STUB_BASE_URL, failureOf, openBody, stubFetch } from '../support/fetch-stub.ts';
 import { LIVE_AD, pointAdapterAt } from '../support/mugloar-api.ts';
 import { startStubServer } from '../support/stub-server.ts';
@@ -36,7 +36,9 @@ describe('mugloar api: hardened fetch', () => {
       ]);
       stub.post('/elsewhere', () => ({ gameId: 'hijacked' }));
 
-      await expect(mugloarRepository.startGame()).rejects.toBeInstanceOf(UpstreamUnavailableError);
+      await expect(gameRepository.mugloar.startGame()).rejects.toBeInstanceOf(
+        UpstreamUnavailableError,
+      );
       expect(stub.callCount('/elsewhere')).toBe(0);
     });
   });
@@ -51,7 +53,7 @@ describe('mugloar api: hardened fetch', () => {
 
       pointAdapterAt({ baseUrl: FETCH_STUB_BASE_URL });
 
-      await expect(mugloarRepository.findAds({ gameId: 'g1' })).resolves.toMatchObject({
+      await expect(gameRepository.mugloar.findAds({ gameId: 'g1' })).resolves.toMatchObject({
         status: 'ok',
       });
       expect(fetchStub).toHaveBeenCalledTimes(2);
@@ -64,7 +66,7 @@ describe('mugloar api: hardened fetch', () => {
       stubFetch(new Response(openBody({ onCancel: cancelled }), { status: 410 }));
       pointAdapterAt({ baseUrl: FETCH_STUB_BASE_URL });
 
-      await expect(mugloarRepository.solveAd({ gameId: 'g1', adId: 'a1' })).resolves.toEqual({
+      await expect(gameRepository.mugloar.solveAd({ gameId: 'g1', adId: 'a1' })).resolves.toEqual({
         status: 'game_over',
       });
       expect(cancelled).toHaveBeenCalledOnce();
@@ -78,7 +80,9 @@ describe('mugloar api: hardened fetch', () => {
       stubFetch(new Response(unreadableBody, { status: 502 }));
       pointAdapterAt({ baseUrl: FETCH_STUB_BASE_URL });
 
-      const failure = await failureOf(mugloarRepository.buyItem({ gameId: 'g1', itemId: 'hpot' }));
+      const failure = await failureOf(
+        gameRepository.mugloar.buyItem({ gameId: 'g1', itemId: 'hpot' }),
+      );
 
       expect(failure).toBeInstanceOf(UpstreamUnavailableError);
       expect(String(failure?.cause)).toMatch(/→ 502: $/);

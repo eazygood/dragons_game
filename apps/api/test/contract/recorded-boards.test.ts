@@ -3,8 +3,8 @@ import type { Ad } from '@dragons-game/contracts';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import type { OrGameOver } from '../../src/types.ts';
-import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
-import type { DecodedBoard } from '../../src/repositories/mugloar-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
+import type { DecodedBoard } from '../../src/repositories/game-repository/mugloar.ts';
 import { SolveParamsSchema } from '../../src/routes/schemas/game-schemas.ts';
 import { gameIdOf, readRecordedGame, startReplay } from '../support/recorded-game.ts';
 import type { StoredRecording } from '../support/replay-fetch.ts';
@@ -52,7 +52,7 @@ describe('Mugloar API against the recorded ad boards', () => {
       reads.push({
         recording,
         raws: Array.isArray(recording.body) ? (recording.body as RawAd[]) : [],
-        result: await mugloarRepository.findAds({ gameId: gameIdOf(recording) }),
+        result: await gameRepository.mugloar.findAds({ gameId: gameIdOf(recording) }),
       });
     }
   });

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 import { MAX_RESPONSE_BYTES } from '../../src/adapters/mugloar-api-adapter/response-body.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
-import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import { FETCH_STUB_BASE_URL, openBody, stubFetch } from '../support/fetch-stub.ts';
 import { LIVE_AD, pointAdapterAt } from '../support/mugloar-api.ts';
 import { startStubServer } from '../support/stub-server.ts';
@@ -30,7 +30,7 @@ describe('mugloar api: response size cap', () => {
       { ...LIVE_AD, message: 'x'.repeat(BOUNDED_MESSAGE_BYTES) },
     ]);
 
-    const result = await mugloarRepository.findAds({ gameId: 'g1' });
+    const result = await gameRepository.mugloar.findAds({ gameId: 'g1' });
 
     expect(result).toMatchObject({ status: 'ok', value: { ads: [{ adId: LIVE_AD.adId }] } });
   });
@@ -45,7 +45,7 @@ describe('mugloar api: response size cap', () => {
     );
     pointAdapterAt({ baseUrl: FETCH_STUB_BASE_URL });
 
-    await expect(mugloarRepository.findAds({ gameId: 'g1' })).rejects.toBeInstanceOf(
+    await expect(gameRepository.mugloar.findAds({ gameId: 'g1' })).rejects.toBeInstanceOf(
       UpstreamUnavailableError,
     );
     expect(cancelled).toHaveBeenCalledOnce();
@@ -65,7 +65,7 @@ describe('mugloar api: response size cap', () => {
     stubFetch(new Response(endlessBody));
     pointAdapterAt({ baseUrl: FETCH_STUB_BASE_URL });
 
-    await expect(mugloarRepository.findAds({ gameId: 'g1' })).rejects.toBeInstanceOf(
+    await expect(gameRepository.mugloar.findAds({ gameId: 'g1' })).rejects.toBeInstanceOf(
       UpstreamUnavailableError,
     );
     expect(cancelled).toHaveBeenCalledOnce();
@@ -79,7 +79,7 @@ describe('mugloar api: response size cap', () => {
     ]);
 
     await expect(
-      mugloarRepository.buyItem({ gameId: 'g1', itemId: 'hpot' }),
+      gameRepository.mugloar.buyItem({ gameId: 'g1', itemId: 'hpot' }),
     ).rejects.toBeInstanceOf(UpstreamUnavailableError);
   });
 });

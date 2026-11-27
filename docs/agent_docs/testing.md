@@ -98,7 +98,7 @@ recordings in the order they were made and throws once they run out.
 `replay.invalid` base URL and stubs `fetch` with a fresh replay.
 
 - `test/contract/recorded-boards.test.ts` parses every recorded board through
-  `mugloarRepository.findAds` without dropping an ad, decodes every base64
+  `gameRepository.mugloar.findAds` without dropping an ad, decodes every base64
   `adId` into one `SolveParamsSchema` accepts, decodes the ROT13 ads to known
   labels, and reads the final `410` as `game_over`.
 - `test/contract/recorded-moves.test.ts` replays the game start, every solve
@@ -106,7 +106,7 @@ recordings in the order they were made and throws once they run out.
   `AdExpiredError`) and the failed purchase through the repositories.
 - `test/contract/recorded-shop.test.ts` reads a recorded `/shop` response (a bare
   array, from a second game, `ruZ9j1Af`) through
-  `mugloarRepository.findShopItems` field for field, and asserts that it equals
+  `gameRepository.mugloar.findShopItems` field for field, and asserts that it equals
   `RECORDED_SHOP_ITEMS`.
 
 The tool that recorded them was deleted once the fixtures existed; the upstream

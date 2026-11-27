@@ -5,8 +5,7 @@ import type { GameRun } from '../../src/entities/game-run.ts';
 import { SILENT_LOGGER } from '../../src/managers/bot-manager.ts';
 import { playBuyTurn, playSolveTurn, startGameRun } from '../../src/managers/game-manager/index.ts';
 import type { MoveContext, OnPersistFailure } from '../../src/managers/game-manager/index.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
-import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import { useMigratedDatabase } from './integration-db.ts';
 
 export const CLAW_HONING: ShopItem = { id: 'ch', name: 'Claw Honing', cost: 300 };
@@ -57,7 +56,7 @@ export const useManagedGame = () => {
   });
 
   beforeEach(async () => {
-    vi.spyOn(mugloarRepository, 'startGame').mockResolvedValue({
+    vi.spyOn(gameRepository.mugloar, 'startGame').mockResolvedValue({
       gameId: 'mgr-game',
       lives: 3,
       gold: 0,
@@ -66,11 +65,11 @@ export const useManagedGame = () => {
       highScore: 0,
       turn: 0,
     });
-    vi.spyOn(mugloarRepository, 'solveAd').mockResolvedValue({
+    vi.spyOn(gameRepository.mugloar, 'solveAd').mockResolvedValue({
       status: 'ok',
       value: { success: true, lives: 3, gold: 20, score: 20, turn: 1, message: 'ok' },
     });
-    vi.spyOn(mugloarRepository, 'buyItem').mockResolvedValue({
+    vi.spyOn(gameRepository.mugloar, 'buyItem').mockResolvedValue({
       status: 'ok',
       value: {
         success: true,
@@ -104,7 +103,7 @@ export const useManagedGame = () => {
         item: CLAW_HONING,
         reasoning: PURCHASE_REASONING,
       }),
-    storedRun: () => gameRunRepository.findOne({ db, gameId: run.gameId }),
+    storedRun: () => gameRepository.db.findOne({ db, gameId: run.gameId }),
     countOf: async ({ table }: { table: string }) => db(table).count({ count: '*' }),
   };
 };

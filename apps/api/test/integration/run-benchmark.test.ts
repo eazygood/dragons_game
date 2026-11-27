@@ -6,7 +6,7 @@ import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import { useMigratedDatabase } from '../support/integration-db.ts';
 import { scriptGame } from '../support/scripted-game.ts';
 
@@ -39,7 +39,7 @@ describe('runBenchmark: history scoping and run accounting', () => {
   });
 
   beforeEach(async () => {
-    seededRunId = await gameRunRepository.createOne({
+    seededRunId = await gameRepository.db.createOne({
       db,
       gameRun: {
         gameId: SEEDED_GAME_ID,
@@ -178,7 +178,7 @@ describe('runBenchmark: history scoping and run accounting', () => {
 
   it('leaves a run that never ended out of the mean duration', async () => {
     scriptedGame.solveAd.mockRejectedValue(new Error('upstream exploded'));
-    vi.spyOn(gameRunRepository, 'updateOne').mockRejectedValue(new Error('db went away'));
+    vi.spyOn(gameRepository.db, 'updateOne').mockRejectedValue(new Error('db went away'));
 
     const summary = await runBenchmark({
       db,

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { finishRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import { useManagedGame } from '../support/managed-game.ts';
 
 describe('game manager', () => {
@@ -51,7 +51,7 @@ describe('game manager', () => {
   });
 
   it('reports game over from the manager rather than throwing', async () => {
-    vi.mocked(mugloarRepository.solveAd).mockResolvedValue({ status: 'game_over' });
+    vi.mocked(gameRepository.mugloar.solveAd).mockResolvedValue({ status: 'game_over' });
 
     await expect(solveTheAd()).resolves.toEqual({ status: 'game_over' });
     expect(await countOf({ table: DbTables.AdAttempts })).toEqual([{ count: 0 }]);

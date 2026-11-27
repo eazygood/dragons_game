@@ -2,10 +2,10 @@ import type { Ad, GameState, Reasoning, ScoredReasoning, ShopItem } from '@drago
 import type { Knex } from 'knex';
 
 import type { GameRun } from '../../entities/game-run.ts';
-import * as adAttemptRepository from '../../repositories/ad-attempt-repository.ts';
-import * as mugloarRepository from '../../repositories/mugloar-repository.ts';
-import * as purchaseRepository from '../../repositories/purchase-repository.ts';
+import * as gameRepository from '../../repositories/game-repository/index.ts';
 import type { Logger, OrGameOver } from '../../types.ts';
+import * as adAttemptManager from '../ad-attempt-manager.ts';
+import * as purchaseManager from '../purchase-manager.ts';
 import { saveStateWithRecord } from './turn-persistence.ts';
 import type { OnPersistFailure, SavedTurn, TurnResult } from './turn-persistence.ts';
 
@@ -63,7 +63,7 @@ export const playSolveTurn = ({
 
   return playMove({
     context,
-    callUpstream: () => mugloarRepository.solveAd({ gameId: run.gameId, adId: ad.adId }),
+    callUpstream: () => gameRepository.mugloar.solveAd({ gameId: run.gameId, adId: ad.adId }),
     // solve never reports level; it only changes through a purchase.
     toTurnResult: ({ outcome }) => ({
       state: {
@@ -77,7 +77,7 @@ export const playSolveTurn = ({
       message: outcome.message,
     }),
     writeRecord: ({ outcome, trx }) =>
-      adAttemptRepository.createOne({
+      adAttemptManager.createOne({
         db: trx,
         attempt: {
           gameRunId: run.id,
@@ -109,7 +109,7 @@ export const playBuyTurn = ({
 
   return playMove({
     context,
-    callUpstream: () => mugloarRepository.buyItem({ gameId: run.gameId, itemId: item.id }),
+    callUpstream: () => gameRepository.mugloar.buyItem({ gameId: run.gameId, itemId: item.id }),
     // A failed purchase still burns a turn, but must not move the level.
     toTurnResult: ({ outcome }) => ({
       state: {
@@ -123,7 +123,7 @@ export const playBuyTurn = ({
       message: null,
     }),
     writeRecord: ({ outcome, trx }) =>
-      purchaseRepository.createOne({
+      purchaseManager.createOne({
         db: trx,
         purchase: {
           gameRunId: run.id,

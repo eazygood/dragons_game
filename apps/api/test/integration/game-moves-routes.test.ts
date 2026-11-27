@@ -10,7 +10,7 @@ import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
 import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';
-import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import {
   PLAYER_GAME_ID,
   newGameSnapshot,
@@ -60,8 +60,8 @@ describe('game moves route', () => {
   });
 
   it("lists a game's moves newest first, solves and purchases together", async () => {
-    vi.mocked(mugloarRepository.solveAd).mockResolvedValue(solvedAdResponse({ gold: 60 }));
-    vi.mocked(mugloarRepository.buyItem).mockResolvedValue({
+    vi.mocked(gameRepository.mugloar.solveAd).mockResolvedValue(solvedAdResponse({ gold: 60 }));
+    vi.mocked(gameRepository.mugloar.buyItem).mockResolvedValue({
       status: 'ok',
       value: { success: true, gold: 10, lives: 4, level: 0, turn: 2 },
     });
@@ -142,7 +142,7 @@ describe('game moves route', () => {
   });
 
   it("lists a bot game's moves, which the player routes refuse", async () => {
-    vi.mocked(mugloarRepository.startGame).mockResolvedValueOnce(newGameSnapshot('bot-moves'));
+    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValueOnce(newGameSnapshot('bot-moves'));
     const { run } = await startGameRun({ db: app.db, strategy: 'calibrated' });
 
     await adAttemptRepository.createOne({
@@ -172,9 +172,9 @@ describe('game moves route', () => {
   it('answers from the database alone', async () => {
     await app.inject({ url: MOVES_URL });
 
-    expect(mugloarRepository.findAds).not.toHaveBeenCalled();
-    expect(mugloarRepository.findShopItems).not.toHaveBeenCalled();
-    expect(mugloarRepository.solveAd).not.toHaveBeenCalled();
-    expect(mugloarRepository.buyItem).not.toHaveBeenCalled();
+    expect(gameRepository.mugloar.findAds).not.toHaveBeenCalled();
+    expect(gameRepository.mugloar.findShopItems).not.toHaveBeenCalled();
+    expect(gameRepository.mugloar.solveAd).not.toHaveBeenCalled();
+    expect(gameRepository.mugloar.buyItem).not.toHaveBeenCalled();
   });
 });

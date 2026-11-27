@@ -59,7 +59,7 @@ Three migrations in `apps/api/migrations/` build this schema:
 3. `20261125000001_unique_game_id.ts` replaces the plain index on
    `game_runs.game_id` with a unique one. One upstream game is one run: the plain
    index let a duplicate in silently, and a read had to guess which row was
-   current. `gameRunRepository.findOne` is now a plain
+   current. `gameRepository.db.findOne` is now a plain
    `where({ game_id }).first()`, with no ordering.
 
 ## Every column has to earn its place
@@ -152,17 +152,17 @@ Gameplay does not depend on persistence succeeding where the upstream turn has
 already happened. Every place that catches an error and carries on, and nowhere
 else:
 
-| Where                                                                     | Swallows                                                                   | Then                                                                                          |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `calibration-manager` `loadCalibration`                                   | a failed counts read                                                       | logs `warn`; uses the prior at a game's start, the calibration held so far on a bot's re-read |
-| `game-manager` `saveStateWithRecord`, `'keep_playing'` (bot)              | a failed transaction for a turn's state and row                            | logs `warn`, plays on with the state in memory; the attempt is not learned                    |
-| `game-manager` `saveStateWithRecord`, `'save_state_only'` (player)        | a failed transaction for a turn's state and row                            | logs `warn`, writes the state alone; if that fails too, throws `PersistenceFailedError` (500) |
-| `game-manager` `recordGameOver`                                           | a failed `finishRun` on game over                                          | logs `warn`; game over is still reported                                                      |
-| `bot-manager` `playGame`, per turn                                        | `UpstreamUnavailableError`, `AdExpiredError`                               | logs `warn`, plays the next turn; the third in a row rethrows                                 |
-| `bot-manager` `playGame`, on finish                                       | a failed final `finishRun`                                                 | logs `warn`; the row stays `active`                                                           |
-| `bot-mediator` `startBotGame`                                             | the detached game's rejection                                              | logs `error`; the run was already ended `abandoned` where the write allowed                   |
-| `cli/run-benchmark.ts` `runBounded`                                       | one benchmark run's error                                                  | counts it in `failedRuns`; the other runs go on                                               |
-| `wire-schemas.ts` `AdListWireSchema`, `mugloar-repository.ts` `decodeAds` | one ad that does not parse, decodes to an unknown label or to an unsafe id | drops that ad, keeps the board; `game-manager` `findAds` logs `warn` with the count           |
+| Where                                                                          | Swallows                                                                   | Then                                                                                          |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `calibration-manager` `loadCalibration`                                        | a failed counts read                                                       | logs `warn`; uses the prior at a game's start, the calibration held so far on a bot's re-read |
+| `game-manager` `saveStateWithRecord`, `'keep_playing'` (bot)                   | a failed transaction for a turn's state and row                            | logs `warn`, plays on with the state in memory; the attempt is not learned                    |
+| `game-manager` `saveStateWithRecord`, `'save_state_only'` (player)             | a failed transaction for a turn's state and row                            | logs `warn`, writes the state alone; if that fails too, throws `PersistenceFailedError` (500) |
+| `game-manager` `recordGameOver`                                                | a failed `finishRun` on game over                                          | logs `warn`; game over is still reported                                                      |
+| `bot-manager` `playGame`, per turn                                             | `UpstreamUnavailableError`, `AdExpiredError`                               | logs `warn`, plays the next turn; the third in a row rethrows                                 |
+| `bot-manager` `playGame`, on finish                                            | a failed final `finishRun`                                                 | logs `warn`; the row stays `active`                                                           |
+| `bot-mediator` `startBotGame`                                                  | the detached game's rejection                                              | logs `error`; the run was already ended `abandoned` where the write allowed                   |
+| `cli/run-benchmark.ts` `runBounded`                                            | one benchmark run's error                                                  | counts it in `failedRuns`; the other runs go on                                               |
+| `wire-schemas.ts` `AdListWireSchema`, `game-repository/mugloar.ts` `decodeAds` | one ad that does not parse, decodes to an unknown label or to an unsafe id | drops that ad, keeps the board; `game-manager` `findAds` logs `warn` with the count           |
 
 **The player fallback.** A human's next move rebuilds its state from the
 `game_runs` row, so a lost write would carry a stale dragon level forward for
@@ -179,6 +179,9 @@ table lacks.
 
 - One repository per entity. A repository never calls another repository or a
   manager.
+- A manager calls only its own entity's repository. `game-manager` writes an
+  attempt or purchase through `ad-attempt-manager` or `purchase-manager`, which
+  take its transaction as `db`.
 - `transform` / `reverseTransform` on every repository, converting between the
   row shape (snake_case) and the domain entity (camelCase).
 - Transactions are **owned by managers**, never by repositories or routes. A

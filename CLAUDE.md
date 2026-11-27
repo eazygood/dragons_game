@@ -36,7 +36,8 @@ Docker runtime is Colima. If containers fail, check `colima status`.
 Dependencies move downward only. Never skip a layer, never call upward.
 Entry points are `routes/` (HTTP) and `cli/` (bot, bench); both call mediators
 or managers only, and `app.ts` and `cli/live-runtime.ts` are the composition
-roots. `eslint.boundaries.mjs` enforces the boundaries.
+roots. A manager calls only its own entity's repository; another entity goes
+through its manager. `eslint.boundaries.mjs` enforces the boundaries.
 
 The **decision engine** (`apps/api/src/engine/`) is **pure** — no I/O, no
 clock, no randomness. This is load-bearing, not stylistic: it is why the headless

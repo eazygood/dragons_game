@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';
-import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import {
   LEVEL_AFTER_PURCHASE,
   TURN_AFTER_PURCHASE,
@@ -41,7 +41,7 @@ describe('game manager purchases', () => {
   });
 
   it('advances the turn but not the level when a purchase fails upstream', async () => {
-    vi.mocked(mugloarRepository.buyItem).mockResolvedValue({
+    vi.mocked(gameRepository.mugloar.buyItem).mockResolvedValue({
       status: 'ok',
       value: { success: false, gold: 10, lives: 3, level: 0, turn: 6 },
     });

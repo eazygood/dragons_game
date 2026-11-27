@@ -19,7 +19,7 @@ flowchart TB
         MED["Mediators — compose responses"]
         MAN["Managers — game rules, transactions, the bot loop"]
         ENG["Decision engine — PURE"]
-        REPO["Repositories — one table each, plus mugloar-repository"]
+        REPO["Repositories — one entity each; the game in db + mugloar"]
         MYA["mysql-adapter — knex pool, withTransaction"]
         ADP["mugloar-api-adapter — only outbound caller"]
     end
@@ -64,18 +64,19 @@ Dependencies move **downward only**. Never skip a layer, never call upward.
 engine. A mediator never imports a sibling mediator; what two share belongs to
 a manager.
 
-| Layer            | May call                               | Must not                                               |
-| ---------------- | -------------------------------------- | ------------------------------------------------------ |
-| **Routes**       | Mediators                              | contain business logic; touch repositories or adapters |
-| **CLI**          | Managers ²                             | touch repositories or adapters ³                       |
-| **Mediators**    | Managers                               | contain game rules; touch repositories or the engine   |
-| **Managers**     | Repositories, Engine, other Managers   | be called by anything below them; touch adapters ¹     |
-| **Repositories** | one data-source Adapter                | span tables; call managers or other repositories       |
-| **Adapters**     | one external system                    | contain business logic                                 |
-| **Engine**       | `@dragons-game/contracts` schemas only | perform I/O of any kind                                |
+| Layer            | May call                                              | Must not                                                                          |
+| ---------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Routes**       | Mediators                                             | contain business logic; touch repositories or adapters                            |
+| **CLI**          | Managers ²                                            | touch repositories or adapters ³                                                  |
+| **Mediators**    | Managers                                              | contain game rules; touch repositories or the engine                              |
+| **Managers**     | their own entity's Repository, Engine, other Managers | be called by anything below them; touch another entity's repository or adapters ¹ |
+| **Repositories** | one data-source Adapter per file                      | span tables; call managers or other repositories                                  |
+| **Adapters**     | one external system                                   | contain business logic                                                            |
+| **Engine**       | `@dragons-game/contracts` schemas only                | perform I/O of any kind                                                           |
 
 ¹ The one exception is `withTransaction` from `mysql-adapter`: a manager owns
-the transaction boundary, so it opens the transaction and hands it to repositories.
+the transaction boundary, so it opens the transaction and hands it down, to its own
+repository or to another entity's manager.
 ² The CLIs need `StrategyConfig` and `STRATEGY_CONFIG` to override thresholds;
 `bot-manager.ts` re-exports both, so `cli/` imports nothing from `engine/`.
 ³ Except `cli/live-runtime.ts`, the CLIs' composition root, which opens the pool
@@ -86,8 +87,9 @@ and configures the Mugloar adapter.
 repositories, the engine or routes.
 `cli/` is an entry point beside `routes/`: one file per `pnpm` command
 (`bot.ts`, `bench.ts`), plus `run-benchmark.ts`, `benchmark-report.ts` and the
-composition root `live-runtime.ts`. It calls `bot-manager` directly: the bot
-loop is a manager, and a mediator would only pass it through.
+composition root `live-runtime.ts`. It calls `bot-manager` directly, and
+`game-manager` for a benchmark's runs: the bot loop is a manager, and a mediator
+would only pass it through.
 
 Contract shapes: `game-manager`'s `toGameView` builds `GameView`, which both
 mediators return; `game-mediator.ts` builds `MoveResult` and `TurnView`;
@@ -100,7 +102,7 @@ of its `strategy` column (`StrategyName`, `StrategyNameSchema`), which the web
 never sees. The two types every layer needs, `Logger` and `OrGameOver`, live in
 `src/types.ts`. Any other type lives beside the code that produces it:
 `TurnResult` in `game-manager/turn-persistence.ts`, `RawAd` in the Mugloar adapter's
-`wire-schemas.ts`, `SolveOutcome` and `BuyOutcome` in `mugloar-repository.ts`,
+`wire-schemas.ts`, `SolveOutcome` and `BuyOutcome` in `game-repository/mugloar.ts`,
 `BotStrategy` in `bot-manager.ts`.
 The table names (`DbTables`) live in `repositories/db-tables.ts`.
 `tools/` holds helpers that belong to no layer, such as `discard-outcome.ts`;
@@ -132,15 +134,18 @@ Own one entity's lifecycle, its rules and its transaction boundary. A manager is
 one file until its workflow outgrows the 200-line limit; then it becomes a
 folder with one file per concern and an `index.ts`, its public API, which is
 all that callers import. `bot-manager.ts` is the one manager file still over
-the limit. A manager may compose every repository its transaction writes:
-`game-manager/` owns the game state machine and writes a turn's run update
-together with its attempt or purchase row, atomically. Each of its files
-imports only the files above it here:
+the limit. A manager calls only its own entity's repository and reaches another
+entity through that entity's manager. `game-manager/` owns the game state
+machine and writes a turn's run update together with its attempt or purchase
+row: it opens the transaction and hands it to `ad-attempt-manager` or
+`purchase-manager`, so the write stays atomic. A manager that owns no table
+(`bot-manager`, `calibration-manager`, `advisor-manager`) imports no repository.
+Each of `game-manager/`'s files imports only the files above it here:
 
 | File                  | Concern                                                                   |
 | --------------------- | ------------------------------------------------------------------------- |
 | `game-state.ts`       | a run row to `GameState` and back, `toGameView`, `isOutOfLives`           |
-| `game-runs.ts`        | find, start and finish a run, `recordGameOver`                            |
+| `game-runs.ts`        | find, start and finish a run, a benchmark's runs, `recordGameOver`        |
 | `board-and-shop.ts`   | `findAds` and `findShopItems`, read from the upstream                     |
 | `move-history.ts`     | `findMoveHistory`, read from the database only                            |
 | `game-lock.ts`        | `withGameLock`, one move per game at a time                               |
@@ -149,7 +154,7 @@ imports only the files above it here:
 | `player-moves.ts`     | `solvePlayerAd` and `buyPlayerItem`, a player's move from lock to outcome |
 
 It fronts the reads (`findAds`, `findShopItems`, `findRun`, `findPlayableRun`,
-`findMoveHistory`) so that callers never reach a repository. Every move runs
+`findBenchmarkRuns`, `findMoveHistory`) so that callers never reach a repository. Every move runs
 through `playMove`: call the upstream, turn its answer into the next state, and
 save that state with the move's record in `saveStateWithRecord`. A player's move
 is wrapped in `withPlayerTurn`, which takes the per-game lock (`withGameLock`),
@@ -159,7 +164,11 @@ turn's transaction fails after the upstream move happened, the caller's
 in memory) logs and plays on, `'save_state_only'` (the player, whose next move
 rebuilds state from the row) saves the state without the record; see
 [`database.md`](database.md).
-`calibration-manager.ts` turns stored attempts into a `Calibration`, falling back
+`ad-attempt-manager.ts` and `purchase-manager.ts` own the `ad_attempts` and
+`purchases` tables. Today each function passes straight through to the
+repository; they exist so that each table has one manager in front of it.
+`calibration-manager.ts` turns stored attempts, read through
+`ad-attempt-manager`, into a `Calibration`, falling back
 to the prior (or, on a bot's re-read, the calibration it already holds) when the
 read fails, and `learnFromAttempt` folds one new attempt
 into a calibration in memory. `advisor-manager.ts` builds the player's advice
@@ -173,36 +182,46 @@ the manager it reaches.
 
 ### Repositories
 
-One flat file per table, plus one for the upstream API:
-`game-run-repository.ts`, `ad-attempt-repository.ts`,
-`purchase-repository.ts` and `mugloar-repository.ts`. Callers import them as
-namespaces (`import * as gameRunRepository from ...`) and call
-`gameRunRepository.createOne(...)`. Repositories enforce no business rules. In
-the table repositories, `transform` / `reverseTransform` convert between the
-row shape (snake_case) and the entity (camelCase). In `mugloar-repository.ts`,
-the zod schema's `transform` maps the wire shape into `SolveOutcome` and
-`BuyOutcome`, so `shoppingSuccess` and `highScore` never get past the
-repository.
+One repository per entity: `ad-attempt-repository.ts`, `purchase-repository.ts`
+and the `game-repository/` folder. The game lives in two stores, so its
+repository holds one file per store: `db.ts` for the `game_runs` row and
+`mugloar.ts` for the upstream game. Every upstream endpoint is `/game/start` or
+sits under a `gameId`, so the game is the upstream's one entity and its ads and
+shop are parts of it. The table is `game_runs`, not `games`, because the game is
+the upstream's: `gameId` is its id and `id` is ours, and a row records one run
+of that game: who played it, which benchmark it belonged to and how it ended,
+including `abandoned`, which the upstream has no word for.
+
+Callers import a repository as a namespace and name the store at the call site:
+`purchaseRepository.createOne(...)`, `gameRepository.db.updateOne(...)`,
+`gameRepository.mugloar.solveAd(...)`. `game-repository/index.ts` exports each
+store as a namespace, and neither store imports the other; `game-manager`
+composes them. Repositories enforce no business rules. In the database files,
+`transform` / `reverseTransform` convert between the row shape (snake_case) and
+the entity (camelCase). In `game-repository/mugloar.ts`, the zod schema's
+`transform` maps the wire shape into `SolveOutcome` and `BuyOutcome`, so
+`shoppingSuccess` and `highScore` never get past the repository.
 
 "One table" governs what a table repository returns and writes. A read may still
 filter by a related table: `findCalibrationCounts` scopes attempts to a
 benchmark with a subquery on `game_runs`. That is cheaper than a second
-round-trip through `gameRunRepository`, and it writes nothing.
+round-trip through `game-manager`, it writes nothing, and it keeps
+`ad-attempt-manager` from calling `game-manager`, which already calls it.
 
-`mugloar-repository.ts` owns every endpoint: the path, the wire schema, and
+`game-repository/mugloar.ts` owns every endpoint: the path, the wire schema, and
 decoding encrypted ads. Its reads keep the `find` verb; its writes are named
 for the game move (`startGame`, `solveAd`, `buyItem`) rather than `createOne`,
 because each one plays a turn upstream rather than inserting a row.
 
-| Upstream call                  | Repository                        |
-| ------------------------------ | --------------------------------- |
-| `POST /game/start`             | `mugloarRepository.startGame`     |
-| `GET /{gameId}/messages`       | `mugloarRepository.findAds`       |
-| `POST /{gameId}/solve/{adId}`  | `mugloarRepository.solveAd`       |
-| `GET /{gameId}/shop`           | `mugloarRepository.findShopItems` |
-| `POST /{gameId}/shop/buy/{id}` | `mugloarRepository.buyItem`       |
+| Upstream call                  | Repository                             |
+| ------------------------------ | -------------------------------------- |
+| `POST /game/start`             | `gameRepository.mugloar.startGame`     |
+| `GET /{gameId}/messages`       | `gameRepository.mugloar.findAds`       |
+| `POST /{gameId}/solve/{adId}`  | `gameRepository.mugloar.solveAd`       |
+| `GET /{gameId}/shop`           | `gameRepository.mugloar.findShopItems` |
+| `POST /{gameId}/shop/buy/{id}` | `gameRepository.mugloar.buyItem`       |
 
-Tests replace a repository function with `vi.spyOn(gameRunRepository,
+Tests replace a repository function with `vi.spyOn(gameRepository.db,
 'updateOne')`: Vitest can patch the exports of an ESM namespace, so a repository
 needs no wrapping object.
 
@@ -233,7 +252,7 @@ never is.
   refusing a larger declared `Content-Length` up front and stopping a stream that
   passes the cap, so a misbehaving upstream cannot fill the process's memory.
 - **Bad ads are dropped, not fatal.** `wire-schemas.ts` parses ad by ad and
-  drops one failing `RawAdSchema`; `decodeAds` in `mugloar-repository.ts` drops
+  drops one failing `RawAdSchema`; `decodeAds` in `game-repository/mugloar.ts` drops
   one whose decoded label is unknown or whose decoded id is unsafe in the solve
   URL. The rest of the board stays playable. The repository returns the count it
   dropped beside the ads, and `game-manager` `findAds` logs a `warn` with it, so

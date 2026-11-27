@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { RawAd } from '../../src/adapters/mugloar-api-adapter/wire-schemas.ts';
-import { decodeAds } from '../../src/repositories/mugloar-repository.ts';
+import { decodeAds } from '../../src/repositories/game-repository/mugloar.ts';
 
 const toBase64 = (value: string) => Buffer.from(value, 'utf8').toString('base64');
 

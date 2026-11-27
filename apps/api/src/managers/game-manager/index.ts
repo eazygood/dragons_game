@@ -2,7 +2,14 @@
 // sharing between its own files.
 export { findAds, findShopItems } from './board-and-shop.ts';
 export { withGameLock } from './game-lock.ts';
-export { findPlayableRun, findRun, finishRun, recordGameOver, startGameRun } from './game-runs.ts';
+export {
+  findBenchmarkRuns,
+  findPlayableRun,
+  findRun,
+  finishRun,
+  recordGameOver,
+  startGameRun,
+} from './game-runs.ts';
 export { isOutOfLives, stateFromRun, toGameView } from './game-state.ts';
 export { findMoveHistory } from './move-history.ts';
 export { playBuyTurn, playSolveTurn } from './play-turn.ts';

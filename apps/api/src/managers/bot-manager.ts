@@ -10,7 +10,6 @@ import { StrategyNameSchema } from '../entities/game-run.ts';
 import type { GameRun } from '../entities/game-run.ts';
 import { DecisionInvariantError } from '../errors/decision-invariant-error.ts';
 import { AdExpiredError, UpstreamUnavailableError } from '../errors/errors.ts';
-import * as gameRunRepository from '../repositories/game-run-repository.ts';
 import type { Logger, OrGameOver } from '../types.ts';
 import * as calibrationManager from './calibration-manager.ts';
 import * as gameManager from './game-manager/index.ts';
@@ -85,14 +84,6 @@ type PlayGameInput = {
 
 // 'stopped' covers every way a game ends while the upstream game is still alive.
 type TurnsEnd = { progress: BotRunProgress; ending: Exclude<TurnOutcome['status'], 'played'> };
-
-export const findBenchmarkRuns = ({
-  db,
-  benchmarkId,
-}: {
-  db: Knex;
-  benchmarkId: string;
-}): Promise<GameRun[]> => gameRunRepository.findMany({ db, benchmarkId });
 
 const executeDecision = async ({
   context,

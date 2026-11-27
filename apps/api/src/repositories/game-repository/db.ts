@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
-import type { DbExecutor } from '../adapters/mysql-adapter.ts';
-import { RUN_STATUSES, StrategyNameSchema } from '../entities/game-run.ts';
-import type { GameRun, GameRunId, GameRunPatch, NewGameRun } from '../entities/game-run.ts';
-import { DbTables } from './db-tables.ts';
+import type { DbExecutor } from '../../adapters/mysql-adapter.ts';
+import { RUN_STATUSES, StrategyNameSchema } from '../../entities/game-run.ts';
+import type { GameRun, GameRunId, GameRunPatch, NewGameRun } from '../../entities/game-run.ts';
+import { DbTables } from '../db-tables.ts';
 
 interface GameRunRow {
   id: number;

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { playTurn } from '../../src/managers/bot-manager.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';
 import { useBotRunHarness } from '../support/bot-run.ts';
 import { readStoredCalibration, startCalibratedRun } from '../support/bot-turns.ts';
@@ -39,7 +39,7 @@ describe('a bot turn when its record cannot be written', () => {
 
     expect(await countOf({ table: DbTables.AdAttempts })).toBe(0);
     expect(
-      await gameRunRepository.findOne({ db: harness.db, gameId: context.run.gameId }),
+      await gameRepository.db.findOne({ db: harness.db, gameId: context.run.gameId }),
     ).toMatchObject({
       turn: 0,
       score: 0,
@@ -72,7 +72,7 @@ describe('a bot turn when its record cannot be written', () => {
     expect(outcome.progress.state.turn).toBe(1);
     expect(await countOf({ table: DbTables.Purchases })).toBe(0);
     expect(
-      await gameRunRepository.findOne({ db: harness.db, gameId: context.run.gameId }),
+      await gameRepository.db.findOne({ db: harness.db, gameId: context.run.gameId }),
     ).toMatchObject({
       turn: 0,
     });
