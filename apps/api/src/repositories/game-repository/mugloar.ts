@@ -1,5 +1,5 @@
 import { AdSchema } from '@dragons-game/contracts';
-import type { Ad, ShopItem } from '@dragons-game/contracts';
+import type { Ad, GameState, ShopItem } from '@dragons-game/contracts';
 import { z } from 'zod';
 
 import { mugloarApiAdapter } from '../../adapters/mugloar-api-adapter/index.ts';
@@ -10,7 +10,7 @@ import {
   ShopWireSchema,
   SolveWireSchema,
 } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
-import type { GameSnapshot, RawAd } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
+import type { RawAd } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
 import { AdExpiredError, UpstreamUnavailableError } from '../../errors/errors.ts';
 import type { OrGameOver } from '../../types.ts';
 
@@ -91,7 +91,19 @@ const DecodedBoardSchema = z.array(z.unknown()).transform((entries): DecodedBoar
   return { ads, droppedCount: entries.length - ads.length };
 });
 
-// highScore is the server's global record, not this game's; nothing downstream reads it.
+// Neither a start nor a solve passes on highScore: it is the server's global record, not this
+// game's, and nothing downstream reads it.
+const StartedGameStateSchema = GameStartWireSchema.transform(
+  ({ gameId, lives, gold, level, score, turn }): GameState => ({
+    gameId,
+    lives,
+    gold,
+    dragonLevel: level,
+    turn,
+    score,
+  }),
+);
+
 const SolveOutcomeSchema = SolveWireSchema.transform(
   ({ success, lives, gold, score, turn, message }): SolveOutcome => ({
     success,
@@ -120,12 +132,12 @@ const adExpired = ({ cause }: { cause: Error }) =>
   new AdExpiredError({ message: AD_EXPIRED_MESSAGE, cause });
 
 // No game exists yet, so Game Over on a start is an upstream fault, not an ending.
-export const startGame = async (): Promise<GameSnapshot> => {
+export const startGame = async (): Promise<GameState> => {
   const result = await mugloarApiAdapter.request({
     operation: 'start_game',
     method: 'POST',
     path: '/game/start',
-    schema: GameStartWireSchema,
+    schema: StartedGameStateSchema,
   });
 
   if (result.status === 'game_over') {

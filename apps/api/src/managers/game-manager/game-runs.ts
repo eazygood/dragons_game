@@ -55,15 +55,7 @@ export const startGameRun = async ({
   strategy: StrategyName;
   benchmarkId?: string | null;
 }): Promise<{ run: GameRun; state: GameState }> => {
-  const snapshot = await gameRepository.mugloar.startGame();
-  const state: GameState = {
-    gameId: snapshot.gameId,
-    lives: snapshot.lives,
-    gold: snapshot.gold,
-    dragonLevel: snapshot.level,
-    turn: snapshot.turn,
-    score: snapshot.score,
-  };
+  const state = await gameRepository.mugloar.startGame();
   const gameRun: NewGameRun = {
     ...state,
     strategy,

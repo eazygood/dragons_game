@@ -1,4 +1,4 @@
-import type { Ad } from '@dragons-game/contracts';
+import type { Ad, GameState } from '@dragons-game/contracts';
 import { RECORDED_SHOP_ITEMS } from '@dragons-game/contracts/test-support';
 import { vi } from 'vitest';
 
@@ -23,7 +23,8 @@ export const PLAYER_BOARD = [
   buildAd({ adId: 'imp', probability: 'Impossible', reward: 200 }),
 ];
 
-export const newGameSnapshot = (gameId: string) => ({
+// What the upstream's /game/start answers, for tests that stub the HTTP call.
+export const newGameStartBody = (gameId: string) => ({
   gameId,
   lives: 3,
   gold: 0,
@@ -31,6 +32,16 @@ export const newGameSnapshot = (gameId: string) => ({
   score: 0,
   highScore: 0,
   turn: 0,
+});
+
+// What the repository's startGame returns, for tests that stub the repository.
+export const newGameState = (gameId: string): GameState => ({
+  gameId,
+  lives: 3,
+  gold: 0,
+  dragonLevel: 0,
+  turn: 0,
+  score: 0,
 });
 
 export const solvedAdResponse = (overrides: object = {}) => ({
@@ -48,7 +59,7 @@ export const solvedAdResponse = (overrides: object = {}) => ({
 
 // Every upstream call a player move can make, answered as a fresh game would.
 export const stubPlayerUpstream = () => {
-  vi.spyOn(gameRepository.mugloar, 'startGame').mockResolvedValue(newGameSnapshot(PLAYER_GAME_ID));
+  vi.spyOn(gameRepository.mugloar, 'startGame').mockResolvedValue(newGameState(PLAYER_GAME_ID));
   vi.spyOn(gameRepository.mugloar, 'findAds').mockResolvedValue({
     status: 'ok',
     value: { ads: PLAYER_BOARD, droppedCount: 0 },

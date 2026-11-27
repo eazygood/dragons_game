@@ -1,6 +1,7 @@
 import type { GameView } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
+import { DEFAULT_BOT_STRATEGY } from '../entities/game-run.ts';
 import { ServiceUnavailableError } from '../errors/service-unavailable-error.ts';
 import { TooManyRequestsError } from '../errors/too-many-requests-error.ts';
 import * as botManager from '../managers/bot-manager.ts';
@@ -94,7 +95,7 @@ export const startBotGame = async ({
   }
 
   try {
-    const strategy = 'calibrated';
+    const strategy = DEFAULT_BOT_STRATEGY;
     const { run, state } = await gameManager.startGameRun({ db, strategy });
     const gameView = gameManager.toGameView({ run });
 

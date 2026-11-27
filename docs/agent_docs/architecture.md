@@ -99,11 +99,11 @@ through; the engine returns `Decision` and `AdvisedAd`.
 `entities/` holds one type per table: `GameRun` (`game_runs`), `AdAttempt`
 (`ad_attempts`) and `Purchase` (`purchases`). `game-run.ts` also owns the values
 of its `strategy` column (`StrategyName`, `StrategyNameSchema`), which the web
-never sees. The two types every layer needs, `Logger` and `OrGameOver`, live in
+never sees, the subset a bot may play (`BotStrategy`, `BotStrategySchema`), and
+`DEFAULT_BOT_STRATEGY`, which `bot-mediator` and both CLIs read. The two types every layer needs, `Logger` and `OrGameOver`, live in
 `src/types.ts`. Any other type lives beside the code that produces it:
 `TurnResult` in `game-manager/turn-persistence.ts`, `RawAd` in the Mugloar adapter's
-`wire-schemas.ts`, `SolveOutcome` and `BuyOutcome` in `game-repository/mugloar.ts`,
-`BotStrategy` in `bot-manager.ts`.
+`wire-schemas.ts`, `SolveOutcome` and `BuyOutcome` in `game-repository/mugloar.ts`.
 The table names (`DbTables`) live in `repositories/db-tables.ts`.
 `tools/` holds helpers that belong to no layer, such as `discard-outcome.ts`;
 any layer may import them except the engine, which imports nothing from outside
@@ -199,8 +199,11 @@ store as a namespace, and neither store imports the other; `game-manager`
 composes them. Repositories enforce no business rules. In the database files,
 `transform` / `reverseTransform` convert between the row shape (snake_case) and
 the entity (camelCase). In `game-repository/mugloar.ts`, the zod schema's
-`transform` maps the wire shape into `SolveOutcome` and `BuyOutcome`, so
-`shoppingSuccess` and `highScore` never get past the repository.
+`transform` maps the wire shape into `GameState` for a start, `SolveOutcome` and
+`BuyOutcome`, so `level` arrives as `dragonLevel` and `shoppingSuccess` and
+`highScore` never get past the repository. `highScore` is the server's all-time
+record and nothing reads it, so the wire schemas accept it as optional: a change
+to it cannot fail a solve the server has already played, which is never retried.
 
 "One table" governs what a table repository returns and writes. A read may still
 filter by a related table: `findCalibrationCounts` scopes attempts to a

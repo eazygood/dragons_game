@@ -1,11 +1,12 @@
 import { parseArgs } from 'node:util';
 
 import { consoleLogger, createLiveRuntime } from './live-runtime.ts';
-import { BotStrategySchema, playNewGame } from '../managers/bot-manager.ts';
+import { BotStrategySchema, DEFAULT_BOT_STRATEGY } from '../entities/game-run.ts';
+import { playNewGame } from '../managers/bot-manager.ts';
 
 const main = async () => {
   const { values } = parseArgs({
-    options: { strategy: { type: 'string', default: 'calibrated' } },
+    options: { strategy: { type: 'string', default: DEFAULT_BOT_STRATEGY } },
   });
   const strategy = BotStrategySchema.parse(values.strategy);
   const { db } = createLiveRuntime();

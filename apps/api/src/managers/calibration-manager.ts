@@ -4,9 +4,9 @@ import { buildCalibration, priorCalibration, withAttempt } from '../engine/calib
 import type { CalibrationAttempt, MeasuredCalibration } from '../engine/calibration.ts';
 import { STRATEGY_CONFIG } from '../engine/strategy-config.ts';
 import type { StrategyConfig } from '../engine/strategy-config.ts';
+import type { BotStrategy } from '../entities/game-run.ts';
 import type { Logger } from '../types.ts';
 import * as adAttemptManager from './ad-attempt-manager.ts';
-import type { BotStrategy } from './bot-manager.ts';
 
 type LoadCalibrationInput = {
   db: Knex;
