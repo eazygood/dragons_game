@@ -2,7 +2,7 @@ import type { GameView, Move, MoveResult, TurnView } from '@dragons-game/contrac
 import type { Knex } from 'knex';
 
 import * as advisorManager from '../managers/advisor-manager.ts';
-import * as gameManager from '../managers/game-manager.ts';
+import * as gameManager from '../managers/game-manager/index.ts';
 import type { Logger, OrGameOver } from '../types.ts';
 
 const toMoveResult = ({

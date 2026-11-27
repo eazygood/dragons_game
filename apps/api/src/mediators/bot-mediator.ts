@@ -4,7 +4,7 @@ import type { Knex } from 'knex';
 import { ServiceUnavailableError } from '../errors/service-unavailable-error.ts';
 import { TooManyRequestsError } from '../errors/too-many-requests-error.ts';
 import * as botManager from '../managers/bot-manager.ts';
-import * as gameManager from '../managers/game-manager.ts';
+import * as gameManager from '../managers/game-manager/index.ts';
 import type { Logger } from '../types.ts';
 
 // A bot game takes a minute or two, so half a minute is a fair first wait for a free slot.

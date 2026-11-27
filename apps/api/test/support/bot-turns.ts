@@ -4,7 +4,7 @@ import type { Knex } from 'knex';
 
 import { priorCalibration } from '../../src/engine/calibration.ts';
 import { loadCalibration } from '../../src/managers/calibration-manager.ts';
-import { startGameRun } from '../../src/managers/game-manager.ts';
+import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import { playTurn } from '../../src/managers/bot-manager.ts';
 import type { BotGameContext, BotRunProgress } from '../../src/managers/bot-manager.ts';
 import { BOT_CONFIG, botLogger } from './bot-run.ts';

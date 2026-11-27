@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { GameRun } from '../../src/entities/game-run.ts';
 import { PersistenceFailedError } from '../../src/errors/errors.ts';
-import { buyPlayerItem, solvePlayerAd, startGameRun } from '../../src/managers/game-manager.ts';
+import {
+  buyPlayerItem,
+  solvePlayerAd,
+  startGameRun,
+} from '../../src/managers/game-manager/index.ts';
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
 import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';

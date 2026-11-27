@@ -3,8 +3,8 @@ import { afterEach, beforeEach, vi } from 'vitest';
 
 import type { GameRun } from '../../src/entities/game-run.ts';
 import { SILENT_LOGGER } from '../../src/managers/bot-manager.ts';
-import { playBuyTurn, playSolveTurn, startGameRun } from '../../src/managers/game-manager.ts';
-import type { MoveContext, OnPersistFailure } from '../../src/managers/game-manager.ts';
+import { playBuyTurn, playSolveTurn, startGameRun } from '../../src/managers/game-manager/index.ts';
+import type { MoveContext, OnPersistFailure } from '../../src/managers/game-manager/index.ts';
 import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import { useMigratedDatabase } from './integration-db.ts';

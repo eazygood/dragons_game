@@ -6,7 +6,7 @@ import { STRATEGY_CONFIG } from '../engine/strategy-config.ts';
 import type { GameRun } from '../entities/game-run.ts';
 import type { Logger, OrGameOver } from '../types.ts';
 import * as calibrationManager from './calibration-manager.ts';
-import * as gameManager from './game-manager.ts';
+import * as gameManager from './game-manager/index.ts';
 
 type PlayerTurn = {
   run: GameRun;

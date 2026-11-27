@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { GameRun } from '../../src/entities/game-run.ts';
 import { adviseTurn } from '../../src/managers/advisor-manager.ts';
-import { startGameRun } from '../../src/managers/game-manager.ts';
+import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import { useMigratedDatabase } from '../support/integration-db.ts';

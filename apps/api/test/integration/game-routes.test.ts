@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
-import { startGameRun } from '../../src/managers/game-manager.ts';
+import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';

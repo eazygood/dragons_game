@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { GameRun } from '../../src/entities/game-run.ts';
 import { PersistenceFailedError } from '../../src/errors/errors.ts';
-import { saveStateWithRecord } from '../../src/managers/game-manager.ts';
-import type { OnPersistFailure } from '../../src/managers/game-manager.ts';
+import { saveStateWithRecord } from '../../src/managers/game-manager/index.ts';
+import type { OnPersistFailure } from '../../src/managers/game-manager/index.ts';
 import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 
 const STATE = { gameId: 'g1', lives: 3, gold: 30, dragonLevel: 1, turn: 4, score: 30 };

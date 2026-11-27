@@ -6,7 +6,7 @@ import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import type { AdAttempt } from '../../src/entities/ad-attempt.ts';
 import type { GameRunId } from '../../src/entities/game-run.ts';
-import { startGameRun } from '../../src/managers/game-manager.ts';
+import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
 import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';

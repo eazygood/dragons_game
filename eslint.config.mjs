@@ -32,8 +32,8 @@ export default tseslint.config(
     },
   },
   {
-    // One file per manager, so a manager holds its whole entity's workflow.
-    files: ['apps/api/src/managers/*.ts'],
+    // The bot's play loop is not yet split by concern, as managers/game-manager/ is.
+    files: ['apps/api/src/managers/bot-manager.ts'],
     rules: { 'max-lines': 'off' },
   },
   {

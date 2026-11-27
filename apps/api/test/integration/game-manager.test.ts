@@ -1,7 +1,7 @@
 import type { GameState } from '@dragons-game/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
-import { finishRun } from '../../src/managers/game-manager.ts';
+import { finishRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import { useManagedGame } from '../support/managed-game.ts';

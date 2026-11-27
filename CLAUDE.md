@@ -68,8 +68,10 @@ The bot executes the `Decision`. The UI renders it. Same function.
 - **Guard clauses** over `else if` — return early.
 - **Let errors bubble** to the registered Fastify handler; routes never catch.
 - **No magic numbers** — strategy thresholds live in one typed `StrategyConfig`.
-- Files ≤ 200 lines, preferably ≤ 150, except `apps/api/src/managers/*.ts`: one
-  file per manager holds its entity's whole workflow. Functions well under 150.
+- Files ≤ 200 lines, preferably ≤ 150. A manager that outgrows one file becomes a
+  folder, one file per concern behind an `index.ts` that callers import
+  (`managers/game-manager/`). `bot-manager.ts` is the one exception left.
+  Functions well under 150.
 - Run `pnpm lint && pnpm format && pnpm typecheck && pnpm test` before asking for
   approval to commit.
 
