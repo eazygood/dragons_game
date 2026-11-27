@@ -524,7 +524,8 @@ count of consecutive failures) and the loop plays on: the next turn
 re-reads the board and its response re-syncs lives, gold, score and turn. The
 failed solve or buy is never retried. On the third consecutive failure
 (`MAX_CONSECUTIVE_FAILED_TURNS`), or any other error, `playGame` ends the run
-`abandoned` and rethrows. A lost purchase's dragon level is not recoverable.
+`abandoned` and rethrows. A lost purchase leaves the dragon level one short
+until the next successful buy, the only move whose response reports it.
 
 ### Detached bot games
 

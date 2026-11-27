@@ -231,7 +231,7 @@ const isTurnFailureSurvivable = (error: unknown) =>
 
 // The failed solve/buy is never retried (not idempotent): the next turn re-reads the board,
 // and its successful response re-syncs lives, gold, score and turn. Local state may lag
-// until then, and a lost purchase's dragon level cannot be recovered.
+// until then; the dragon level, which only a buy reports, lags until the next successful buy.
 const tolerateFailedTurn = ({
   error,
   consecutiveFailedTurns,

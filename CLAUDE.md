@@ -62,8 +62,9 @@ The bot executes the `Decision`. The UI renders it. Same function.
 - **A failed purchase still burns a turn.** Never speculatively buy.
 - **Never assume a JSON body on a non-2xx response** — the upstream returns HTML.
 - **Never retry `solve` or `buy`** — they are not idempotent. Retry reads only.
-- **`solve` does not return `level`.** Dragon level is derived locally from
-  purchases and must be persisted in the same transaction as the purchase.
+- **`solve` does not return `level`.** Only `start` and `buy` report it, so the
+  dragon level is carried locally between buys: take it from the buy response,
+  never count purchases, and persist it with every turn's state.
 - **Object destructuring** for all function arguments: `{ context, gameId }`.
 - **CRUD naming:** `createOne`, `findMany`, `updateOne`, `deleteMany`.
 - **Guard clauses** over `else if` — return early.
