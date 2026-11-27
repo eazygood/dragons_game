@@ -17,7 +17,7 @@ export type SavedTurn = { turn: TurnResult; persisted: boolean };
 
 // What a lost record means depends on who plays. A bot carries its state in memory, so it
 // logs and plays on. A player's next move rebuilds state from the row, so a lost write would
-// carry a stale dragon level forward for good: the record may go, but the state must land.
+// leave the dragon level stale until the next buy: the record may go, but the state must land.
 export type OnPersistFailure = 'keep_playing' | 'save_state_only';
 
 type SaveInput = {

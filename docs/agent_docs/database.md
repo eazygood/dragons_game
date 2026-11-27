@@ -16,7 +16,7 @@ erDiagram
         varchar benchmark_id "nullable — groups one bench invocation"
         int lives
         int gold
-        int dragon_level "derived — see below"
+        int dragon_level "as start or the last buy reported — see below"
         int turn
         int score
         enum status "active | game_over | abandoned"
@@ -122,15 +122,19 @@ reason** — stated plainly because it is a choice, not a necessity.
 There is a separate and sharper point about `dragon_level`:
 
 **`POST /solve` does not return `level`.** Only `/game/start` and `/shop/buy`
-do, and there is no "get game state" endpoint upstream. Dragon level is
-therefore **derived locally** by accumulating purchases — and it is a calibration
-key. If a purchase succeeds but the level update does not, the counter drifts and
-every row written for the rest of that run is keyed on a wrong level, silently
-poisoning the engine's own estimates.
+do, and there is no "get game state" endpoint upstream. So `dragon_level` holds
+the level that `start` or the last successful buy reported, carried across the
+solves in between, and it is a calibration key: every `ad_attempts` row is keyed
+on it. It is **taken from the buy response, never counted from `purchases`**, so
+a buy that times out after the upstream processed it leaves the level one short
+only until the next successful buy, and the attempts written in between are
+keyed one level low.
 
-**Therefore:** `dragon_level` must be updated in the **same transaction** as the
-purchase row that changed it. Never update one without the other. This holds
-regardless of whether resume is supported.
+**Therefore:** `dragon_level` is written with the rest of the turn's state, in
+the same transaction as the purchase row. For a player that row is the only copy
+of the level between buys, so when the transaction fails the state is still
+written on its own (_The player fallback_ below) and the purchase row is the part
+given up.
 
 ## Why these tables exist at all
 
@@ -165,8 +169,9 @@ else:
 | `wire-schemas.ts` `AdListWireSchema`, `game-repository/mugloar.ts` `decodeAds` | one ad that does not parse, decodes to an unknown label or to an unsafe id | drops that ad, keeps the board; `game-manager` `findAds` logs `warn` with the count           |
 
 **The player fallback.** A human's next move rebuilds its state from the
-`game_runs` row, so a lost write would carry a stale dragon level forward for
-good. When a solve or buy's transaction fails after the upstream move, the
+`game_runs` row, so a lost write would carry a stale dragon level forward until
+the next successful buy, keying every attempt in between one level low. When a
+solve or buy's transaction fails after the upstream move, the
 attempt or purchase row is given up, but the state (`lives`, `gold`,
 `dragon_level`, `turn`, `score`) is written on its own; if that fails as well,
 the request answers `500` rather than letting the row drift. The bot keeps its

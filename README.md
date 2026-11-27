@@ -390,10 +390,10 @@ answer. The benchmark plays the live game, so it stays manual.
 - The game server forgets a game that sits idle for a while. Our copy still reads
   `active`, so the API answers the next `/turn` with `404`; the play page shows
   "This game has expired on the game server" and offers _Start a new game_.
-- A buy that times out but that the upstream did process is lost locally. The
-  dragon level is derived from recorded purchases, because `solve` never
-  returns it, so that game's level, and the calibration rows keyed on it, stay
-  one purchase short.
+- A buy that times out but that the upstream did process is lost locally.
+  `solve` never reports the dragon level, so that game's level stays one short
+  until its next successful buy returns the server's level, and the attempts
+  recorded in between are keyed one level low in calibration.
 - Calibration runs a `GROUP BY` over the whole `ad_attempts` history on every
   `/turn` the player loads, and for the bot at the start and every 10 turns. It
   is fast at this size; at scale the counts would need to be cached or
