@@ -327,6 +327,9 @@ An ad:
   `Vzcbffvoyr` → `Impossible`. Rare — one board in four recording sessions. A later
   probe game confirmed the solve URL needs the decoded ROT13 `adId` too (raw → `400`,
   decoded → `200`); see [`phase-1-benchmark.md`](findings/phase-1-benchmark.md).
+  Identified from the label alone: `probability` has eleven values, and only
+  `Impossible` has the length and the doubled letter of `Vzcbffvoyr`, every letter
+  13 places on.
 
 **The `adId` must be decoded before use in the solve URL.** Verified:
 
@@ -335,8 +338,12 @@ adId "cVlmaFlnRnQ=" → "qYfhYgFt"
 POST /solve/cVlmaFlnRnQ=  → 400 Bad Request
 ```
 
-Encrypted ads carry disproportionately large rewards (122 and 193 observed
-against a typical 1–64), so skipping them is expensive.
+**Why decode rather than skip.** The engine prices an ad by its `probability`
+label, so an undecoded label is unknown and `decodeAds` drops the ad; the solve
+URL needs the decoded `adId`. Base64 ads are common and pay well (122 and 193
+observed against a typical 1–64). ROT13 ads are rare, and the only one recorded
+was `Impossible`, which the engine never plays. The decoder stays because it is
+seven lines and one sample cannot rule out a valuable ROT13 ad.
 
 ### Probability labels
 
