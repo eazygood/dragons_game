@@ -438,8 +438,25 @@ answer. The benchmark plays the live game, so it stays manual.
 
 ## How AI was used
 
-The code was written with an AI coding agent, under rules meant to stop it from
-drifting:
+The code, tests and docs were written with Claude Code (Claude Opus/Sonnet) as the
+coding agent.
+
+### How the work ran
+
+- **Probe before design.** Small scripts played the live game first and printed
+  what it really returns. That is how the published docs were found to be
+  wrong, before any code depended on them.
+- **Spec, then plan, then tasks.** A design spec came first, then one plan per
+  phase (engine and bot; REST API and play; bot games, watch page and Docker),
+  each split into tasks with their tests. Agents worked through the tasks one at
+  a time, test first. Where a plan was ambiguous or wrong, the agent wrote down
+  a ruling and what it would cost if wrong instead of guessing silently. The
+  spec, plans and ledger are working notes kept outside the repo.
+- **State files between sessions.** A long session ended by writing down what
+  was done, what was open and what had been decided, so the next session started
+  from that file instead of re-deriving the decisions.
+
+### Guardrails
 
 - **Rules and ground truth in the repo.** `CLAUDE.md` holds the agent's rules
   (layers, naming, error handling, the upstream's traps) and
@@ -454,6 +471,9 @@ drifting:
   test instead of a live game.
 - **One worktree per task.** Each task ran in its own git worktree under
   `.worktrees/`, so parallel work never shared a checkout.
+
+### Review and decisions
+
 - **Parallel review agents.** Separate agents, run side by side, reviewed the
   finished work as principal engineers would. Their findings led to rounds of
   fixes in the code today, among them the cross-site guard, rate limits on the
