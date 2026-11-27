@@ -60,10 +60,9 @@ export const useManagedGame = () => {
       gameId: 'mgr-game',
       lives: 3,
       gold: 0,
-      level: 0,
-      score: 0,
-      highScore: 0,
+      dragonLevel: 0,
       turn: 0,
+      score: 0,
     });
     vi.spyOn(gameRepository.mugloar, 'solveAd').mockResolvedValue({
       status: 'ok',

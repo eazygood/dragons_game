@@ -7,15 +7,15 @@ import { startStubServer } from '../support/stub-server.ts';
 import type { StubServer } from '../support/stub-server.ts';
 
 const GAME_OVER: [number, unknown] = [410, { status: 'Game Over' }];
-const SOLVE_SUCCESS = {
+const SOLVE_OUTCOME = {
   success: true,
   lives: 3,
   gold: 20,
   score: 120,
-  highScore: 900,
   turn: 4,
   message: 'You successfully solved the mission!',
 };
+const SOLVE_SUCCESS = { ...SOLVE_OUTCOME, highScore: 900 };
 const ENCODED_AD_ID = 'cVlmaFlnRnQ=';
 const DECODED_AD_ID = 'qYfhYgFt';
 const BASE64_AD = {
@@ -82,6 +82,15 @@ describe('mugloar api: shapes and errors', () => {
     await expect(gameRepository.mugloar.findAds({ gameId: 'g1' })).resolves.toEqual({
       status: 'ok',
       value: { ads: [expect.objectContaining({ adId: LIVE_AD.adId })], droppedCount: 1 },
+    });
+  });
+
+  it('accepts a solve without the high score, since nothing reads it', async () => {
+    stub.post('/:gameId/solve/:adId', () => SOLVE_OUTCOME);
+
+    await expect(gameRepository.mugloar.solveAd({ gameId: 'g1', adId: 'a1' })).resolves.toEqual({
+      status: 'ok',
+      value: SOLVE_OUTCOME,
     });
   });
 

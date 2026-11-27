@@ -13,6 +13,7 @@ import {
 import type { StoredRecording } from '../support/replay-fetch.ts';
 
 type RecordedSolve = { highScore: number; lives: number } & Record<string, unknown>;
+type RecordedStart = { highScore: number; level: number } & Record<string, unknown>;
 
 describe('Mugloar API against the recorded moves', () => {
   let recordings: StoredRecording[];
@@ -24,12 +25,14 @@ describe('Mugloar API against the recorded moves', () => {
     recordings = await readRecordedGame();
   });
 
-  it('reads the recorded game start', async () => {
+  it('reads the recorded game start as game state, dropping the high score', async () => {
     const recording = find(({ path }) => path.endsWith('/game/start'));
+    const { highScore, level, ...state } = recording.body as RecordedStart;
 
+    expect(highScore).toEqual(expect.any(Number));
     await expect(
       replayThrough({ recording, call: () => gameRepository.mugloar.startGame() }),
-    ).resolves.toEqual(recording.body);
+    ).resolves.toEqual({ ...state, dragonLevel: level });
   });
 
   // Each ad is solved once, so one replay serves them all in a single pass.

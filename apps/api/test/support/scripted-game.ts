@@ -32,10 +32,9 @@ export const scriptGame = ({ turnsUntilGameOver }: { turnsUntilGameOver: number 
         gameId: game.gameId,
         lives: STARTING_LIVES,
         gold: 0,
-        level: 0,
-        score: 0,
-        highScore: 0,
+        dragonLevel: 0,
         turn: 0,
+        score: 0,
       });
     }),
     fetchAds: vi.spyOn(gameRepository.mugloar, 'findAds').mockImplementation(() =>

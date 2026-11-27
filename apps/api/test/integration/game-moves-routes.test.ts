@@ -13,7 +13,7 @@ import * as purchaseRepository from '../../src/repositories/purchase-repository.
 import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import {
   PLAYER_GAME_ID,
-  newGameSnapshot,
+  newGameState,
   solvedAdResponse,
   stubPlayerUpstream,
 } from '../support/player-game.ts';
@@ -142,7 +142,7 @@ describe('game moves route', () => {
   });
 
   it("lists a bot game's moves, which the player routes refuse", async () => {
-    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValueOnce(newGameSnapshot('bot-moves'));
+    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValueOnce(newGameState('bot-moves'));
     const { run } = await startGameRun({ db: app.db, strategy: 'calibrated' });
 
     await adAttemptRepository.createOne({

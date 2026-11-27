@@ -3,17 +3,20 @@ import { z } from 'zod';
 
 // Shapes as the live API returns them, not as its published docs claim; see
 // "Verified API reference" in docs/agent_docs/architecture.md.
+
+// The server's all-time record, not this game's, and read by nothing. Optional, so a change to
+// it cannot fail a solve the server has already played.
+const HighScoreWireSchema = z.number().int().optional();
+
 export const GameStartWireSchema = z.object({
   gameId: IdentifierSchema,
   lives: z.number().int(),
   gold: z.number().int(),
   level: z.number().int(),
   score: z.number().int(),
-  highScore: z.number().int(),
+  highScore: HighScoreWireSchema,
   turn: z.number().int(),
 });
-
-export type GameSnapshot = z.infer<typeof GameStartWireSchema>;
 
 // The ad as the upstream sends it. Its id, message and label are ciphertext when
 // `encrypted` is set, so only the decoded `AdSchema` holds a validated identifier.
@@ -43,7 +46,7 @@ export const SolveWireSchema = z.object({
   lives: z.number().int(),
   gold: z.number().int(),
   score: z.number().int(),
-  highScore: z.number().int(),
+  highScore: HighScoreWireSchema,
   turn: z.number().int(),
   message: z.string(),
 });

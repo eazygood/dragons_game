@@ -21,7 +21,7 @@ import { useMigratedDatabase } from '../support/integration-db.ts';
 import {
   PLAYER_GAME_ID,
   SILENT_LOGGER,
-  newGameSnapshot,
+  newGameState,
   solvedAdResponse,
   stubPlayerUpstream,
 } from '../support/player-game.ts';
@@ -133,7 +133,7 @@ describe('player moves', () => {
   });
 
   it('refuses to play a bot run', async () => {
-    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValue(newGameSnapshot('bot-game'));
+    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValue(newGameState('bot-game'));
     await startGameRun({ db, strategy: 'calibrated' });
 
     await expect(

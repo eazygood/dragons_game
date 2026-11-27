@@ -7,7 +7,7 @@ import { loadConfig } from '../../src/config/index.ts';
 import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as gameRepository from '../../src/repositories/game-repository/index.ts';
-import { PLAYER_GAME_ID, newGameSnapshot, stubPlayerUpstream } from '../support/player-game.ts';
+import { PLAYER_GAME_ID, newGameState, stubPlayerUpstream } from '../support/player-game.ts';
 
 const RATE_LIMIT_MAX = 2;
 const HTTP_TOO_MANY_REQUESTS = 429;
@@ -67,7 +67,7 @@ describe('rate limits on the game routes', () => {
     let startedGames = 0;
 
     vi.mocked(gameRepository.mugloar.startGame).mockImplementation(() =>
-      Promise.resolve(newGameSnapshot(`limited-${(startedGames += 1)}`)),
+      Promise.resolve(newGameState(`limited-${(startedGames += 1)}`)),
     );
   });
 

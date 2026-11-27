@@ -199,8 +199,11 @@ store as a namespace, and neither store imports the other; `game-manager`
 composes them. Repositories enforce no business rules. In the database files,
 `transform` / `reverseTransform` convert between the row shape (snake_case) and
 the entity (camelCase). In `game-repository/mugloar.ts`, the zod schema's
-`transform` maps the wire shape into `SolveOutcome` and `BuyOutcome`, so
-`shoppingSuccess` and `highScore` never get past the repository.
+`transform` maps the wire shape into `GameState` for a start, `SolveOutcome` and
+`BuyOutcome`, so `level` arrives as `dragonLevel` and `shoppingSuccess` and
+`highScore` never get past the repository. `highScore` is the server's all-time
+record and nothing reads it, so the wire schemas accept it as optional: a change
+to it cannot fail a solve the server has already played, which is never retried.
 
 "One table" governs what a table repository returns and writes. A read may still
 filter by a related table: `findCalibrationCounts` scopes attempts to a

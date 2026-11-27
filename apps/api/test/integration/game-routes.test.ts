@@ -8,7 +8,7 @@ import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as gameRepository from '../../src/repositories/game-repository/index.ts';
-import { PLAYER_GAME_ID, newGameSnapshot, stubPlayerUpstream } from '../support/player-game.ts';
+import { PLAYER_GAME_ID, newGameState, stubPlayerUpstream } from '../support/player-game.ts';
 
 const gameId = PLAYER_GAME_ID;
 
@@ -34,7 +34,7 @@ describe('game routes', () => {
   });
 
   it('starts a manual game', async () => {
-    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValueOnce(newGameSnapshot('fresh'));
+    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValueOnce(newGameState('fresh'));
 
     const response = await app.inject({ method: 'POST', url: '/api/games' });
 
@@ -97,7 +97,7 @@ describe('game routes', () => {
   });
 
   it('returns 409 for a bot game', async () => {
-    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValueOnce(newGameSnapshot('bot-game'));
+    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValueOnce(newGameState('bot-game'));
     await startGameRun({ db: app.db, strategy: 'calibrated' });
 
     const response = await app.inject({ url: '/api/games/bot-game/turn' });

@@ -6,7 +6,7 @@ import { buildApp } from '../../src/app.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import { migrateFresh } from '../support/integration-db.ts';
 import { LIVE_AD, pointAdapterAt } from '../support/mugloar-api.ts';
-import { PLAYER_GAME_ID, newGameSnapshot } from '../support/player-game.ts';
+import { PLAYER_GAME_ID, newGameStartBody } from '../support/player-game.ts';
 import { startStubServer } from '../support/stub-server.ts';
 import type { StubServer } from '../support/stub-server.ts';
 
@@ -43,7 +43,7 @@ describe('solving an encrypted ad through the API', () => {
     // buildApp configures the adapter from the environment, so the stub must be set after it.
     pointAdapterAt({ baseUrl: stub.baseUrl });
 
-    stub.post('/game/start', () => newGameSnapshot(PLAYER_GAME_ID));
+    stub.post('/game/start', () => newGameStartBody(PLAYER_GAME_ID));
     stub.get('/:gameId/messages', () => [BASE64_AD]);
     stub.get('/:gameId/shop', () => []);
     stub.post('/:gameId/solve/:adId', ({ path }) => {
