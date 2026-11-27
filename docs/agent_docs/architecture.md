@@ -99,7 +99,7 @@ through; the engine returns `Decision` and `AdvisedAd`.
 of its `strategy` column (`StrategyName`, `StrategyNameSchema`), which the web
 never sees. The two types every layer needs, `Logger` and `OrGameOver`, live in
 `src/types.ts`. Any other type lives beside the code that produces it:
-`TurnResult` in `game-manager.ts`, `RawAd` in the Mugloar adapter's
+`TurnResult` in `game-manager/turn-persistence.ts`, `RawAd` in the Mugloar adapter's
 `wire-schemas.ts`, `SolveOutcome` and `BuyOutcome` in `mugloar-repository.ts`,
 `BotStrategy` in `bot-manager.ts`.
 The table names (`DbTables`) live in `repositories/db-tables.ts`.
@@ -128,18 +128,32 @@ player's routes, and `bot-mediator.ts` starts bot games and owns their registry.
 
 ### Managers
 
-Own one entity's lifecycle, its rules and its transaction boundary. One file
-per manager, which holds that entity's whole workflow, so the 200-line limit
-does not apply to `managers/*.ts`. A manager
-may compose every repository its transaction writes: `game-manager.ts` owns the
-game state machine and writes a turn's run update together with its attempt or
-purchase row, atomically. It also fronts the reads (`findAds`, `findShopItems`,
-`findRun`, `findPlayableRun`, `findMoveHistory`) so that callers never reach a
-repository. Every move runs through `playMove`: call the
-upstream, turn its answer into the next state, and save that state with the
-move's record in `saveStateWithRecord`. A player's move is wrapped in
-`withPlayerTurn`, which takes the per-game lock (`withGameLock`), re-reads the
-playable run and the board or shop, and settles a game that ended. When the
+Own one entity's lifecycle, its rules and its transaction boundary. A manager is
+one file until its workflow outgrows the 200-line limit; then it becomes a
+folder with one file per concern and an `index.ts`, its public API, which is
+all that callers import. `bot-manager.ts` is the one manager file still over
+the limit. A manager may compose every repository its transaction writes:
+`game-manager/` owns the game state machine and writes a turn's run update
+together with its attempt or purchase row, atomically. Each of its files
+imports only the files above it here:
+
+| File                  | Concern                                                                   |
+| --------------------- | ------------------------------------------------------------------------- |
+| `game-state.ts`       | a run row to `GameState` and back, `toGameView`, `isOutOfLives`           |
+| `game-runs.ts`        | find, start and finish a run, `recordGameOver`                            |
+| `board-and-shop.ts`   | `findAds` and `findShopItems`, read from the upstream                     |
+| `move-history.ts`     | `findMoveHistory`, read from the database only                            |
+| `game-lock.ts`        | `withGameLock`, one move per game at a time                               |
+| `turn-persistence.ts` | `saveStateWithRecord`, a turn's state and record in one transaction       |
+| `play-turn.ts`        | `playSolveTurn` and `playBuyTurn`, one move for the bot and player alike  |
+| `player-moves.ts`     | `solvePlayerAd` and `buyPlayerItem`, a player's move from lock to outcome |
+
+It fronts the reads (`findAds`, `findShopItems`, `findRun`, `findPlayableRun`,
+`findMoveHistory`) so that callers never reach a repository. Every move runs
+through `playMove`: call the upstream, turn its answer into the next state, and
+save that state with the move's record in `saveStateWithRecord`. A player's move
+is wrapped in `withPlayerTurn`, which takes the per-game lock (`withGameLock`),
+re-reads the playable run and the board or shop, and settles a game that ended. When the
 turn's transaction fails after the upstream move happened, the caller's
 `onPersistFailure` decides: `'keep_playing'` (the bot, which carries its state
 in memory) logs and plays on, `'save_state_only'` (the player, whose next move
@@ -154,8 +168,8 @@ and `executeDecision`, which turns a `Decision` into a call on `game-manager`;
 see _Bot runtime_.
 
 Managers call each other through namespace imports
-(`import * as gameManager from './game-manager.ts'`), so a call site names the
-manager it reaches.
+(`import * as gameManager from './game-manager/index.ts'`), so a call site names
+the manager it reaches.
 
 ### Repositories
 
@@ -505,7 +519,7 @@ under that assumption, because each lives in memory:
 
 - the bot-game registry, so the cap of 3 bot games is per process;
 - the `@fastify/rate-limit` counters, so every limit is per process;
-- the per-game move lock (`withGameLock` in `game-manager.ts`), so two processes could each send a
+- the per-game move lock (`withGameLock` in `game-manager/game-lock.ts`), so two processes could each send a
   move of the same game upstream at once;
 - the outbound throttle, so two processes would double the rate the upstream
   sees.

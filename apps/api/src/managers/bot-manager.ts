@@ -13,7 +13,7 @@ import { AdExpiredError, UpstreamUnavailableError } from '../errors/errors.ts';
 import * as gameRunRepository from '../repositories/game-run-repository.ts';
 import type { Logger, OrGameOver } from '../types.ts';
 import * as calibrationManager from './calibration-manager.ts';
-import * as gameManager from './game-manager.ts';
+import * as gameManager from './game-manager/index.ts';
 
 // cli/ calls managers only, so the engine's config reaches it through here.
 export { STRATEGY_CONFIG };

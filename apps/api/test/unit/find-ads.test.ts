@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { findAds } from '../../src/managers/game-manager.ts';
+import { findAds } from '../../src/managers/game-manager/index.ts';
 import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import { PLAYER_BOARD, PLAYER_GAME_ID } from '../support/player-game.ts';
 

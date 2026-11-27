@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../../src/app.ts';
 import { DEFAULT_APP_LIMITS, type AppLimits } from '../../src/app-limits.ts';
 import { loadConfig } from '../../src/config/index.ts';
-import { startGameRun } from '../../src/managers/game-manager.ts';
+import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
 import { PLAYER_GAME_ID, newGameSnapshot, stubPlayerUpstream } from '../support/player-game.ts';

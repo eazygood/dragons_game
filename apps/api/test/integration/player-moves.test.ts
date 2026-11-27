@@ -14,7 +14,7 @@ import {
   finishRun,
   solvePlayerAd,
   startGameRun,
-} from '../../src/managers/game-manager.ts';
+} from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
 import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
