@@ -6,7 +6,8 @@ import { z } from 'zod';
 
 import type { Logger } from '../types.ts';
 import { STRATEGY_CONFIG, SILENT_LOGGER, playNewGame } from '../managers/bot-manager.ts';
-import type { BotStrategy, StrategyConfig } from '../managers/bot-manager.ts';
+import type { StrategyConfig } from '../managers/bot-manager.ts';
+import type { BotStrategy } from '../entities/game-run.ts';
 import * as gameManager from '../managers/game-manager/index.ts';
 import { summarise } from './benchmark-report.ts';
 import type { BenchmarkSummary } from './benchmark-report.ts';

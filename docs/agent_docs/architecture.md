@@ -99,11 +99,11 @@ through; the engine returns `Decision` and `AdvisedAd`.
 `entities/` holds one type per table: `GameRun` (`game_runs`), `AdAttempt`
 (`ad_attempts`) and `Purchase` (`purchases`). `game-run.ts` also owns the values
 of its `strategy` column (`StrategyName`, `StrategyNameSchema`), which the web
-never sees. The two types every layer needs, `Logger` and `OrGameOver`, live in
+never sees, the subset a bot may play (`BotStrategy`, `BotStrategySchema`), and
+`DEFAULT_BOT_STRATEGY`, which `bot-mediator` and both CLIs read. The two types every layer needs, `Logger` and `OrGameOver`, live in
 `src/types.ts`. Any other type lives beside the code that produces it:
 `TurnResult` in `game-manager/turn-persistence.ts`, `RawAd` in the Mugloar adapter's
-`wire-schemas.ts`, `SolveOutcome` and `BuyOutcome` in `game-repository/mugloar.ts`,
-`BotStrategy` in `bot-manager.ts`.
+`wire-schemas.ts`, `SolveOutcome` and `BuyOutcome` in `game-repository/mugloar.ts`.
 The table names (`DbTables`) live in `repositories/db-tables.ts`.
 `tools/` holds helpers that belong to no layer, such as `discard-outcome.ts`;
 any layer may import them except the engine, which imports nothing from outside

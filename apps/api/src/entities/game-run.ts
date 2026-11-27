@@ -10,6 +10,14 @@ export const StrategyNameSchema = z.enum(STRATEGY_NAMES);
 
 export type StrategyName = (typeof STRATEGY_NAMES)[number];
 
+// The one declaration of the strategies a bot can play; the CLIs parse their arguments with it.
+export const BotStrategySchema = StrategyNameSchema.exclude(['manual']);
+
+export type BotStrategy = z.infer<typeof BotStrategySchema>;
+
+// One choice for the web's bot games and the CLIs' --strategy default, so they cannot drift.
+export const DEFAULT_BOT_STRATEGY = BotStrategySchema.enum.calibrated;
+
 export type GameRunId = number;
 
 export interface GameRun {

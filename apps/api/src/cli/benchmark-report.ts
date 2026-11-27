@@ -1,4 +1,5 @@
-import type { BotRunResult, BotStrategy } from '../managers/bot-manager.ts';
+import type { BotStrategy } from '../entities/game-run.ts';
+import type { BotRunResult } from '../managers/bot-manager.ts';
 
 const PERCENT = 100;
 const percentOf = ({ rate }: { rate: number }) => `${Math.round(rate * PERCENT)}%`;

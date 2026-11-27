@@ -6,7 +6,7 @@ import type { MeasuredCalibration } from '../../src/engine/calibration.ts';
 import { decide } from '../../src/engine/decide.ts';
 import { STRATEGY_CONFIG } from '../../src/engine/strategy-config.ts';
 import type { StrategyConfig } from '../../src/engine/strategy-config.ts';
-import type { BotStrategy } from '../../src/managers/bot-manager.ts';
+import type { BotStrategy } from '../../src/entities/game-run.ts';
 import { drawBoard, randomFor, succeeds } from './simulated-world.ts';
 
 // A seeded model of the game for regression-testing the strategy, not evidence about the

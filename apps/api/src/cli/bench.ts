@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { formatSummary } from './benchmark-report.ts';
 import { consoleLogger, createLiveRuntime } from './live-runtime.ts';
 import { DEFAULT_CONCURRENCY, applyStrategyOverride, runBenchmark } from './run-benchmark.ts';
-import { BotStrategySchema } from '../managers/bot-manager.ts';
+import { BotStrategySchema, DEFAULT_BOT_STRATEGY } from '../entities/game-run.ts';
 
 const DEFAULT_RUNS = 20;
 
@@ -21,7 +21,7 @@ const main = async () => {
   const { values } = parseArgs({
     options: {
       runs: { type: 'string', default: String(DEFAULT_RUNS) },
-      strategy: { type: 'string', default: 'calibrated' },
+      strategy: { type: 'string', default: DEFAULT_BOT_STRATEGY },
       warm: { type: 'boolean', default: false },
       concurrency: { type: 'string', default: String(DEFAULT_CONCURRENCY) },
       override: { type: 'string' },

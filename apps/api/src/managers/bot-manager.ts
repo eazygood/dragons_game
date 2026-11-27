@@ -1,13 +1,11 @@
 import type { Ad, Decision, GameState, ShopItem } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
-import type { z } from 'zod';
 
 import type { CalibrationAttempt, MeasuredCalibration } from '../engine/calibration.ts';
 import { decide } from '../engine/decide.ts';
 import { STRATEGY_CONFIG } from '../engine/strategy-config.ts';
 import type { StrategyConfig } from '../engine/strategy-config.ts';
-import { StrategyNameSchema } from '../entities/game-run.ts';
-import type { GameRun } from '../entities/game-run.ts';
+import type { BotStrategy, GameRun } from '../entities/game-run.ts';
 import { DecisionInvariantError } from '../errors/decision-invariant-error.ts';
 import { AdExpiredError, UpstreamUnavailableError } from '../errors/errors.ts';
 import type { Logger, OrGameOver } from '../types.ts';
@@ -17,11 +15,6 @@ import * as gameManager from './game-manager/index.ts';
 // cli/ calls managers only, so the engine's config reaches it through here.
 export { STRATEGY_CONFIG };
 export type { StrategyConfig };
-
-// The one declaration of the strategies a bot can play; the CLIs parse their arguments with it.
-export const BotStrategySchema = StrategyNameSchema.exclude(['manual']);
-
-export type BotStrategy = z.infer<typeof BotStrategySchema>;
 
 export type BotRunResult = { gameId: string; score: number; turns: number; strategy: BotStrategy };
 
