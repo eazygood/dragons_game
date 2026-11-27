@@ -431,6 +431,28 @@ not raw levels, because raw cells would be too sparse. **Reward bands**
 under 100 gold, 1/45 at 160+). The repository returns raw rewards and the engine
 buckets them, so the edges are tunable without a query change.
 
+**Where the priors come from.** `probabilityPrior` is a guess written before the
+first game was played: the eleven labels read as an ordered ladder, so the values
+step from 0.95 down to 0. It was never tuned. Measured afterwards on ads under
+100 gold, where the label holds, every label lands within 0.06 of its prior,
+most at or just above it ([`phase-1-benchmark.md`](findings/phase-1-benchmark.md)
+§12). Above 100 gold the top labels win close to never, which one number per
+label cannot fit; the reward band learns those cells, at about one life a game
+in a cold run. With α = 2 a prior counts as two attempts, so it decides the
+first moves of a cold start and of a fresh cell after a level-up, and little
+after that. α itself was swept (§5): at 2, a 0.95 prior drops below the floor
+after three straight failures, where 5 took six.
+
+**Why not a bandit.** The engine acts on its estimate and never explores on
+purpose: no Thompson sampling, no UCB bonus. This is reasoning, not a measured
+comparison. A game lasts about 100 turns and a failed solve costs a life, so a
+turn spent testing a doubtful ad is expensive. The label prior is already
+informative: `baseline`, priors alone, passed 55% of 20 cold runs. Cold
+benchmark games share evidence as they go, so later games start from what
+earlier ones learned. The cost: a label whose prior is under
+`minimumProbability` (`Risky` and worse) is tried only when nothing better is on
+the board, so a prior that is too pessimistic there would be slow to correct.
+
 The player's advice reads calibration fresh on every `/turn`. The bot reads it
 once at the start, then `learnFromAttempt` folds each of its own saved solves in
 memory (an attempt whose row was lost stays out, so the in-memory calibration
@@ -567,6 +589,7 @@ Recorded as they are established. A documented negative result is a finding.
 | Does levelling up pay?                              | partly  | from the start: on 95% pass, off 100%, so **off** below 1000. Past 1000: median 2620.5 → 3579.5, pass unchanged, so **on**. On an exhausted board: **no** |
 | Does the board run dry?                             | **yes** | by turn ~95 every ad is `Impossible`, and 8–22 level-ups bought there won nothing more; the game is over in all but name                                  |
 | Can lives exceed the starting 3?                    | yes     | observed up to 12 from repeated potions                                                                                                                   |
+| Are the label priors right?                         | partly  | under 100 gold, within 0.06 for every label; above, `Sure thing` and `Piece of cake` win 0–12% against 0.90–0.95, about one life a game when cold (§12)   |
 | Is `encrypted: 2` ROT13?                            | yes     | captured 2026-11-23; solving needs the decoded id (raw → `400`, decoded → `200`)                                                                          |
 | Do encrypted ads behave differently?                | no      | 0.73 vs 0.72 success; `was_encrypted` column dropped                                                                                                      |
 | Does reputation affect anything?                    | skip    | **each call burns a turn**; values move but nothing uses them                                                                                             |

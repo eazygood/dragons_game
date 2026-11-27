@@ -111,9 +111,12 @@ recordings in the order they were made and throws once they run out.
 
 The tool that recorded them was deleted once the fixtures existed; the upstream
 is a fixed game, so re-recording is not routine. Should the upstream ever
-change, `ba13e64` is the last commit that has it: `src/tools/capture.ts`, run
-as `pnpm capture`, and `adapters/mugloar-api-adapter/recorder.ts`. Never patch a
-fixture by hand to make a test pass — re-record instead.
+change, git history still has it: `src/tools/capture.ts`, run as
+`pnpm capture`, and `adapters/mugloar-api-adapter/recorder.ts`. The commit that
+deleted them is the one
+`git log --full-history --diff-filter=D -- apps/api/src/tools/capture.ts`
+prints; restore from its parent. Never patch a fixture by hand to make a test
+pass — re-record instead.
 
 ## Stubbing the upstream
 

@@ -1,16 +1,17 @@
 # Phase 1 benchmark — raw numbers
 
 Every number here came from `pnpm bench` against the live API, on 2026-11-23
-(§1–§7) and in later runs through 2026-11-26 (§8–§11). **Cold** means calibration reads only the
+(§1–§7) and in later runs through 2026-11-26 (§8–§11); §12 reads the attempts
+those runs stored. **Cold** means calibration reads only the
 current benchmark's own games: `calibrated` starts from the priors alone and
 learns within the invocation, 3 games in parallel sharing the evidence. It is
 what a first-time reviewer with an empty database gets. `--warm` reads all
 stored history instead.
 
 How "cold" was achieved changed during the day. §1–§6 ran with an earlier
-benchmark that truncated `ad_attempts` before a cold run. Since commit ae3625a,
-a cold run instead scopes calibration to its own games (`calibrationBenchmarkId`)
-and deletes nothing; §7 and §8 were measured that way. Both start the engine
+benchmark that truncated `ad_attempts` before a cold run. A later change made a
+cold run scope calibration to its own games (`calibrationBenchmarkId`) instead,
+deleting nothing; §7 and §8 were measured that way. Both start the engine
 from the same priors.
 
 ## 1. Baseline vs calibrated (before reward bands)
@@ -316,3 +317,49 @@ Open, not measured:
   just spread the evidence thinner.
 - **The gold reserve.** 50 is one potion, not a swept value.
 - **Level-ups before 1000** stay off. §4 is the only evidence, and it is weak.
+
+## 12. The priors against what was measured
+
+`probabilityPrior` was written before the first game was played and has never
+been tuned. The eleven labels read as an ordered ladder, so the values step from
+0.95 down to 0, and `Impossible` is 0 by definition. No failure pointed at it:
+the reward trap was fixed by the reward band (§4) and α = 2 (§5), which unlearn
+a wrong prior faster rather than correct it, and §5 swept the knobs the
+failures did point at.
+
+Measured on 2026-11-27 over every attempt stored by then: 20,061 attempts in 358
+games, 2026-11-23 to 2026-11-26. 14,548 of them paid under 100 gold, the band
+where the label holds (§2), so that column is the fair test of a prior that
+ignores reward:
+
+| Label              | Prior | Won, reward < 100 | Attempts < 100 | Won, all rewards |
+| ------------------ | ----- | ----------------- | -------------- | ---------------- |
+| Sure thing         | 0.95  | 1.00              | 1005           | 0.43             |
+| Piece of cake      | 0.90  | 0.96              | 3338           | 0.67             |
+| Walk in the park   | 0.85  | 0.85              | 2048           | 0.80             |
+| Quite likely       | 0.75  | 0.78              | 1544           | 0.77             |
+| Hmmm....           | 0.60  | 0.65              | 1052           | 0.64             |
+| Gamble             | 0.50  | 0.56              | 795            | 0.55             |
+| Risky              | 0.40  | 0.44              | 786            | 0.45             |
+| Rather detrimental | 0.30  | 0.35              | 660            | 0.36             |
+| Playing with fire  | 0.20  | 0.22              | 634            | 0.23             |
+| Suicide mission    | 0.10  | 0.04              | 2686           | 0.04             |
+
+- Every label lands within 0.06 of its prior. All but `Suicide mission` measure
+  at or above it, so the guess errs on the safe side, and `Suicide mission` is
+  under the probability floor either way.
+- `Risky` measures 0.44, still under `minimumProbability` (0.45), so a truer
+  prior there would not have changed a choice.
+- The prior misses where reward matters, and badly. At 100–159 gold and at 160+,
+  `Sure thing` wins 0.01 and 0.00, `Piece of cake` 0.12 and 0.00 (§2). One
+  number per label cannot fit both sides, so the reward band learns those cells
+  instead. In the two runs of §11 (`05a010b6`, `44f556c5`), such ads chosen on
+  the prior (`best_expected_value`, estimated about 0.7) lost 15 and 27 times in
+  20 games: about one life a game, at 100% pass. A prior per reward band would
+  save those; it is not built and not measured.
+- Another 151 and 29 such losses were `safest_available`, on boards with
+  nothing above the floor, estimated 0.11–0.23. A truer prior would change which
+  bad ad the engine took there, not whether it took one.
+- The sample is the engine's own choices, so labels under the floor were mostly
+  played as the fallback. `Impossible` has no attempts: the engine filters it
+  out.
