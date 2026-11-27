@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { AdAttempt } from '../../src/entities/ad-attempt.ts';
 import type { NewGameRun } from '../../src/entities/game-run.ts';
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import { useMigratedDatabase } from '../support/integration-db.ts';
 
 const STARTED_AT = new Date('2026-11-24T10:00:00.000Z');
@@ -51,12 +51,12 @@ describe('repositories', () => {
   const db = useMigratedDatabase();
 
   const createRun = (patch: Partial<NewGameRun> & Pick<NewGameRun, 'gameId'>) =>
-    gameRunRepository.createOne({ db, gameRun: { ...ACTIVE_RUN, ...patch } });
+    gameRepository.db.createOne({ db, gameRun: { ...ACTIVE_RUN, ...patch } });
 
   it('round-trips a game run through transform and back', async () => {
-    const id = await gameRunRepository.createOne({ db, gameRun: ACTIVE_RUN });
+    const id = await gameRepository.db.createOne({ db, gameRun: ACTIVE_RUN });
 
-    expect(await gameRunRepository.findOne({ db, gameId: ACTIVE_RUN.gameId })).toEqual({
+    expect(await gameRepository.db.findOne({ db, gameId: ACTIVE_RUN.gameId })).toEqual({
       ...ACTIVE_RUN,
       id,
     });
@@ -65,19 +65,19 @@ describe('repositories', () => {
   it('returns null for an unknown game', async () => {
     await createRun({ gameId: 'repo-known' });
 
-    expect(await gameRunRepository.findOne({ db, gameId: 'never-started' })).toBeNull();
+    expect(await gameRepository.db.findOne({ db, gameId: 'never-started' })).toBeNull();
   });
 
   it('updates live state in place, touching nothing else', async () => {
     const id = await createRun({ gameId: 'repo-update' });
 
-    await gameRunRepository.updateOne({
+    await gameRepository.db.updateOne({
       db,
       id,
       patch: { lives: 2, gold: 120, turn: 7, score: 300 },
     });
 
-    expect(await gameRunRepository.findOne({ db, gameId: 'repo-update' })).toMatchObject({
+    expect(await gameRepository.db.findOne({ db, gameId: 'repo-update' })).toMatchObject({
       lives: 2,
       gold: 120,
       turn: 7,
@@ -91,9 +91,9 @@ describe('repositories', () => {
     const id = await createRun({ gameId: 'repo-finalise' });
     const endedAt = new Date('2026-11-24T10:05:00.000Z');
 
-    await gameRunRepository.updateOne({ db, id, patch: { status: 'game_over', endedAt } });
+    await gameRepository.db.updateOne({ db, id, patch: { status: 'game_over', endedAt } });
 
-    expect(await gameRunRepository.findOne({ db, gameId: 'repo-finalise' })).toMatchObject({
+    expect(await gameRepository.db.findOne({ db, gameId: 'repo-finalise' })).toMatchObject({
       status: 'game_over',
       endedAt,
     });

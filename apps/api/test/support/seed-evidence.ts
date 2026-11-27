@@ -2,7 +2,7 @@ import type { ProbabilityLabel } from '@dragons-game/contracts';
 import type { Knex } from 'knex';
 
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 
 export type EvidenceCell = {
   label: ProbabilityLabel;
@@ -22,7 +22,7 @@ export const seedEvidence = async ({
   cells: EvidenceCell[];
   benchmarkId?: string | null;
 }): Promise<void> => {
-  const gameRunId = await gameRunRepository.createOne({
+  const gameRunId = await gameRepository.db.createOne({
     db,
     gameRun: {
       gameId: `seeded-${benchmarkId ?? 'history'}`,

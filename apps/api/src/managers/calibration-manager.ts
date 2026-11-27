@@ -4,8 +4,8 @@ import { buildCalibration, priorCalibration, withAttempt } from '../engine/calib
 import type { CalibrationAttempt, MeasuredCalibration } from '../engine/calibration.ts';
 import { STRATEGY_CONFIG } from '../engine/strategy-config.ts';
 import type { StrategyConfig } from '../engine/strategy-config.ts';
-import * as adAttemptRepository from '../repositories/ad-attempt-repository.ts';
 import type { Logger } from '../types.ts';
+import * as adAttemptManager from './ad-attempt-manager.ts';
 import type { BotStrategy } from './bot-manager.ts';
 
 type LoadCalibrationInput = {
@@ -28,7 +28,7 @@ const readCalibration = async ({
   fallback: MeasuredCalibration;
 }): Promise<MeasuredCalibration> => {
   try {
-    const counts = await adAttemptRepository.findCalibrationCounts({ db, benchmarkId });
+    const counts = await adAttemptManager.findCalibrationCounts({ db, benchmarkId });
 
     return buildCalibration({ counts, config });
   } catch (error) {

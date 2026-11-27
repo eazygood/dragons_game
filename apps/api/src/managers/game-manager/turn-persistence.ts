@@ -4,7 +4,7 @@ import type { Knex } from 'knex';
 import { withTransaction } from '../../adapters/mysql-adapter.ts';
 import type { GameRun } from '../../entities/game-run.ts';
 import { PersistenceFailedError } from '../../errors/errors.ts';
-import * as gameRunRepository from '../../repositories/game-run-repository.ts';
+import * as gameRepository from '../../repositories/game-repository/index.ts';
 import type { Logger } from '../../types.ts';
 import { statePatch } from './game-state.ts';
 
@@ -46,7 +46,7 @@ const settleLostRecord = async ({
   logger.warn({ err: cause, turn }, 'turn record not persisted; saving state only');
 
   try {
-    await gameRunRepository.updateOne({
+    await gameRepository.db.updateOne({
       db,
       id: run.id,
       patch: statePatch({ state: turnResult.state }),
@@ -77,7 +77,7 @@ export const saveStateWithRecord = async ({
     await withTransaction({
       db,
       callback: async (trx) => {
-        await gameRunRepository.updateOne({
+        await gameRepository.db.updateOne({
           db: trx,
           id: run.id,
           patch: statePatch({ state: turnResult.state }),

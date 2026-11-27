@@ -6,14 +6,14 @@ import type { GameRunId } from '../../src/entities/game-run.ts';
 import type { Purchase } from '../../src/entities/purchase.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import * as purchaseRepository from '../../src/repositories/purchase-repository.ts';
 import { useMigratedDatabase } from '../support/integration-db.ts';
 
 const STARTED_AT = new Date('2026-11-24T10:00:00.000Z');
 
 const startRun = ({ db, gameId }: { db: Knex; gameId: string }): Promise<GameRunId> =>
-  gameRunRepository.createOne({
+  gameRepository.db.createOne({
     db,
     gameRun: {
       gameId,

@@ -6,7 +6,7 @@ import { DEFAULT_APP_LIMITS, type AppLimits } from '../../src/app-limits.ts';
 import { loadConfig } from '../../src/config/index.ts';
 import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import { PLAYER_GAME_ID, newGameSnapshot, stubPlayerUpstream } from '../support/player-game.ts';
 
 const RATE_LIMIT_MAX = 2;
@@ -66,7 +66,7 @@ describe('rate limits on the game routes', () => {
     // game_id is unique, so every later start needs its own upstream id.
     let startedGames = 0;
 
-    vi.mocked(mugloarRepository.startGame).mockImplementation(() =>
+    vi.mocked(gameRepository.mugloar.startGame).mockImplementation(() =>
       Promise.resolve(newGameSnapshot(`limited-${(startedGames += 1)}`)),
     );
   });

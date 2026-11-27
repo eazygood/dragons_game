@@ -3,8 +3,8 @@ import type { Knex } from 'knex';
 
 import type { AdAttempt } from '../../entities/ad-attempt.ts';
 import type { Purchase } from '../../entities/purchase.ts';
-import * as adAttemptRepository from '../../repositories/ad-attempt-repository.ts';
-import * as purchaseRepository from '../../repositories/purchase-repository.ts';
+import * as adAttemptManager from '../ad-attempt-manager.ts';
+import * as purchaseManager from '../purchase-manager.ts';
 import { findRun } from './game-runs.ts';
 
 const toSolveMove = ({ attempt }: { attempt: AdAttempt }): Move => ({
@@ -37,8 +37,8 @@ export const findMoveHistory = async ({
 }): Promise<Move[]> => {
   const run = await findRun({ db, gameId });
   const [attempts, purchases] = await Promise.all([
-    adAttemptRepository.findMany({ db, gameRunId: run.id }),
-    purchaseRepository.findMany({ db, gameRunId: run.id }),
+    adAttemptManager.findMany({ db, gameRunId: run.id }),
+    purchaseManager.findMany({ db, gameRunId: run.id }),
   ]);
 
   return [

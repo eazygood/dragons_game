@@ -5,13 +5,9 @@ import type { Knex } from 'knex';
 import { z } from 'zod';
 
 import type { Logger } from '../types.ts';
-import {
-  STRATEGY_CONFIG,
-  SILENT_LOGGER,
-  findBenchmarkRuns,
-  playNewGame,
-} from '../managers/bot-manager.ts';
+import { STRATEGY_CONFIG, SILENT_LOGGER, playNewGame } from '../managers/bot-manager.ts';
 import type { BotStrategy, StrategyConfig } from '../managers/bot-manager.ts';
+import * as gameManager from '../managers/game-manager/index.ts';
 import { summarise } from './benchmark-report.ts';
 import type { BenchmarkSummary } from './benchmark-report.ts';
 
@@ -135,7 +131,7 @@ export const runBenchmark = async ({
     }
   });
 
-  const runDurationsInMs = (await findBenchmarkRuns({ db, benchmarkId })).flatMap(
+  const runDurationsInMs = (await gameManager.findBenchmarkRuns({ db, benchmarkId })).flatMap(
     ({ startedAt, endedAt }) => (endedAt === null ? [] : [endedAt.getTime() - startedAt.getTime()]),
   );
 

@@ -1,6 +1,6 @@
 import type { Ad, ShopItem } from '@dragons-game/contracts';
 
-import * as mugloarRepository from '../../repositories/mugloar-repository.ts';
+import * as gameRepository from '../../repositories/game-repository/index.ts';
 import type { Logger, OrGameOver } from '../../types.ts';
 
 // What the game offers right now, read from the upstream: ads change every turn, and the shop
@@ -12,7 +12,7 @@ export const findAds = async ({
   gameId: string;
   logger: Logger;
 }): Promise<OrGameOver<Ad[]>> => {
-  const boardResult = await mugloarRepository.findAds({ gameId });
+  const boardResult = await gameRepository.mugloar.findAds({ gameId });
 
   if (boardResult.status === 'game_over') {
     return boardResult;
@@ -30,4 +30,4 @@ export const findAds = async ({
 };
 
 export const findShopItems = ({ gameId }: { gameId: string }): Promise<OrGameOver<ShopItem[]>> =>
-  mugloarRepository.findShopItems({ gameId });
+  gameRepository.mugloar.findShopItems({ gameId });

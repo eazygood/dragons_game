@@ -7,8 +7,7 @@ import { loadConfig } from '../../src/config/index.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import { startGameRun } from '../../src/managers/game-manager/index.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
-import * as mugloarRepository from '../../src/repositories/mugloar-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import { PLAYER_GAME_ID, newGameSnapshot, stubPlayerUpstream } from '../support/player-game.ts';
 
 const gameId = PLAYER_GAME_ID;
@@ -35,7 +34,7 @@ describe('game routes', () => {
   });
 
   it('starts a manual game', async () => {
-    vi.mocked(mugloarRepository.startGame).mockResolvedValueOnce(newGameSnapshot('fresh'));
+    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValueOnce(newGameSnapshot('fresh'));
 
     const response = await app.inject({ method: 'POST', url: '/api/games' });
 
@@ -44,7 +43,7 @@ describe('game routes', () => {
       status: 'active',
       state: { gameId: 'fresh', lives: 3 },
     });
-    expect(await gameRunRepository.findOne({ db: app.db, gameId: 'fresh' })).toMatchObject({
+    expect(await gameRepository.db.findOne({ db: app.db, gameId: 'fresh' })).toMatchObject({
       strategy: 'manual',
     });
   });
@@ -53,7 +52,7 @@ describe('game routes', () => {
     const response = await app.inject({ url: `/api/games/${gameId}` });
 
     expect(GameViewSchema.parse(response.json())).toMatchObject({ status: 'active' });
-    expect(mugloarRepository.findAds).not.toHaveBeenCalled();
+    expect(gameRepository.mugloar.findAds).not.toHaveBeenCalled();
   });
 
   it('serves the turn with advice that parses as a contract', async () => {
@@ -76,7 +75,7 @@ describe('game routes', () => {
 
       expect(response.statusCode).toBe(400);
       expect(response.json()).toMatchObject({ error: { code: 'invalid_request' } });
-      expect(mugloarRepository.findAds).not.toHaveBeenCalled();
+      expect(gameRepository.mugloar.findAds).not.toHaveBeenCalled();
     },
   );
 
@@ -98,7 +97,7 @@ describe('game routes', () => {
   });
 
   it('returns 409 for a bot game', async () => {
-    vi.mocked(mugloarRepository.startGame).mockResolvedValueOnce(newGameSnapshot('bot-game'));
+    vi.mocked(gameRepository.mugloar.startGame).mockResolvedValueOnce(newGameSnapshot('bot-game'));
     await startGameRun({ db: app.db, strategy: 'calibrated' });
 
     const response = await app.inject({ url: '/api/games/bot-game/turn' });
@@ -108,7 +107,7 @@ describe('game routes', () => {
   });
 
   it('answers 410 on game over and then reports the finished game', async () => {
-    vi.mocked(mugloarRepository.findAds).mockResolvedValue({ status: 'game_over' });
+    vi.mocked(gameRepository.mugloar.findAds).mockResolvedValue({ status: 'game_over' });
 
     const turn = await app.inject({ url: `/api/games/${gameId}/turn` });
 
@@ -122,17 +121,17 @@ describe('game routes', () => {
   it('answers 410 when the solve itself is game over, and ends the run', async () => {
     const url = `/api/games/${gameId}/ads/sure1/solve`;
 
-    vi.mocked(mugloarRepository.solveAd).mockResolvedValue({ status: 'game_over' });
+    vi.mocked(gameRepository.mugloar.solveAd).mockResolvedValue({ status: 'game_over' });
 
     expect((await app.inject({ method: 'POST', url })).statusCode).toBe(410);
-    expect(await gameRunRepository.findOne({ db: app.db, gameId })).toMatchObject({
+    expect(await gameRepository.db.findOne({ db: app.db, gameId })).toMatchObject({
       status: 'game_over',
       endedAt: expect.any(Date) as Date,
     });
   });
 
   it('maps an unreachable upstream to 502', async () => {
-    vi.mocked(mugloarRepository.findAds).mockRejectedValue(
+    vi.mocked(gameRepository.mugloar.findAds).mockRejectedValue(
       new UpstreamUnavailableError({ message: 'down' }),
     );
 

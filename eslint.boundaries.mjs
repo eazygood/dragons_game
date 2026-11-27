@@ -1,3 +1,35 @@
+// A manager calls only its own entity's repository; another entity is reached through that
+// entity's manager. A manager missing here owns no table and calls no repository.
+const OWN_REPOSITORY_BY_MANAGER = {
+  'apps/api/src/managers/game-manager/**/*.ts': 'game-repository/',
+  'apps/api/src/managers/ad-attempt-manager.ts': 'ad-attempt-repository\\.ts$',
+  'apps/api/src/managers/purchase-manager.ts': 'purchase-repository\\.ts$',
+};
+
+const managerRules = ({ ownRepository }) => ({
+  'no-restricted-imports': [
+    'error',
+    {
+      patterns: [
+        {
+          group: ['**/adapters/**'],
+          allowImportNames: ['withTransaction'],
+          message: 'Managers call repositories; only withTransaction comes from an adapter.',
+        },
+        {
+          group: ['**/mediators/**', '**/routes/**', '**/cli/**'],
+          message: 'Managers never call upward.',
+        },
+        {
+          regex: ownRepository ? `/repositories/(?!${ownRepository})` : '/repositories/',
+          message:
+            "A manager calls only its own entity's repository; another entity goes through its manager.",
+        },
+      ],
+    },
+  ],
+});
+
 // Layer rules from docs/agent_docs/architecture.md §Layers: dependencies move downward only.
 export const layerBoundaries = [
   {
@@ -90,27 +122,11 @@ export const layerBoundaries = [
       ],
     },
   },
-  {
-    files: ['apps/api/src/managers/**/*.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['**/adapters/**'],
-              allowImportNames: ['withTransaction'],
-              message: 'Managers call repositories; only withTransaction comes from an adapter.',
-            },
-            {
-              group: ['**/mediators/**', '**/routes/**', '**/cli/**'],
-              message: 'Managers never call upward.',
-            },
-          ],
-        },
-      ],
-    },
-  },
+  { files: ['apps/api/src/managers/**/*.ts'], rules: managerRules({ ownRepository: null }) },
+  ...Object.entries(OWN_REPOSITORY_BY_MANAGER).map(([files, ownRepository]) => ({
+    files: [files],
+    rules: managerRules({ ownRepository }),
+  })),
   {
     files: ['apps/api/src/repositories/**/*.ts'],
     rules: {
@@ -123,7 +139,12 @@ export const layerBoundaries = [
               message: 'Repositories never call upward.',
             },
             {
-              group: ['./*-repository.ts'],
+              group: [
+                './*-repository.ts',
+                '../*-repository.ts',
+                './*-repository/**',
+                '../*-repository/**',
+              ],
               message: 'A repository serves one entity; composing two is a manager job.',
             },
           ],

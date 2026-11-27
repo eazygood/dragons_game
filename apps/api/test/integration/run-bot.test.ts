@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CALIBRATION_REFRESH_TURNS, playNewGame } from '../../src/managers/bot-manager.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import {
   BOT_CONFIG as config,
   SCRIPTED_SCORE,
@@ -49,7 +49,7 @@ describe('playNewGame', () => {
       strategy: 'calibrated',
     });
     expect(
-      await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId }),
+      await gameRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
     ).toMatchObject({ status: 'game_over', score: SCRIPTED_SCORE });
   });
 
@@ -73,7 +73,7 @@ describe('playNewGame', () => {
     harness.scriptedGame.fetchAds.mockResolvedValueOnce({ status: 'game_over' });
 
     const result = await playNewGame({ db: harness.db, strategy: 'baseline', config });
-    const run = await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId });
+    const run = await gameRepository.db.findOne({ db: harness.db, gameId: result.gameId });
 
     expect(result.turns).toBe(0);
     expect(run).toMatchObject({ status: 'game_over' });
@@ -90,7 +90,7 @@ describe('playNewGame', () => {
 
     expect(harness.scriptedGame.fetchAds).toHaveBeenCalledOnce();
     expect(
-      await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId }),
+      await gameRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
     ).toMatchObject({ status: 'game_over', lives: 0 });
   });
 
@@ -148,7 +148,7 @@ describe('playNewGame', () => {
       { item_id: HEALING_POTION_ID, rule: 'survival_floor', success: 1 },
     ]);
     expect(
-      await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId }),
+      await gameRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
     ).toMatchObject({ lives: 4, dragonLevel: 0, gold: result.score - (potionCost ?? 0) });
   });
 
@@ -161,7 +161,7 @@ describe('playNewGame', () => {
     expect(result.turns).toBe(5);
     expect(neverEndingGame.solveAd).toHaveBeenCalledTimes(5);
     expect(
-      await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId }),
+      await gameRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
     ).toMatchObject({ status: 'abandoned' });
   });
 });

@@ -2,17 +2,17 @@ import { AdSchema } from '@dragons-game/contracts';
 import type { Ad, ShopItem } from '@dragons-game/contracts';
 import { z } from 'zod';
 
-import { mugloarApiAdapter } from '../adapters/mugloar-api-adapter/index.ts';
+import { mugloarApiAdapter } from '../../adapters/mugloar-api-adapter/index.ts';
 import {
   AdListWireSchema,
   BuyWireSchema,
   GameStartWireSchema,
   ShopWireSchema,
   SolveWireSchema,
-} from '../adapters/mugloar-api-adapter/wire-schemas.ts';
-import type { GameSnapshot, RawAd } from '../adapters/mugloar-api-adapter/wire-schemas.ts';
-import { AdExpiredError, UpstreamUnavailableError } from '../errors/errors.ts';
-import type { OrGameOver } from '../types.ts';
+} from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
+import type { GameSnapshot, RawAd } from '../../adapters/mugloar-api-adapter/wire-schemas.ts';
+import { AdExpiredError, UpstreamUnavailableError } from '../../errors/errors.ts';
+import type { OrGameOver } from '../../types.ts';
 
 // What a solve reports back; the turn's attempt row is built from it.
 export type SolveOutcome = {

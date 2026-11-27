@@ -5,7 +5,7 @@ import type { GameRun } from '../../src/entities/game-run.ts';
 import { PersistenceFailedError } from '../../src/errors/errors.ts';
 import { saveStateWithRecord } from '../../src/managers/game-manager/index.ts';
 import type { OnPersistFailure } from '../../src/managers/game-manager/index.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 
 const STATE = { gameId: 'g1', lives: 3, gold: 30, dragonLevel: 1, turn: 4, score: 30 };
 const TURN = { state: STATE, success: true, message: 'ok' };
@@ -42,7 +42,7 @@ afterEach(() => {
 
 describe('saveStateWithRecord', () => {
   it('writes the state and the record on one transaction', async () => {
-    const updateOne = vi.spyOn(gameRunRepository, 'updateOne').mockResolvedValue();
+    const updateOne = vi.spyOn(gameRepository.db, 'updateOne').mockResolvedValue();
     const writeRecord = vi.fn().mockResolvedValue(undefined);
 
     const saved = await save({
@@ -57,7 +57,7 @@ describe('saveStateWithRecord', () => {
   });
 
   it('keep_playing: reports the lost record and writes nothing more', async () => {
-    const updateOne = vi.spyOn(gameRunRepository, 'updateOne').mockResolvedValue();
+    const updateOne = vi.spyOn(gameRepository.db, 'updateOne').mockResolvedValue();
 
     const saved = await save({
       transaction: transactionThatFails(),
@@ -70,7 +70,7 @@ describe('saveStateWithRecord', () => {
   });
 
   it('save_state_only: saves the state outside the failed transaction', async () => {
-    const updateOne = vi.spyOn(gameRunRepository, 'updateOne').mockResolvedValue();
+    const updateOne = vi.spyOn(gameRepository.db, 'updateOne').mockResolvedValue();
 
     const saved = await save({
       transaction: transactionThatFails(),
@@ -83,7 +83,7 @@ describe('saveStateWithRecord', () => {
   });
 
   it('save_state_only: fails the move when not even the state can be saved', async () => {
-    vi.spyOn(gameRunRepository, 'updateOne').mockRejectedValue(new Error('still down'));
+    vi.spyOn(gameRepository.db, 'updateOne').mockRejectedValue(new Error('still down'));
 
     await expect(
       save({ transaction: transactionThatFails(), onPersistFailure: 'save_state_only' }),

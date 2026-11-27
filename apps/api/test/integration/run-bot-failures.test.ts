@@ -4,7 +4,7 @@ import { playNewGame } from '../../src/managers/bot-manager.ts';
 import { UpstreamUnavailableError } from '../../src/errors/errors.ts';
 import { DbTables } from '../../src/repositories/db-tables.ts';
 import * as adAttemptRepository from '../../src/repositories/ad-attempt-repository.ts';
-import * as gameRunRepository from '../../src/repositories/game-run-repository.ts';
+import * as gameRepository from '../../src/repositories/game-repository/index.ts';
 import {
   BOT_CONFIG as config,
   SCRIPTED_SCORE,
@@ -65,10 +65,10 @@ describe('playNewGame when something fails mid-game', () => {
   });
 
   it('still reports the finished game and logs it when the final run write fails', async () => {
-    const realUpdateOne = gameRunRepository.updateOne;
+    const realUpdateOne = gameRepository.db.updateOne;
 
     // Per-turn state writes pass through; only the write that sets the final status fails.
-    vi.spyOn(gameRunRepository, 'updateOne').mockImplementation((input) =>
+    vi.spyOn(gameRepository.db, 'updateOne').mockImplementation((input) =>
       input.patch.status === undefined
         ? realUpdateOne(input)
         : Promise.reject(new Error('db went away')),
@@ -82,7 +82,7 @@ describe('playNewGame when something fails mid-game', () => {
       'finished run not finalised',
     );
     expect(
-      await gameRunRepository.findOne({ db: harness.db, gameId: result.gameId }),
+      await gameRepository.db.findOne({ db: harness.db, gameId: result.gameId }),
     ).toMatchObject({ status: 'active' });
   });
 });

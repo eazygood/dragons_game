@@ -3,13 +3,12 @@ import type { Knex } from 'knex';
 
 import type { GameRun, NewGameRun, StrategyName } from '../../entities/game-run.ts';
 import { GameNotFoundError, GameNotPlayableError } from '../../errors/errors.ts';
-import * as gameRunRepository from '../../repositories/game-run-repository.ts';
-import * as mugloarRepository from '../../repositories/mugloar-repository.ts';
+import * as gameRepository from '../../repositories/game-repository/index.ts';
 import type { Logger, OrGameOver } from '../../types.ts';
 import { stateFromRun, statePatch } from './game-state.ts';
 
 export const findRun = async ({ db, gameId }: { db: Knex; gameId: string }): Promise<GameRun> => {
-  const run = await gameRunRepository.findOne({ db, gameId });
+  const run = await gameRepository.db.findOne({ db, gameId });
 
   if (!run) {
     throw new GameNotFoundError({ message: `Game ${gameId} not found` });
@@ -17,6 +16,14 @@ export const findRun = async ({ db, gameId }: { db: Knex; gameId: string }): Pro
 
   return run;
 };
+
+export const findBenchmarkRuns = ({
+  db,
+  benchmarkId,
+}: {
+  db: Knex;
+  benchmarkId: string;
+}): Promise<GameRun[]> => gameRepository.db.findMany({ db, benchmarkId });
 
 // A finished run answers game over without asking the upstream, which would say 410 anyway.
 export const findPlayableRun = async ({
@@ -48,7 +55,7 @@ export const startGameRun = async ({
   strategy: StrategyName;
   benchmarkId?: string | null;
 }): Promise<{ run: GameRun; state: GameState }> => {
-  const snapshot = await mugloarRepository.startGame();
+  const snapshot = await gameRepository.mugloar.startGame();
   const state: GameState = {
     gameId: snapshot.gameId,
     lives: snapshot.lives,
@@ -65,7 +72,7 @@ export const startGameRun = async ({
     startedAt: new Date(),
     endedAt: null,
   };
-  const id = await gameRunRepository.createOne({ db, gameRun });
+  const id = await gameRepository.db.createOne({ db, gameRun });
 
   return { run: { ...gameRun, id }, state };
 };
@@ -81,7 +88,7 @@ export const finishRun = async ({
   state: GameState;
   status: Exclude<RunStatus, 'active'>;
 }): Promise<void> => {
-  await gameRunRepository.updateOne({
+  await gameRepository.db.updateOne({
     db,
     id: run.id,
     patch: { ...statePatch({ state }), status, endedAt: new Date() },
